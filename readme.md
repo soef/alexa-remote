@@ -11,3 +11,24 @@ Early code version.
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/soef/alexa-remote/blob/master/LICENSE)
 -->
 
+
+```js
+let Alexa = require('alexa-remote');
+let alexa = new Alexa();
+
+/***************************************************************/
+// see: https://www.gehrig.info/alexa/Alexa.html
+// cookie starts with x-amzn-dat and ends with =" csrf=12345780
+let cookie = 'x-amzn-dat.../ /...=" csrf=12345780';
+
+alexa.init({
+        cookie: cookie,
+        bluetooth: true
+    },
+    function () {
+        for (let device of this.devices) {
+            console.log (device._name);
+        }
+    }
+);
+````

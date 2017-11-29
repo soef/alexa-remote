@@ -24,7 +24,7 @@ function AlexaRemote (cookie, csrf) {
 
     //this.init = function (cookie, csrf, callback) {
     this.init = function (cookie, csrf, callback) {
-        var opts = {};
+        let opts = {};
         if (typeof cookie === 'object') {
             opts = cookie;
             cookie = opts.cookie;
@@ -34,6 +34,7 @@ function AlexaRemote (cookie, csrf) {
             callback = csrf;
             csrf = undefined;
         }
+        if(typeof callback === 'function') callback = callback.bind(this);
         this.setCookie(cookie, csrf);
         this.getAccount((err, result) => {
             if (!err && result && Array.isArray(result)) {
@@ -45,10 +46,10 @@ function AlexaRemote (cookie, csrf) {
 
             this.getDevices((err, result) => {
                 if (!err && result && Array.isArray(result.devices)) {
-                    var customerIds = {};
+                    let customerIds = {};
                     result.devices.forEach((device) => {
                         this.serialNumbers [device.serialNumber] = device;
-                        var name = device.accountName;
+                        let name = device.accountName;
                         this.names [name] = device;
                         this.names [name.toLowerCase()] = device;
                         if (device.deviceTypeFriendlyName) {
