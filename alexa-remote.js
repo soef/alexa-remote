@@ -8,9 +8,11 @@ function AlexaRemote (cookie, csrf) {
     this.serialNumbers = {};
     this.names = {};
     this.friendlyNames = {};
+    this.devices = undefined;
 
-    this.setCookie = function (_cookie) {
+    this.setCookie = function (_cookie, _csrf) {
         cookie = _cookie;
+        if (_csrf) return csrf = _csrf;
         let ar = cookie.match(/csrf:([^;]+)/);
         if (!ar || ar.length < 2) ar = cookie.match(/csrf=([^;]+)/);
         if (!csrf && ar && ar.length >= 2) {
@@ -23,7 +25,7 @@ function AlexaRemote (cookie, csrf) {
     let self = this;
 
     //this.init = function (cookie, csrf, callback) {
-    this.init = function (cookie, csrf, callback) {
+    this.init = function (cookie, callback) {
         let opts = {};
         if (typeof cookie === 'object') {
             opts = cookie;
@@ -35,7 +37,8 @@ function AlexaRemote (cookie, csrf) {
             csrf = undefined;
         }
         if(typeof callback === 'function') callback = callback.bind(this);
-        this.setCookie(cookie, csrf);
+        this.setCookie(cookie, opts.csrf);
+        if (!csrf) return callback && callback('no csrf found');
         this.getAccount((err, result) => {
             if (!err && result && Array.isArray(result)) {
                 result.forEach ((account) => {
@@ -47,6 +50,7 @@ function AlexaRemote (cookie, csrf) {
             this.getDevices((err, result) => {
                 if (!err && result && Array.isArray(result.devices)) {
                     let customerIds = {};
+                    this.devices = result.devices;
                     result.devices.forEach((device) => {
                         this.serialNumbers [device.serialNumber] = device;
                         let name = device.accountName;
@@ -58,7 +62,8 @@ function AlexaRemote (cookie, csrf) {
                             this.names [name.toLowerCase()] = device;
                         }
                         device._name = name;
-                        device.sendCommand = this.sendCommand.bind(this, device.serialNumber);
+                        device.sendCommand = this.sendCommand.bind(this, device);
+                        device.setTunein = this.setTunein.bind(this, device);
                         if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
                         if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
                         customerIds[device.deviceOwnerCustomerId] += 1;
@@ -262,11 +267,15 @@ AlexaRemote.prototype.getBluetooth = function (cached, callback) {
     });
 };
 
-AlexaRemote.prototype.tuneinSearch = function (query, mediaOwnerCustomerId, callback) {
-    this.httpsGet (`/api/tunein/search?query=${query}&mediaOwnerCustomerId=${mediaOwnerCustomerId}&_=%t`, callback);
+AlexaRemote.prototype.tuneinSearch = function (query, callback) {
+    this.httpsGet (`/api/tunein/search?query=${query}&mediaOwnerCustomerId=${this.ownerCustomerId}&_=%t`, callback);
 };
 
-AlexaRemote.prototype.setTunein = function (serialOrName, guideId, mediaOwnerCustomerId, callback) {
+AlexaRemote.prototype.setTunein = function (serialOrName, guideId, contentType, callback) {
+    if (typeof contentType === 'function') {
+        callback = contentType;
+        contentType = 'station';
+    }
     let dev = this.find(serialOrName, callback);
     if (!dev) return;
     //this.httpsGet (`alexa.amazon.de/api/tunein/queue-and-play
@@ -274,9 +283,9 @@ AlexaRemote.prototype.setTunein = function (serialOrName, guideId, mediaOwnerCus
        ?deviceSerialNumber=${dev.serialNumber}
        &deviceType=${dev.deviceType}
        &guideId=${guideId}
-       &contentType=station
+       &contentType=${contentType}
        &callSign=
-       &mediaOwnerCustomerId=${mediaOwnerCustomerId}`,
+       &mediaOwnerCustomerId=${this.ownerCustomerId}`,
         callback,
         { method: 'POST' });
 };
