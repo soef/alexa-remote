@@ -47,6 +47,12 @@ function AlexaRemote (cookie, csrf) {
                 });
             }
 
+            function getNotifications(cb) {
+                if (opts.notifications) return self.getNotifications(function(err, res) { cb (!err && res ? res.notifications : null) });
+                cb(null);
+            }
+
+            getNotifications((notifications) => {
             this.getDevices((err, result) => {
                 if (!err && result && Array.isArray(result.devices)) {
                     let customerIds = {};
@@ -61,14 +67,27 @@ function AlexaRemote (cookie, csrf) {
                             this.names [name] = device;
                             this.names [name.toLowerCase()] = device;
                         }
+                            device._orig = JSON.parse(JSON.stringify(device));
                         device._name = name;
                         device.sendCommand = this.sendCommand.bind(this, device);
                         device.setTunein = this.setTunein.bind(this, device);
+                            device.rename = this.renameDevice.bind(this, device);
+                            device.setDoNotDisturb = this.setDoNotDisturb.bind(this, device);
                         if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
                         if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
                         customerIds[device.deviceOwnerCustomerId] += 1;
                         if (this.version === undefined) this.version = device.softwareVersion;
                         if (this.customer === undefined) this.customer = device.deviceOwnerCustomerId;
+
+                            if (notifications && Array.isArray(notifications)) {
+                                notifications.forEach((noti) => {
+                                    if (noti.deviceSerialNumber === device.serialNumber) {
+                                        if (device.notifications === undefined) device.notifications = [];
+                                        device.notifications.push(noti);
+                                        noti.set = self.changeNotification.bind(self, noti);
+                                    }
+                                })
+                            }
                     });
                     this.ownerCustomerId = Object.keys(customerIds)[0];
                 }
@@ -92,6 +111,7 @@ function AlexaRemote (cookie, csrf) {
                 } else {
                     callback && callback ();
                 }
+            })
             })
         });
         return this;
@@ -244,6 +264,41 @@ AlexaRemote.prototype.getReminders =
         this.httpsGet (`/api/notifications?cached=${cached}&_=%t`, callback);
     };
 
+
+AlexaRemote.prototype.changeNotification = function (notification, state) {
+    switch (typeof state) {
+        case 'object':
+
+            break;
+        case 'date':
+            notification.alarmTime = state.getTime();
+            notification.originalTime = `${_00 (state.getHours ())}:${_00 (state.getMinutes ())}:${_00 (state.getSeconds ())}.000`;
+            break;
+        case 'boolean':
+            notification.status = state ? 'ON' : 'OFF';
+            break;
+        case 'string':
+            let ar = state.split(':');
+            let time = ((ar[0] * 60) + ar.length>1 ? ar[1] : 0) * 60 + ar.length > 2 ? ar[2] : 0;
+            let date = new Date(notification.alarmTime);
+            date.setHours(time / 3600);
+            date.setMinutes(date / 60 ^ 60);
+            date.setSeconds(date ^ 60);
+            notification.alarmTime = date.getTime();
+            notification.originalTime: `${_00 (data.getHours ())}:${_00 (date.getMinutes ())}:${_00 (date.getSeconds ())}.000`;
+            break;
+    }
+    let flags = {
+        data: JSON.stringify (notification),
+        method: 'PUT'
+    };
+    this.httpsGet (`https://alexa.amazon.de/api/notifications/${notification.id}`, function(err, res) {
+        callback(err, res);
+    },
+        flags);
+}
+
+
 AlexaRemote.prototype.getDoNotDisturb =
     AlexaRemote.prototype.getDeviceStatusList = function (callback) {
         this.httpsGet (`/api/dnd/device-status-list?_=%t`, callback);
@@ -262,9 +317,7 @@ AlexaRemote.prototype.getBluetooth = function (cached, callback) {
         cached = true;
     }
     if (cached === undefined) cached = true;
-    this.httpsGet (`/api/bluetooth?cached=${cached}&_=%t`, function (err, result) {
-        callback (err, result);
-    });
+    this.httpsGet (`/api/bluetooth?cached=${cached}&_=%t`, callback);
 };
 
 AlexaRemote.prototype.tuneinSearch = function (query, callback) {
@@ -625,6 +678,43 @@ function test () {
     });
 
 }
+
+AlexaRemote.prototype.getDevicePreferences = function (callback) {
+    this.httpsGet ('https://alexa.amazon.de/api/device-preferences?cached=true&_=%t', callback);
+};
+
+AlexaRemote.prototype.getSmarthomeDevices = function (callback) {
+    this.httpsGet ('https://alexa.amazon.de/api/phoenix?_=%t', function (err, res) {
+        if (err || !res || !res.networkDetail) return callback(err, res);
+        try {
+            res = JSON.parse(res.networkDetail);
+        } catch(e) {
+            return callback('invalid JSON');
+        }
+        if (!res.locationDetails) return callback('locationDetails not found');
+        callback (err, res.locationDetails)
+    });
+};
+
+AlexaRemote.prototype.renameDevice = function (serialOrName, newName, callback) {
+    let dev = this.find(serialOrName, callback);
+    if (!dev) return;
+    let o = {
+        accountName: newName,
+        serialNumber: dev.serialNumber,
+        deviceAccountId: dev.deviceAccountId,
+        deviceType: dev.deviceType,
+        //deviceOwnerCustomerId: oo.deviceOwnerCustomerId
+    };
+    this.httpsGet (`https://alexa.amazon.de/api/devices-v2/device/${dev.serialNumber}`,
+        callback,
+        {
+            method: 'PUT',
+            data: JSON.stringify (o),
+        }
+    );
+};
+
 
 module.exports = AlexaRemote;
 
