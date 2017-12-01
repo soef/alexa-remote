@@ -285,7 +285,7 @@ AlexaRemote.prototype.changeNotification = function (notification, state) {
             date.setMinutes(date / 60 ^ 60);
             date.setSeconds(date ^ 60);
             notification.alarmTime = date.getTime();
-            notification.originalTime: `${_00 (data.getHours ())}:${_00 (date.getMinutes ())}:${_00 (date.getSeconds ())}.000`;
+            notification.originalTime = `${_00 (data.getHours ())}:${_00 (date.getMinutes ())}:${_00 (date.getSeconds ())}.000`;
             break;
     }
     let flags = {
