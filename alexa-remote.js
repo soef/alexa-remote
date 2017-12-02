@@ -13,7 +13,7 @@ function AlexaRemote (cookie, csrf) {
     this.setCookie = function (_cookie, _csrf) {
         cookie = _cookie;
         if (_csrf) return csrf = _csrf;
-        let ar = cookie.match(/csrf:([^;]+)/);
+        let ar = cookie.match(/csrf=([^;]+)/);
         if (!ar || ar.length < 2) ar = cookie.match(/csrf=([^;]+)/);
         if (!csrf && ar && ar.length >= 2) {
             csrf = ar[1];
