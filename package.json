@@ -1,7 +1,7 @@
 {
   "name": "alexa-remote",
-  "version": "0.0.15",
-  "description": "Remote control for Alexa (Amazon Echo)",
+  "version": "0.0.16",
+  "description": "Remote Control for amazon echo devices",
   "author": {
     "name": "soef",
     "email": "soef@gmx.net"
@@ -15,37 +15,27 @@
   "homepage": "https://github.com/soef/alexa-remote",
   "license": "MIT",
   "keywords": [
-    "sync",
-    "iobroker file",
-    "JetBrains",
-    "webstorm",
-    "file",
-    "debug",
-    "editor",
-    "ide"
+    "alexa",
+    "echo",
+    "alexa remote",
+    "layla.amazon.de"
   ],
-  "engines": {
-    "node": ">=4.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/soef/alexa-remote"
-  },
   "dependencies": {
-    "https": "^1.0.0",
-    "soef": "^0.4.11",
-    "alexa-remote": "^0.0.1"
   },
   "devDependencies": {
     "mocha": "^2.3.4",
     "chai": "^3.4.1"
   },
-  "main": "alexa-remote.js",
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soef/alexa-remote.git"
   },
   "bugs": {
     "url": "https://github.com/soef/alexa-remote/issues"
   },
-  "readmeFilename": "README.md"
+  "main": "alexa-remote.js",
+  "readmeFilename": "readme.md"
 }
