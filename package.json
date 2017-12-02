@@ -1,6 +1,6 @@
 {
   "name": "alexa-remote",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Remote control for Alexa (Amazon Echo)",
   "author": {
     "name": "soef",
@@ -40,7 +40,7 @@
     "mocha": "^2.3.4",
     "chai": "^3.4.1"
   },
-  "main": "alexa.js",
+  "main": "alexa-remote.js",
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha"
   },
