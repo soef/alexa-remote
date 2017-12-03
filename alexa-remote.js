@@ -110,10 +110,13 @@ function AlexaRemote (cookie, csrf) {
                                             bt[d.address] = d;
                                             d.connect = function (on, cb) {
                                                 self[on ? 'connectBluetooth' : 'disconnectBluetooth'] (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
+                                            };
+                                            d.unpaire = function (val, cb) {
+                                                self.unpaireBluetooth (device, d.address, cb);
                                             }
                                         })
                                     }
-                                })
+                                });
                                 callback && callback();
                             })
 
@@ -129,7 +132,7 @@ function AlexaRemote (cookie, csrf) {
 
     this.timestamp = this.now = function () {
         return new Date().getTime();
-    }
+    };
 
     this.httpsGet = function (path, callback, flags = {}) {
 
@@ -309,7 +312,8 @@ AlexaRemote.prototype.changeNotification = function (notification, state) {
     this.httpsGet (`https://alexa.amazon.de/api/notifications/${notification.id}`, function(err, res) {
             callback(err, res);
         },
-        flags);
+        flags
+    );
 };
 
 
@@ -345,7 +349,6 @@ AlexaRemote.prototype.setTunein = function (serialOrName, guideId, contentType, 
     }
     let dev = this.find(serialOrName, callback);
     if (!dev) return;
-    //this.httpsGet (`alexa.amazon.de/api/tunein/queue-and-play
     this.httpsGet (`/api/tunein/queue-and-play
        ?deviceSerialNumber=${dev.serialNumber}
        &deviceType=${dev.deviceType}
@@ -358,50 +361,50 @@ AlexaRemote.prototype.setTunein = function (serialOrName, guideId, contentType, 
 };
 
 AlexaRemote.prototype.getHistory =
-    AlexaRemote.prototype.getActivities = function (options, callback) {
-        if (typeof options === 'function') {
-            callback = options;
-            options = {};
-        }
-        this.httpsGet (`/api/activities` +
-            `?startTime=${options.startTime || ''}` +
-            `&size=${options.size || 1}` +
-            `&offset=${options.offset || 1}`,
-            (err, result) => {
-                if (err || !result) return callback.length >= 2 && callback(err, result);
+AlexaRemote.prototype.getActivities = function (options, callback) {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    this.httpsGet (`/api/activities` +
+        `?startTime=${options.startTime || ''}` +
+        `&size=${options.size || 1}` +
+        `&offset=${options.offset || 1}`,
+        (err, result) => {
+            if (err || !result) return callback.length >= 2 && callback(err, result);
 
-                let ret = [];
-                for (let r=0; r<result.activities.length; r++) {
-                    let res = result.activities[r];
-                    let o = {
-                        description: JSON.parse (res.description),
-                        data: res
-                    };
-                    if (options.filter) {
-                        o.description.summary = (o.description.summary || '').trim ();
-                        switch (o.description.summary) {
-                            case 'stopp':
-                            case 'alexa':
-                            case ',':
-                            case '':
-                                continue;
-                        }
-                    }
-                    for (let i=0; i<res.sourceDeviceIds.length; i++) {
-                        o.serialNumber = res.sourceDeviceIds[i].serialNumber;
-                        o.name = this.serialNumbers[o.serialNumber].accountName;
-                        let wakeWord = this.serialNumbers[o.serialNumber];
-                        if (wakeWord) wakeWord = wakeWord.wakeWord;
-                        if (wakeWord && o.description.summary.startsWith(wakeWord)) {
-                            o.description.summary = o.description.summary.substr(wakeWord.length).trim();
-                        }
-                        if (o.description.summary) ret.push (o);
+            let ret = [];
+            for (let r=0; r<result.activities.length; r++) {
+                let res = result.activities[r];
+                let o = {
+                    description: JSON.parse (res.description),
+                    data: res
+                };
+                if (options.filter) {
+                    o.description.summary = (o.description.summary || '').trim ();
+                    switch (o.description.summary) {
+                        case 'stopp':
+                        case 'alexa':
+                        case ',':
+                        case '':
+                            continue;
                     }
                 }
-                if (typeof callback === 'function') return callback.length >= 2 ? callback (err, ret) : callback(ret);
+                for (let i=0; i<res.sourceDeviceIds.length; i++) {
+                    o.serialNumber = res.sourceDeviceIds[i].serialNumber;
+                    o.name = this.serialNumbers[o.serialNumber].accountName;
+                    let wakeWord = this.serialNumbers[o.serialNumber];
+                    if (wakeWord) wakeWord = wakeWord.wakeWord;
+                    if (wakeWord && o.description.summary.startsWith(wakeWord)) {
+                        o.description.summary = o.description.summary.substr(wakeWord.length).trim();
+                    }
+                    if (o.description.summary) ret.push (o);
+                }
             }
-        );
-    };
+            if (typeof callback === 'function') return callback.length >= 2 ? callback (err, ret) : callback(ret);
+        }
+    );
+};
 
 AlexaRemote.prototype.getAccount = function (callback) {
     this.httpsGet (`https://alexa-comms-mobile-service.amazon.com/accounts`, callback);
@@ -502,48 +505,48 @@ AlexaRemote.prototype.setAlarmVolume = function (serialOrName, volume, callback)
 };
 
 AlexaRemote.prototype.sendCommand =
-    AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, callback) {
-        let dev = this.find(serialOrName, callback);
-        if (!dev) return;
+AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, callback) {
+    let dev = this.find(serialOrName, callback);
+    if (!dev) return;
 
-        let o = { contentFocusClientId: null };
-        switch (command) {
-            case 'play':
-            case 'pause':
-            case 'next':
-            case 'previous':
-            case 'forward':
-            case 'rewind':
-                o.type = command.substr(0, 1).toUpperCase() + command.substr(1) + 'Command';
-                break;
-            case 'volume':
-                o.type = 'VolumeLevelCommand';
-                o.volumeLevel = ~~value;
-                break;
-            case 'shuffle':
-                o.shuffle = value === 'on';
-                break;
-            case 'repeat':
-                o.repeat = value === 'on';
-                break;
-            default:
-                return;
-        }
+    let o = { contentFocusClientId: null };
+    switch (command) {
+        case 'play':
+        case 'pause':
+        case 'next':
+        case 'previous':
+        case 'forward':
+        case 'rewind':
+            o.type = command.substr(0, 1).toUpperCase() + command.substr(1) + 'Command';
+            break;
+        case 'volume':
+            o.type = 'VolumeLevelCommand';
+            o.volumeLevel = ~~value;
+            break;
+        case 'shuffle':
+            o.shuffle = value === 'on';
+            break;
+        case 'repeat':
+            o.repeat = value === 'on';
+            break;
+        default:
+            return;
+    }
 
-        this.httpsGet (`/api/np/command?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}`,
-            callback,
-            {
-                method: 'POST',
-                data: JSON.stringify(o),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                }
-                // Content-Type: application/x-www-form-urlencoded;
-                // charset=UTF-8",#\r\n
-                // Referer: https://alexa.amazon.de/spa/index.html'
+    this.httpsGet (`/api/np/command?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}`,
+        callback,
+        {
+            method: 'POST',
+            data: JSON.stringify(o),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
             }
-        );
-    };
+            // Content-Type: application/x-www-form-urlencoded;
+            // charset=UTF-8",#\r\n
+            // Referer: https://alexa.amazon.de/spa/index.html'
+        }
+    );
+};
 
 
 AlexaRemote.prototype.sendTextMessage = function (conversationId, text, callback) {
@@ -597,7 +600,7 @@ AlexaRemote.prototype.setList = function (serialOrName, listType, value, callbac
 };
 
 function _00(val) {
-    var s = val.toString();
+    let s = val.toString();
     while (s.length) s = '0'+s;
     return s;
 }
@@ -736,6 +739,48 @@ AlexaRemote.prototype.renameDevice = function (serialOrName, newName, callback) 
         }
     );
 };
+
+
+AlexaRemote.prototype.deleteSmarthomeDevice = function (smarthomeDevice, callback) {
+    let flags = {
+        method: 'DELETE'
+        //data: JSON.stringify (o),
+    };
+    this.httpsGet (`https://alexa.amazon.de/api/phoenix/appliance/${smarthomeDevice}`, callback, flags);
+};
+
+AlexaRemote.prototype.deleteAllSmarthomeDevices = function (callback) {
+    let flags = {
+        method: 'DELETE'
+        //data: JSON.stringify (o),
+    };
+    this.httpsGet (`https://alexa.amazon.de/api/phoenix`, callback, flags);
+};
+
+
+
+AlexaRemote.prototype.discoverSmarthomeDevice = function (callback) {
+    let flags = {
+        method: 'POST'
+        //data: JSON.stringify (o),
+    };
+    this.httpsGet ('https://alexa.amazon.de/api/phoenix/discovery', callback, flags);
+};
+
+
+AlexaRemote.prototype.unpaireBluetooth = function (serialOrName, btAddress, callback) {
+    let dev = this.find(serialOrName, callback);
+    if (!dev) return;
+    let flags = {
+        method: 'POST',
+        data: JSON.stringify ({
+            bluetoothDeviceAddress: btAddress,
+            bluetoothDeviceClass: "OTHER"
+        })
+    };
+    this.httpsGet (`https://alexa.amazon.de/api/bluetooth/unpair-sink/${dev.deviceType}/${dev.serialNumber}`, callback, flags);
+};
+
 
 
 module.exports = AlexaRemote;

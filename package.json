@@ -1,6 +1,6 @@
 {
   "name": "alexa-remote",
-  "version": "0.0.18",
+  "version": "0.0.20",
   "description": "Remote Control for amazon echo devices",
   "author": {
     "name": "soef",
