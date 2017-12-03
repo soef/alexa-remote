@@ -53,69 +53,83 @@ function AlexaRemote (cookie, csrf) {
             }
 
             getNotifications((notifications) => {
-            this.getDevices((err, result) => {
-                if (!err && result && Array.isArray(result.devices)) {
-                    let customerIds = {};
-                    this.devices = result.devices;
-                    result.devices.forEach((device) => {
-                        this.serialNumbers [device.serialNumber] = device;
-                        let name = device.accountName;
-                        this.names [name] = device;
-                        this.names [name.toLowerCase()] = device;
-                        if (device.deviceTypeFriendlyName) {
-                            name += ' (' + device.deviceTypeFriendlyName + ')';
-                            this.names [name] = device;
-                            this.names [name.toLowerCase()] = device;
+                this.getWakeWords ((err, wakeWords) => {
+                    if (!err && wakeWords) wakeWords = wakeWords.wakeWords;
+                    this.getDevices((err, result) => {
+                        if (!err && result && Array.isArray(result.devices)) {
+                            let customerIds = {};
+                            this.devices = result.devices;
+                            result.devices.forEach((device) => {
+                                this.serialNumbers [device.serialNumber] = device;
+                                let name = device.accountName;
+                                this.names [name] = device;
+                                this.names [name.toLowerCase()] = device;
+                                if (device.deviceTypeFriendlyName) {
+                                    name += ' (' + device.deviceTypeFriendlyName + ')';
+                                    this.names [name] = device;
+                                    this.names [name.toLowerCase()] = device;
+                                }
+                                device._orig = JSON.parse(JSON.stringify(device));
+                                device._name = name;
+                                device.sendCommand = this.sendCommand.bind(this, device);
+                                device.setTunein = this.setTunein.bind(this, device);
+                                device.rename = this.renameDevice.bind(this, device);
+                                device.setDoNotDisturb = this.setDoNotDisturb.bind(this, device);
+                                if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
+                                if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
+                                customerIds[device.deviceOwnerCustomerId] += 1;
+                                if (this.version === undefined) this.version = device.softwareVersion;
+                                if (this.customer === undefined) this.customer = device.deviceOwnerCustomerId;
+
+                                if (notifications && Array.isArray(notifications)) {
+                                    notifications.forEach((noti) => {
+                                        if (noti.deviceSerialNumber === device.serialNumber) {
+                                            if (device.notifications === undefined) device.notifications = [];
+                                            device.notifications.push(noti);
+                                            noti.set = self.changeNotification.bind(self, noti);
+                                        }
+                                    })
+                                }
+
+                                if (Array.isArray (wakeWords)) wakeWords.forEach ((o) => {
+                                    if (o.deviceSerialNumber === device.serialNumber && typeof o.wakeWord === 'string') {
+                                        device.wakeWord = o.wakeWord.toLowerCase();
+                                    }
+                                })
+
+                            });
+                            this.ownerCustomerId = Object.keys(customerIds)[0];
                         }
-                            device._orig = JSON.parse(JSON.stringify(device));
-                        device._name = name;
-                        device.sendCommand = this.sendCommand.bind(this, device);
-                        device.setTunein = this.setTunein.bind(this, device);
-                            device.rename = this.renameDevice.bind(this, device);
-                            device.setDoNotDisturb = this.setDoNotDisturb.bind(this, device);
-                        if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
-                        if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
-                        customerIds[device.deviceOwnerCustomerId] += 1;
-                        if (this.version === undefined) this.version = device.softwareVersion;
-                        if (this.customer === undefined) this.customer = device.deviceOwnerCustomerId;
+                        if (opts.bluetooth) {
+                            this.getBluetooth((err, res) => {
+                                if (err || !res || !Array.isArray(res.bluetoothStates)) return callback && callback (err);
+                                res.bluetoothStates.forEach((bt) => {
+                                    if (bt.pairedDeviceList && this.serialNumbers[bt.deviceSerialNumber]) {
+                                        this.serialNumbers[bt.deviceSerialNumber].bluetoothState = bt;
+                                        bt.pairedDeviceList.forEach((d) => {
+                                            bt[d.address] = d;
+                                            d.connect = function (on, cb) {
+                                                self[on ? 'connectBluetooth' : 'disconnectBluetooth'] (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
+                                            }
+                                        })
+                                    }
+                                })
+                                callback && callback();
+                            })
 
-                            if (notifications && Array.isArray(notifications)) {
-                                notifications.forEach((noti) => {
-                                    if (noti.deviceSerialNumber === device.serialNumber) {
-                                        if (device.notifications === undefined) device.notifications = [];
-                                        device.notifications.push(noti);
-                                        noti.set = self.changeNotification.bind(self, noti);
-                                    }
-                                })
-                            }
-                    });
-                    this.ownerCustomerId = Object.keys(customerIds)[0];
-                }
-                if (opts.bluetooth) {
-                    this.getBluetooth((err, res) => {
-                        if (err || !res || !Array.isArray(res.bluetoothStates)) return callback && callback (err);
-                        res.bluetoothStates.forEach((bt) => {
-                            if (bt.pairedDeviceList && this.serialNumbers[bt.deviceSerialNumber]) {
-                                this.serialNumbers[bt.deviceSerialNumber].bluetoothState = bt;
-                                bt.pairedDeviceList.forEach((d) => {
-                                    bt[d.address] = d;
-                                    d.connect = function (on, cb) {
-                                        self[on ? 'connectBluetooth' : 'disconnectBluetooth'] (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
-                                    }
-                                })
-                            }
-                        })
-                        callback && callback();
+                        } else {
+                            callback && callback ();
+                        }
                     })
-
-                } else {
-                    callback && callback ();
-                }
-            })
+                })
             })
         });
         return this;
     };
+
+    this.timestamp = this.now = function () {
+        return new Date().getTime();
+    }
 
     this.httpsGet = function (path, callback, flags = {}) {
 
@@ -142,7 +156,7 @@ function AlexaRemote (cookie, csrf) {
         } else {
             options.host = baseUrl;
         }
-        let time = new Date ().getTime ();
+        let time = this.now();
         path = path.replace(/%t/g, time);
 
         options.path = path;
@@ -250,7 +264,7 @@ AlexaRemote.prototype.getLists = function (serialOrName, options, callback) {
     });
 };
 
-AlexaRemote.prototype.getWakeWord = function (callback) {
+AlexaRemote.prototype.getWakeWords = function (callback) {
     this.httpsGet (`/api/wake-word?_=%t`, callback);
 };
 
@@ -293,16 +307,16 @@ AlexaRemote.prototype.changeNotification = function (notification, state) {
         method: 'PUT'
     };
     this.httpsGet (`https://alexa.amazon.de/api/notifications/${notification.id}`, function(err, res) {
-        callback(err, res);
-    },
+            callback(err, res);
+        },
         flags);
-}
+};
 
 
 AlexaRemote.prototype.getDoNotDisturb =
-    AlexaRemote.prototype.getDeviceStatusList = function (callback) {
-        this.httpsGet (`/api/dnd/device-status-list?_=%t`, callback);
-    };
+AlexaRemote.prototype.getDeviceStatusList = function (callback) {
+    this.httpsGet (`/api/dnd/device-status-list?_=%t`, callback);
+};
 
 // alarm volume
 AlexaRemote.prototype.getDeviceNotificationState = function (serialOrName, callback) {
@@ -363,20 +377,28 @@ AlexaRemote.prototype.getHistory =
                         description: JSON.parse (res.description),
                         data: res
                     };
-                    if (options.filter) switch ((o.description.summary || '').trim ()) {
-                        case 'stopp':
-                        case 'alexa':
-                        case ',':
-                        case '':
-                            continue;
+                    if (options.filter) {
+                        o.description.summary = (o.description.summary || '').trim ();
+                        switch (o.description.summary) {
+                            case 'stopp':
+                            case 'alexa':
+                            case ',':
+                            case '':
+                                continue;
+                        }
                     }
                     for (let i=0; i<res.sourceDeviceIds.length; i++) {
                         o.serialNumber = res.sourceDeviceIds[i].serialNumber;
                         o.name = this.serialNumbers[o.serialNumber].accountName;
-                        ret.push (o);
+                        let wakeWord = this.serialNumbers[o.serialNumber];
+                        if (wakeWord) wakeWord = wakeWord.wakeWord;
+                        if (wakeWord && o.description.summary.startsWith(wakeWord)) {
+                            o.description.summary = o.description.summary.substr(wakeWord.length).trim();
+                        }
+                        if (o.description.summary) ret.push (o);
                     }
                 }
-                if (typeof callback === 'function') return callback.langth >= 2 ? callback (err, ret) : callback(ret);
+                if (typeof callback === 'function') return callback.length >= 2 ? callback (err, ret) : callback(ret);
             }
         );
     };
@@ -554,7 +576,7 @@ AlexaRemote.prototype.setList = function (serialOrName, listType, value, callbac
     let o = {
         type: listType,
         text: value,
-        createdDate: new Date ().getTime (),
+        createdDate: this.now(),
         complete: false,
         deleted: false
     };
@@ -596,7 +618,7 @@ AlexaRemote.prototype.setReminder = function (serialOrName, timestamp, label, ca
         reminderLabel: label,
         isSaveInFlight: true,
         id: 'createReminder',
-        createdDate: new Date ().getTime ()
+        createdDate: this.now()
     };
     this.httpsGet (`/api/notifications/createReminder`,
         callback,
