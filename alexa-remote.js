@@ -23,22 +23,35 @@ function AlexaRemote (cookie, csrf) {
     if (cookie) this.setCookie(cookie);
     let baseUrl = 'layla.amazon.de';
     let self = this;
+    let opts = {};
 
-    //this.init = function (cookie, csrf, callback) {
     this.init = function (cookie, callback) {
-        let opts = {};
         if (typeof cookie === 'object') {
             opts = cookie;
             cookie = opts.cookie;
         }
-        if (opts.baseUrl) baseUrl = opts.baseUrl;
-        if (typeof csrf === 'function') {
-            callback = csrf;
-            csrf = undefined;
+        function helper(callback) {
+            if (!opts.cookie && opts.password && opts.email) {
+                self.generateCookie(opts.email, opts.password, function(err, res) {
+                    cookie = res.cookie;
+                    opts.csrf = res.csrf;
+                    opts.cookie = res.cookie;
+                    callback();
+                });
+                return;
+            }
+            callback();
         }
+        helper(() => {
+        if (opts.baseUrl) baseUrl = opts.baseUrl;
         if(typeof callback === 'function') callback = callback.bind(this);
         this.setCookie(cookie, opts.csrf);
         if (!csrf) return callback && callback('no csrf found');
+            this.prepare(callback);
+        })
+    };
+
+     this.prepare = function (callback) {
         this.getAccount((err, result) => {
             if (!err && result && Array.isArray(result)) {
                 result.forEach ((account) => {
@@ -75,6 +88,7 @@ function AlexaRemote (cookie, csrf) {
                                 device.setTunein = this.setTunein.bind(this, device);
                                 device.rename = this.renameDevice.bind(this, device);
                                 device.setDoNotDisturb = this.setDoNotDisturb.bind(this, device);
+                                device.delete = this.deleteDevice.bind(this, device);
                                 if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
                                 if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
                                 customerIds[device.deviceOwnerCustomerId] += 1;
@@ -130,6 +144,12 @@ function AlexaRemote (cookie, csrf) {
         return this;
     };
 
+    let alexaCookie;
+    this.generateCookie = function (email, password, callback) {
+        if (!alexaCookie) alexaCookie = require('alexa-cookie');
+        alexaCookie(email, password, callback);
+    };
+
     this.timestamp = this.now = function () {
         return new Date().getTime();
     };
@@ -145,6 +165,7 @@ function AlexaRemote (cookie, csrf) {
                 'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
                 'Content-Type': 'text/plain',
                 //'Content-Type': 'application/json',
+                //'Connection': 'keep-alive', // new
                 'csrf' : csrf,
                 'Cookie' : cookie
             }
@@ -153,7 +174,8 @@ function AlexaRemote (cookie, csrf) {
         path = path.replace(/[\n ]/g, '');
         if (!path.startsWith('/')) {
             path = path.replace(/^https:\/\//, '');
-            let ar = path.match(/^([^\/]+)(\/.*$)/);
+            //let ar = path.match(/^([^\/]+)(\/.*$)/);
+            let ar = path.match(/^([^\/]+)([\/]*.*$)/);
             options.host = ar[1];
             path = ar[2];
         } else {
@@ -780,6 +802,19 @@ AlexaRemote.prototype.unpaireBluetooth = function (serialOrName, btAddress, call
     };
     this.httpsGet (`https://alexa.amazon.de/api/bluetooth/unpair-sink/${dev.deviceType}/${dev.serialNumber}`, callback, flags);
 };
+
+AlexaRemote.prototype.deleteDevice = function (serialOrName, callback) {
+    let dev = this.find(serialOrName, callback);
+    if (!dev) return;
+    let flags = {
+        method: 'DELETE',
+        data: JSON.stringify ({
+            deviceType: dev.deviceType
+        })
+    };
+    this.httpsGet (`https://alexa.amazon.de/api/devices/device/${dev.serialNumber}?deviceType=${dev.deviceType}`, callback, flags);
+};
+
 
 
 
