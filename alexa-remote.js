@@ -33,20 +33,22 @@ function AlexaRemote (cookie, csrf) {
         function helper(callback) {
             if (!opts.cookie && opts.password && opts.email) {
                 self.generateCookie(opts.email, opts.password, function(err, res) {
-                    cookie = res.cookie;
-                    opts.csrf = res.csrf;
-                    opts.cookie = res.cookie;
-                    callback();
+                    if (!err && res) {
+                        cookie = res.cookie;
+                        opts.csrf = res.csrf;
+                        opts.cookie = res.cookie;
+                        callback ();
+                    }
                 });
                 return;
             }
             callback();
         }
         helper(() => {
-        if (opts.baseUrl) baseUrl = opts.baseUrl;
-        if(typeof callback === 'function') callback = callback.bind(this);
-        this.setCookie(cookie, opts.csrf);
-        if (!csrf) return callback && callback('no csrf found');
+            if (opts.baseUrl) baseUrl = opts.baseUrl;
+            if(typeof callback === 'function') callback = callback.bind(this);
+            this.setCookie(cookie, opts.csrf);
+            if (!csrf) return callback && callback('no csrf found');
             this.prepare(callback);
         })
     };
@@ -360,9 +362,15 @@ AlexaRemote.prototype.getBluetooth = function (cached, callback) {
     this.httpsGet (`/api/bluetooth?cached=${cached}&_=%t`, callback);
 };
 
-AlexaRemote.prototype.tuneinSearch = function (query, callback) {
+AlexaRemote.prototype.tuneinSearchRaw = function (query, callback) {
     this.httpsGet (`/api/tunein/search?query=${query}&mediaOwnerCustomerId=${this.ownerCustomerId}&_=%t`, callback);
 };
+
+AlexaRemote.prototype.tuneinSearch = function (query, callback) {
+    query = querystring.escape(query);
+    this.tuneinSearchRaw(query, callback);
+};
+
 
 AlexaRemote.prototype.setTunein = function (serialOrName, guideId, contentType, callback) {
     if (typeof contentType === 'function') {
@@ -814,9 +822,6 @@ AlexaRemote.prototype.deleteDevice = function (serialOrName, callback) {
     };
     this.httpsGet (`https://alexa.amazon.de/api/devices/device/${dev.serialNumber}?deviceType=${dev.deviceType}`, callback, flags);
 };
-
-
-
 
 module.exports = AlexaRemote;
 
