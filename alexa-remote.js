@@ -10,14 +10,19 @@ const querystring = require('querystring');
 
 const defaultUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
 
-function AlexaRemote (cookie, csrf, _options) {
+function AlexaRemote (cookie, csrf) {
     if (!(this instanceof AlexaRemote)) return new AlexaRemote (cookie, csrf);
 
     this.serialNumbers = {};
     this.names = {};
     this.friendlyNames = {};
     this.devices = undefined;
-    this._options = _options;
+    if (typeof cookie === 'object') {
+        this._options = cookie;
+    }
+    else {
+        this._options = {};
+    }
     this._options.userAgent = this._options.userAgent || defaultUserAgent;
 
     this.setCookie = function (_cookie, _csrf) {
