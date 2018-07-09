@@ -43,8 +43,10 @@ function AlexaRemote (cookie, csrf, _options) {
             opts = cookie;
             cookie = opts.cookie;
         }
-        function helper(callback) {
+        function getCookie(callback) {
             if (!opts.cookie && opts.password && opts.email) {
+                self._options.logger && self._options.logger('Alexa-Remote: No cookie, but email and password, generate cookie');
+                opts.cookieJustCreated = true;
                 self.generateCookie(opts.email, opts.password, function(err, res) {
                     if (!err && res) {
                         cookie = res.cookie;
@@ -55,14 +57,25 @@ function AlexaRemote (cookie, csrf, _options) {
                 });
                 return;
             }
+            self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
             callback();
         }
-        helper(() => {
+
+        getCookie(() => {
             if (opts.baseUrl) baseUrl = opts.baseUrl;
             if(typeof callback === 'function') callback = callback.bind(this);
-            this.setCookie(cookie, opts.csrf);
-            if (!csrf) return callback && callback('no csrf found');
-            this.prepare(callback);
+            self.setCookie(cookie, opts.csrf);
+            if (!csrf) return callback && callback(new Error('no csrf found'));
+            this.checkAuthentication((authenticated) => {
+                self._options.logger && self._options.logger('Alexa-Remote: Authentication checked: ' + authenticated);
+                if (! authenticated && !opts.cookieJustCreated && opts.password && opts.email) {
+                    self._options.logger && self._options.logger('Alexa-Remote: Cookie was set, but authentication invalid, retry ith email/password ...');
+                    delete opts.cookie;
+                    delete opts.csrf;
+                    return this.init(opts, callback);
+                }
+                this.prepare(callback);
+            });
         });
     };
 
@@ -242,6 +255,16 @@ function AlexaRemote (cookie, csrf, _options) {
         req.end();
     };
 }
+
+AlexaRemote.prototype.checkAuthentication = function (callback) {
+    this.httpsGet ('/api/bootstrap?version=0', function (err, res) {
+        if (res && res.authentication && res.authentication.authenticated !== undefined) {
+            return callback(res.authentication.authenticated);
+        }
+        return callback(false);
+    });
+};
+
 
 AlexaRemote.prototype.getDevices = function (callback) {
     this.httpsGet ('/api/devices-v2/device?cached=true&_=%t', callback);
