@@ -1,18 +1,31 @@
+/* jshint -W097 */
+/* jshint -W030 */
+/* jshint strict: false */
+/* jslint node: true */
+/* jslint esversion: 6 */
 "use strict";
 
-let https = require('https');
+const https = require('https');
+const querystring = require('querystring');
 
-function AlexaRemote (cookie, csrf) {
+const defaultUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
+
+function AlexaRemote (cookie, csrf, _options) {
     if (!(this instanceof AlexaRemote)) return new AlexaRemote (cookie, csrf);
 
     this.serialNumbers = {};
     this.names = {};
     this.friendlyNames = {};
     this.devices = undefined;
+    this._options = _options;
+    this._options.userAgent = this._options.userAgent || defaultUserAgent;
 
     this.setCookie = function (_cookie, _csrf) {
         cookie = _cookie;
-        if (_csrf) return csrf = _csrf;
+        if (_csrf) {
+            csrf = _csrf;
+            return;
+        }
         let ar = cookie.match(/csrf=([^;]+)/);
         if (!ar || ar.length < 2) ar = cookie.match(/csrf=([^;]+)/);
         if (!csrf && ar && ar.length >= 2) {
@@ -50,10 +63,10 @@ function AlexaRemote (cookie, csrf) {
             this.setCookie(cookie, opts.csrf);
             if (!csrf) return callback && callback('no csrf found');
             this.prepare(callback);
-        })
+        });
     };
 
-     this.prepare = function (callback) {
+    this.prepare = function (callback) {
         this.getAccount((err, result) => {
             if (!err && result && Array.isArray(result)) {
                 result.forEach ((account) => {
@@ -63,7 +76,7 @@ function AlexaRemote (cookie, csrf) {
             }
 
             function getNotifications(cb) {
-                if (opts.notifications) return self.getNotifications(function(err, res) { cb (!err && res ? res.notifications : null) });
+                if (opts.notifications) return self.getNotifications(function(err, res) { cb (!err && res ? res.notifications : null); });
                 cb(null);
             }
 
@@ -104,14 +117,14 @@ function AlexaRemote (cookie, csrf) {
                                             device.notifications.push(noti);
                                             noti.set = self.changeNotification.bind(self, noti);
                                         }
-                                    })
+                                    });
                                 }
 
                                 if (Array.isArray (wakeWords)) wakeWords.forEach ((o) => {
                                     if (o.deviceSerialNumber === device.serialNumber && typeof o.wakeWord === 'string') {
                                         device.wakeWord = o.wakeWord.toLowerCase();
                                     }
-                                })
+                                });
 
                             });
                             this.ownerCustomerId = Object.keys(customerIds)[0];
@@ -128,20 +141,20 @@ function AlexaRemote (cookie, csrf) {
                                                 self[on ? 'connectBluetooth' : 'disconnectBluetooth'] (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
                                             };
                                             d.unpaire = function (val, cb) {
-                                                self.unpaireBluetooth (device, d.address, cb);
-                                            }
-                                        })
+                                                self.unpaireBluetooth (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
+                                            };
+                                        });
                                     }
                                 });
                                 callback && callback();
-                            })
+                            });
 
                         } else {
                             callback && callback ();
                         }
-                    })
-                })
-            })
+                    });
+                });
+            });
         });
         return this;
     };
@@ -149,7 +162,7 @@ function AlexaRemote (cookie, csrf) {
     let alexaCookie;
     this.generateCookie = function (email, password, callback) {
         if (!alexaCookie) alexaCookie = require('alexa-cookie');
-        alexaCookie(email, password, callback);
+        alexaCookie(email, password, self._options, callback);
     };
 
     this.timestamp = this.now = function () {
@@ -162,9 +175,9 @@ function AlexaRemote (cookie, csrf) {
             host: baseUrl,
             path: '',
             method: 'GET',
-            timeout:10000,
+            timeout: 10000,
             headers: {
-                'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+                'User-Agent' : self._options.userAgent,
                 'Content-Type': 'text/plain',
                 //'Content-Type': 'application/json',
                 //'Connection': 'keep-alive', // new
@@ -193,7 +206,8 @@ function AlexaRemote (cookie, csrf) {
             options.headers [n] = flags.headers[n];
         });
 
-        let req = https.request(options, function getDevices(res) {
+        self._options.logger && self._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(options, null, 2));
+        let req = https.request(options, (res) => {
             let body  = "";
 
             res.on('data', function(chunk) {
@@ -204,12 +218,13 @@ function AlexaRemote (cookie, csrf) {
 
                 let ret;
                 if (typeof callback === 'function') {
-                    if(!body) return callback.length >= 2 && callback('no body', null);
+                    if(!body) return callback.length >= 2 && callback(new Error('no body'), null);
                     try {
                         ret = JSON.parse(body);
                     } catch(e) {
-                        if (callback.length >= 2) return callback ('no JSON', body);
+                        if (callback.length >= 2) return callback (new Error('no JSON'), body);
                     }
+                    self._options.logger && self._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
                     if (callback.length >= 2) return callback (null, ret);
                     callback(ret);
                 }
@@ -218,14 +233,14 @@ function AlexaRemote (cookie, csrf) {
 
         req.on('error', function(e) {
             if(typeof callback === 'function' && callback.length >= 2) {
-                return callback (e.message, null);
+                return callback (e, null);
             }
         });
         if (flags && flags.data) {
             req.write(flags.data);
         }
         req.end();
-    }
+    };
 }
 
 AlexaRemote.prototype.getDevices = function (callback) {
@@ -271,7 +286,7 @@ AlexaRemote.prototype.getList = function (serialOrName, listType, options, callb
         &completed=${options.completed || false}
         &type=${listType}
         &deviceSerialNumber=${dev.serialNumber}
-        &deviceType=${deviceType}
+        &deviceType=${dev.deviceType}
         &_=%t`,
         callback);
 };
@@ -326,7 +341,7 @@ AlexaRemote.prototype.changeNotification = function (notification, state) {
             date.setMinutes(date / 60 ^ 60);
             date.setSeconds(date ^ 60);
             notification.alarmTime = date.getTime();
-            notification.originalTime = `${_00 (data.getHours ())}:${_00 (date.getMinutes ())}:${_00 (date.getSeconds ())}.000`;
+            notification.originalTime = `${_00 (date.getHours ())}:${_00 (date.getMinutes ())}:${_00 (date.getSeconds ())}.000`;
             break;
     }
     let flags = {
@@ -334,7 +349,7 @@ AlexaRemote.prototype.changeNotification = function (notification, state) {
         method: 'PUT'
     };
     this.httpsGet (`https://alexa.amazon.de/api/notifications/${notification.id}`, function(err, res) {
-            callback(err, res);
+            //callback(err, res); TODO
         },
         flags
     );
@@ -445,7 +460,7 @@ AlexaRemote.prototype.getConversations = function (options, callback) {
         callback = options;
         options = undefined;
     }
-    if (opntions === undefined) options = {};
+    if (options === undefined) options = {};
     if (options.latest === undefined) options.latest = true;
     if (options.includeHomegroup === undefined) options.includeHomegroup = true;
     if (options.unread === undefined) options.unread = false;
@@ -458,7 +473,7 @@ AlexaRemote.prototype.getConversations = function (options, callback) {
         &includeHomegroup=${options.includeHomegroup}
         &unread=${options.unread}
         &modifiedSinceDate=${options.modifiedSinceDate}
-        &includeUserName=${includeUserName}true`,
+        &includeUserName=${options.includeUserName}`,
         function (err, result) {
             callback (err, result);
         });
@@ -675,14 +690,14 @@ AlexaRemote.prototype.getHomeGroup = function (callback) {
 
 function test () {
     AlexaRemote.prototype.getFeatureAlertLocation = function (callback) {
-        alexa.httpsGet (`https://alexa.amazon.de/api/feature-alert-location?`, callback)
+        alexa.httpsGet (`https://alexa.amazon.de/api/feature-alert-location?`, callback);
     };
 
     let alexa = AlexaRemote ().init (cookie, function () {
 
         alexa.getHomeGroup (function (err, res) {
             res = res;
-        })
+        });
         // alexa.getPlayer('wohnzimmer', function(err, res) {
         //     res = res;
         // })
@@ -717,7 +732,7 @@ function test () {
             alexa.setTunein ('Wohnzimmer', res.browseList[0].id, alexa.ownerCustomerId, function (err, res) {
                 res = res;
             });
-        })
+        });
         // alexa.getDeviceStatusList((ret) => {
         //     ret = ret;
         // })
@@ -747,7 +762,7 @@ AlexaRemote.prototype.getSmarthomeDevices = function (callback) {
             return callback('invalid JSON');
         }
         if (!res.locationDetails) return callback('locationDetails not found');
-        callback (err, res.locationDetails)
+        callback (err, res.locationDetails);
     });
 };
 
@@ -824,4 +839,3 @@ AlexaRemote.prototype.deleteDevice = function (serialOrName, callback) {
 };
 
 module.exports = AlexaRemote;
-
