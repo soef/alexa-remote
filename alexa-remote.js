@@ -8,8 +8,6 @@
 const https = require('https');
 const querystring = require('querystring');
 
-const defaultUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
-
 function AlexaRemote (cookie, csrf) {
     if (!(this instanceof AlexaRemote)) return new AlexaRemote (cookie, csrf);
 
@@ -17,13 +15,7 @@ function AlexaRemote (cookie, csrf) {
     this.names = {};
     this.friendlyNames = {};
     this.devices = undefined;
-    if (typeof cookie === 'object') {
-        this._options = cookie;
-    }
-    else {
-        this._options = {};
-    }
-    this._options.userAgent = this._options.userAgent || defaultUserAgent;
+    this.lastAuthCheck = null;
 
     this.setCookie = function (_cookie, _csrf) {
         cookie = _cookie;
@@ -45,30 +37,33 @@ function AlexaRemote (cookie, csrf) {
 
     this.init = function (cookie, callback) {
         if (typeof cookie === 'object') {
-            opts = cookie;
+            self._options = opts = cookie;
+            self._options.userAgent = this._options.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
             cookie = opts.cookie;
         }
         function getCookie(callback) {
             if (!opts.cookie && opts.password && opts.email) {
                 self._options.logger && self._options.logger('Alexa-Remote: No cookie, but email and password, generate cookie');
                 opts.cookieJustCreated = true;
-                self.generateCookie(opts.email, opts.password, opts, function(err, res) {
+                self.generateCookie(opts.email, opts.password, function(err, res) {
                     if (!err && res) {
                         cookie = res.cookie;
                         opts.csrf = res.csrf;
                         opts.cookie = res.cookie;
-                        callback ();
+                        return callback (null);
                     }
+                    callback(err);
                 });
                 return;
             }
             self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
-            callback();
+            callback(null);
         }
 
-        getCookie(() => {
+        getCookie((err) => {
             if (opts.baseUrl) baseUrl = opts.baseUrl;
             if(typeof callback === 'function') callback = callback.bind(this);
+            if (err) return callback && callback(err);
             self.setCookie(cookie, opts.csrf);
             if (!csrf) return callback && callback(new Error('no csrf found'));
             this.checkAuthentication((authenticated) => {
@@ -79,6 +74,7 @@ function AlexaRemote (cookie, csrf) {
                     delete opts.csrf;
                     return this.init(opts, callback);
                 }
+                self.lastAuthCheck = Date.now();
                 this.prepare(callback);
             });
         });
@@ -187,7 +183,42 @@ function AlexaRemote (cookie, csrf) {
         return new Date().getTime();
     };
 
-    this.httpsGet = function (path, callback, flags = {}) {
+    this.httpsGet = function (noCheck, path, callback, flags = {}) {
+        if (typeof noCheck !== 'boolean') {
+            flags = callback;
+            callback = path;
+            path = noCheck;
+            noCheck = false;
+        }
+        // bypass check because set or last check done before less then 10 mins
+        if (noCheck || (Date.now() - self.lastAuthCheck) < 600000) {
+            self._options.logger && self._options.logger('Alexa-Remote: No authentication check needed (time elapsed ' + (Date.now() - self.lastAuthCheck) + ')');
+            return self.httpsGetCall(path, callback, flags);
+        }
+        self.checkAuthentication(function(authenticated) {
+            if (authenticated) {
+                self._options.logger && self._options.logger('Alexa-Remote: Authentication check successfull');
+                self.lastAuthCheck = Date.now();
+                return self.httpsGetCall(path, callback, flags);
+            }
+            if (self._options.email && self.options.password) {
+                self._options.logger && self._options.logger('Alexa-Remote: Authentication check Error, but email and password, get new cookie');
+                delete self._options.csrf;
+                delete self._options.cookie;
+                self.init(self._options, function(err) {
+                    if (err) {
+                        self._options.logger && self._options.logger('Alexa-Remote: Authentication check Error and renew unsuccessfull. STOP');
+                        return callback(new Error('Cookie invalid, Renew unsuccessfull'));
+                    }
+                    return self.httpsGet(path, callback, flags);
+                });
+            }
+            self._options.logger && self._options.logger('Alexa-Remote: Authentication check Error and no email and password. STOP');
+            callback(new Error('Cookie invalid'));
+        });
+    };
+
+    this.httpsGetCall = function (path, callback, flags = {}) {
 
         let options = {
             host: baseUrl,
@@ -262,7 +293,7 @@ function AlexaRemote (cookie, csrf) {
 }
 
 AlexaRemote.prototype.checkAuthentication = function (callback) {
-    this.httpsGet ('/api/bootstrap?version=0', function (err, res) {
+    this.httpsGetCall ('/api/bootstrap?version=0', function (err, res) {
         if (res && res.authentication && res.authentication.authenticated !== undefined) {
             return callback(res.authentication.authenticated);
         }
