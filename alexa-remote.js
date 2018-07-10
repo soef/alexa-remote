@@ -52,7 +52,7 @@ function AlexaRemote (cookie, csrf) {
             if (!opts.cookie && opts.password && opts.email) {
                 self._options.logger && self._options.logger('Alexa-Remote: No cookie, but email and password, generate cookie');
                 opts.cookieJustCreated = true;
-                self.generateCookie(opts.email, opts.password, function(err, res) {
+                self.generateCookie(opts.email, opts.password, opts, function(err, res) {
                     if (!err && res) {
                         cookie = res.cookie;
                         opts.csrf = res.csrf;
