@@ -56,6 +56,10 @@ function AlexaRemote (cookie, csrf) {
                 });
                 return;
             }
+            else if (!opts.cookie) {
+                self._options.logger && self._options.logger('Alexa-Remote: cookie empty and no email/password');
+                callback(new Error('cookie not provided'));
+            }
             self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
             callback(null);
         }
