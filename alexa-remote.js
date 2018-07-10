@@ -259,7 +259,12 @@ function AlexaRemote (cookie, csrf) {
             options.headers [n] = flags.headers[n];
         });
 
-        self._options.logger && self._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(options, null, 2));
+        const logOptions = JSON.parse(JSON.stringify(options));
+        delete logOptions.headers.Cookie;
+        delete logOptions.headers['User-Agent'];
+        delete logOptions.headers['Content-Type'];
+        delete logOptions.headers.csrf;
+        self._options.logger && self._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST') ? 'and data=' + flags.data : ''));
         let req = https.request(options, (res) => {
             let body  = "";
 
@@ -552,6 +557,7 @@ AlexaRemote.prototype.connectBluetooth = function (serialOrName, btAddress, call
     this.httpsGet (`/api/bluetooth/pair-sink/${dev.deviceType}/${dev.serialNumber}&_=%t`, callback, flags);
 };
 
+// TODO
 AlexaRemote.prototype.connectBluetooth = function (serialOrName, btAddress, callback) {
     let dev = this.find(serialOrName, callback);
     if (!dev) return;
@@ -750,7 +756,7 @@ AlexaRemote.prototype.getHomeGroup = function (callback) {
     this.httpsGet (`https://alexa-comms-mobile-service.amazon.com/users/${this.commsId}/identities?includeUserName=true`, callback);
 };
 
-
+/*
 function test () {
     AlexaRemote.prototype.getFeatureAlertLocation = function (callback) {
         alexa.httpsGet (`https://alexa.amazon.de/api/feature-alert-location?`, callback);
@@ -811,6 +817,7 @@ function test () {
     });
 
 }
+*/
 
 AlexaRemote.prototype.getDevicePreferences = function (callback) {
     this.httpsGet ('https://alexa.amazon.de/api/device-preferences?cached=true&_=%t', callback);
