@@ -454,7 +454,7 @@ AlexaRemote.prototype.tuneinSearch = function (query, callback) {
     this.tuneinSearchRaw(query, callback);
 };
 
-
+//CHECKED!
 AlexaRemote.prototype.setTunein = function (serialOrName, guideId, contentType, callback) {
     if (typeof contentType === 'function') {
         callback = contentType;
@@ -618,6 +618,7 @@ AlexaRemote.prototype.setAlarmVolume = function (serialOrName, volume, callback)
     this.httpsGet (`/api/device-notification-state/${dev.deviceType}/${this.version}/${dev.serialNumber}&_=%t`, callback, flags);
 };
 
+//CHECKED!
 AlexaRemote.prototype.sendCommand =
 AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, callback) {
     let dev = this.find(serialOrName, callback);
@@ -636,11 +637,16 @@ AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, call
         case 'volume':
             o.type = 'VolumeLevelCommand';
             o.volumeLevel = ~~value;
+            if (o.volumeLevel < 0 || o.volumeLevel > 100) {
+                return callback(new Error('Volume needs to be between 0 and 100'));
+            }
             break;
         case 'shuffle':
+            o.type = 'ShuffleCommand';
             o.shuffle = value === 'on';
             break;
         case 'repeat':
+            o.type = 'RepeatCommand'; //TODO ??
             o.repeat = value === 'on';
             break;
         default:

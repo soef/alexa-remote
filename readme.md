@@ -39,6 +39,9 @@ alexa.init({
 
 ## Changelog:
 
+### 0.1.x
+* (Apollon77) 0.1.1: rename "shuffle" to "ShuffleCommand" (and testwise repeat to RepeatCommand, but this is not found anywhere else)
+
 ### 0.1.0
 * (Apollon77) added automatic cookie renewal when email and password are provided
 * (Apollon77) added authentication checks by bootstrap call (like [alexa-remote-control](https://github.com/thorsten-gehrig/alexa-remote-control))
