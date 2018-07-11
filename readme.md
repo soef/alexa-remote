@@ -29,7 +29,11 @@ alexa.init({
         logger: console.log, // optional
         baseUrl: 'layla.amazon.de' // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
     },
-    function () {
+    function (err) {
+        if (err) {
+            console.log (err);
+            return;
+        }
         for (let device of this.devices) {
             console.log (device._name);
         }
