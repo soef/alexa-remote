@@ -27,7 +27,10 @@ alexa.init({
         password: '...', // optional, amazon password for login to get new cookie
         bluetooth: true,
         logger: console.log, // optional
-        baseUrl: 'layla.amazon.de' // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
+        baseUrl: 'layla.amazon.de', // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
+        userAgent: '...', // optional, override used user-Agent for all Requests and Cookie determination
+        acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
+        amazonPage: '...' // optional, override Amazon-Login-Page for cookie determination
     },
     function (err) {
         if (err) {
@@ -44,7 +47,8 @@ alexa.init({
 ## Changelog:
 
 ### 0.1.x
-* (Apollon77) 0.1.1: rename "shuffle" to "ShuffleCommand" (and testwise repeat to RepeatCommand, but this is not found anywhere else)
+* (Apollon77) 0.1.2: add logging for used Alexa-URL and user-Agent once at init
+* (Apollon77) 0.1.1: rename "shuffle" to "ShuffleCommand" and repeat to RepeatCommand)
 
 ### 0.1.0
 * (Apollon77) added automatic cookie renewal when email and password are provided

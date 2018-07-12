@@ -41,6 +41,7 @@ function AlexaRemote (cookie, csrf) {
             self._options.userAgent = this._options.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
             cookie = opts.cookie;
         }
+        self._options.logger && self._options.logger('Alexa-Remote: Use as User-Agent: ' + self._options.userAgent);
         function getCookie(callback) {
             if (!opts.cookie && opts.password && opts.email) {
                 self._options.logger && self._options.logger('Alexa-Remote: No cookie, but email and password, generate cookie');
@@ -66,6 +67,7 @@ function AlexaRemote (cookie, csrf) {
 
         getCookie((err) => {
             if (opts.baseUrl) baseUrl = opts.baseUrl;
+            self._options.logger && self._options.logger('Alexa-Remote: Use as Base-URL: ' + baseUrl);
             if(typeof callback === 'function') callback = callback.bind(this);
             if (err) return callback && callback(err);
             self.setCookie(cookie, opts.csrf);
@@ -646,7 +648,7 @@ AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, call
             o.shuffle = value === 'on';
             break;
         case 'repeat':
-            o.type = 'RepeatCommand'; //TODO ??
+            o.type = 'RepeatCommand';
             o.repeat = value === 'on';
             break;
         default:
