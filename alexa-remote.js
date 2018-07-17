@@ -37,6 +37,9 @@ function AlexaRemote (cookie, csrf) {
     let opts = {};
 
     this.init = function (cookie, callback) {
+        if (opts.baseUrl) baseUrl = opts.baseUrl;
+        self._options.logger && self._options.logger('Alexa-Remote: Use as Base-URL: ' + baseUrl);
+        self._options.alexaServiceHost = baseUrl;
         if (typeof cookie === 'object') {
             self._options = opts = cookie;
             if (!self._options.userAgent) {
@@ -59,7 +62,7 @@ function AlexaRemote (cookie, csrf) {
         self._options.logger && self._options.logger('Alexa-Remote: Use as Login-Amazon-URL: ' + self._options.amazonPage);
         function getCookie(callback) {
             if (!opts.cookie) {
-                self._options.logger && self._options.logger('Alexa-Remote: No cookie, but email and password, generate cookie');
+                self._options.logger && self._options.logger('Alexa-Remote: No cookie given, generate one');
                 opts.cookieJustCreated = true;
                 self.generateCookie(opts.email, opts.password, function(err, res) {
                     if (!err && res) {
@@ -83,8 +86,6 @@ function AlexaRemote (cookie, csrf) {
                 self._options.logger && self._options.logger('Alexa-Remote: Error from retrieving cookies');
                 return callback && callback(err);
             }
-            if (opts.baseUrl) baseUrl = opts.baseUrl;
-            self._options.logger && self._options.logger('Alexa-Remote: Use as Base-URL: ' + baseUrl);
             self.setCookie(cookie, opts.csrf);
             if (!csrf) return callback && callback(new Error('no csrf found'));
             this.checkAuthentication((authenticated) => {
