@@ -7,6 +7,7 @@
 
 const https = require('https');
 const querystring = require('querystring');
+const os = require('os');
 
 function AlexaRemote (cookie, csrf) {
     if (!(this instanceof AlexaRemote)) return new AlexaRemote (cookie, csrf);
@@ -38,12 +39,26 @@ function AlexaRemote (cookie, csrf) {
     this.init = function (cookie, callback) {
         if (typeof cookie === 'object') {
             self._options = opts = cookie;
-            self._options.userAgent = this._options.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
+            if (!self._options.userAgent) {
+                let platform = os.platform();
+                if (platform === 'win32') {
+                    self._options.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
+                }
+                /*else if (platform === 'darwin') {
+                    self._options.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36';
+                }*/
+                else {
+                    self._options.userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36';
+                }
+            }
+            self._options.amazonPage = self._options.amazonPage || 'amazon.de';
+
             cookie = opts.cookie;
         }
         self._options.logger && self._options.logger('Alexa-Remote: Use as User-Agent: ' + self._options.userAgent);
+        self._options.logger && self._options.logger('Alexa-Remote: Use as Login-Amazon-URL: ' + self._options.amazonPage);
         function getCookie(callback) {
-            if (!opts.cookie && opts.password && opts.email) {
+            if (!opts.cookie) {
                 self._options.logger && self._options.logger('Alexa-Remote: No cookie, but email and password, generate cookie');
                 opts.cookieJustCreated = true;
                 self.generateCookie(opts.email, opts.password, function(err, res) {
@@ -51,31 +66,31 @@ function AlexaRemote (cookie, csrf) {
                         cookie = res.cookie;
                         opts.csrf = res.csrf;
                         opts.cookie = res.cookie;
+                        alexaCookie.stopProxyServer();
                         return callback (null);
                     }
                     callback(err);
                 });
                 return;
             }
-            else if (!opts.cookie) {
-                self._options.logger && self._options.logger('Alexa-Remote: cookie empty and no email/password');
-                return callback(new Error('cookie not provided'));
-            }
             self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
             callback(null);
         }
 
         getCookie((err) => {
+            if (typeof callback === 'function') callback = callback.bind(this);
+            if (err) {
+                self._options.logger && self._options.logger('Alexa-Remote: Error from retrieving cookies');
+                return callback && callback(err);
+            }
             if (opts.baseUrl) baseUrl = opts.baseUrl;
             self._options.logger && self._options.logger('Alexa-Remote: Use as Base-URL: ' + baseUrl);
-            if(typeof callback === 'function') callback = callback.bind(this);
-            if (err) return callback && callback(err);
             self.setCookie(cookie, opts.csrf);
             if (!csrf) return callback && callback(new Error('no csrf found'));
             this.checkAuthentication((authenticated) => {
                 self._options.logger && self._options.logger('Alexa-Remote: Authentication checked: ' + authenticated);
-                if (! authenticated && !opts.cookieJustCreated && opts.password && opts.email) {
-                    self._options.logger && self._options.logger('Alexa-Remote: Cookie was set, but authentication invalid, retry ith email/password ...');
+                if (! authenticated && !opts.cookieJustCreated) {
+                    self._options.logger && self._options.logger('Alexa-Remote: Cookie was set, but authentication invalid, retry with email/password ...');
                     delete opts.cookie;
                     delete opts.csrf;
                     return this.init(opts, callback);
@@ -103,75 +118,117 @@ function AlexaRemote (cookie, csrf) {
             getNotifications((notifications) => {
                 this.getWakeWords ((err, wakeWords) => {
                     if (!err && wakeWords) wakeWords = wakeWords.wakeWords;
-                    this.getDevices((err, result) => {
-                        if (!err && result && Array.isArray(result.devices)) {
-                            let customerIds = {};
-                            this.devices = result.devices;
-                            result.devices.forEach((device) => {
-                                this.serialNumbers [device.serialNumber] = device;
-                                let name = device.accountName;
-                                this.names [name] = device;
-                                this.names [name.toLowerCase()] = device;
-                                if (device.deviceTypeFriendlyName) {
-                                    name += ' (' + device.deviceTypeFriendlyName + ')';
+                    this.getAutomationRoutines ((err, routines) => {
+                        this.routines = [];
+                        if (!err && routines) {
+                            for (let i = 0; i < routines.length; i++) {
+                                let routine = routines[i];
+                                if (routine['@type'] !== 'com.amazon.alexa.behaviors.model.Automation') {
+                                    self._options.logger && self._options.logger('Ignore unknown type of Automation Routine ' + routine['@type']);
+                                    continue;
+                                }
+                                if (!routine.sequence) {
+                                    self._options.logger && self._options.logger('Automation Routine has no sequence ' + JSON.stringify(routine));
+                                    continue;
+                                }
+                                let name = routine.name;
+                                if (!name && routine.triggers && routine.triggers[0].payload && routine.triggers[0].payload.utterance) {
+                                    name = routine.triggers[0].payload.utterance;
+                                }
+                                else if (!name && routine.triggers && routine.triggers[0].payload && routine.triggers[0].payload.schedule && routine.triggers[0].payload.schedule.triggerTime) {
+                                    name = routine.triggers[0].payload.schedule.triggerTime;
+                                    if (name.length === 6) name = name.replace(/^({0-9}{2})({0-9}{2})({0-9}{2})$/, '$1:$2:$3');
+                                    if (routine.triggers[0].payload.schedule.recurrence) name += ` ${routine.triggers[0].payload.schedule.recurrence}`;
+                                }
+                                else {
+                                    self._options.logger && self._options.logger('Ignore unknown type of Automation Routine Trigger' + JSON.stringify(routine.triggers.payload));
+                                    name = 'Unknown';
+                                }
+                                routine.friendlyName = name;
+                                let idSplit = routine.automationId.split('.');
+                                routine.friendlyAutomationId = idSplit[idSplit.length - 1];
+                                this.routines.push(routine);
+                            }
+                        }
+                        this.getDevices((err, result) => {
+                            if (!err && result && Array.isArray(result.devices)) {
+                                let customerIds = {};
+                                this.devices = result.devices;
+                                result.devices.forEach((device) => {
+                                    this.serialNumbers [device.serialNumber] = device;
+                                    let name = device.accountName;
                                     this.names [name] = device;
                                     this.names [name.toLowerCase()] = device;
-                                }
-                                device._orig = JSON.parse(JSON.stringify(device));
-                                device._name = name;
-                                device.sendCommand = this.sendCommand.bind(this, device);
-                                device.setTunein = this.setTunein.bind(this, device);
-                                device.rename = this.renameDevice.bind(this, device);
-                                device.setDoNotDisturb = this.setDoNotDisturb.bind(this, device);
-                                device.delete = this.deleteDevice.bind(this, device);
-                                if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
-                                if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
-                                customerIds[device.deviceOwnerCustomerId] += 1;
-                                if (this.version === undefined) this.version = device.softwareVersion;
-                                if (this.customer === undefined) this.customer = device.deviceOwnerCustomerId;
-
-                                if (notifications && Array.isArray(notifications)) {
-                                    notifications.forEach((noti) => {
-                                        if (noti.deviceSerialNumber === device.serialNumber) {
-                                            if (device.notifications === undefined) device.notifications = [];
-                                            device.notifications.push(noti);
-                                            noti.set = self.changeNotification.bind(self, noti);
-                                        }
-                                    });
-                                }
-
-                                if (Array.isArray (wakeWords)) wakeWords.forEach ((o) => {
-                                    if (o.deviceSerialNumber === device.serialNumber && typeof o.wakeWord === 'string') {
-                                        device.wakeWord = o.wakeWord.toLowerCase();
+                                    if (device.deviceTypeFriendlyName) {
+                                        name += ' (' + device.deviceTypeFriendlyName + ')';
+                                        this.names [name] = device;
+                                        this.names [name.toLowerCase()] = device;
                                     }
-                                });
+                                    device._orig = JSON.parse(JSON.stringify(device));
+                                    device._name = name;
+                                    device.sendCommand = this.sendCommand.bind(this, device);
+                                    device.setTunein = this.setTunein.bind(this, device);
+                                    device.rename = this.renameDevice.bind(this, device);
+                                    device.setDoNotDisturb = this.setDoNotDisturb.bind(this, device);
+                                    device.delete = this.deleteDevice.bind(this, device);
+                                    if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
+                                    if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
+                                    customerIds[device.deviceOwnerCustomerId] += 1;
+                                    if (this.version === undefined) this.version = device.softwareVersion;
+                                    if (this.customer === undefined) this.customer = device.deviceOwnerCustomerId;
+                                    device.isControllable = (
+                                        device.capabilities.includes('AUDIO_PLAYER') ||
+                                        device.capabilities.includes('AMAZON_MUSIC') ||
+                                        device.capabilities.includes('TUNE_IN')
+                                    );
+                                    device.hasMusicPlayer = (
+                                        device.capabilities.includes('AUDIO_PLAYER') ||
+                                        device.capabilities.includes('AMAZON_MUSIC')
+                                    );
 
-                            });
-                            this.ownerCustomerId = Object.keys(customerIds)[0];
-                        }
-                        if (opts.bluetooth) {
-                            this.getBluetooth((err, res) => {
-                                if (err || !res || !Array.isArray(res.bluetoothStates)) return callback && callback (err);
-                                res.bluetoothStates.forEach((bt) => {
-                                    if (bt.pairedDeviceList && this.serialNumbers[bt.deviceSerialNumber]) {
-                                        this.serialNumbers[bt.deviceSerialNumber].bluetoothState = bt;
-                                        bt.pairedDeviceList.forEach((d) => {
-                                            bt[d.address] = d;
-                                            d.connect = function (on, cb) {
-                                                self[on ? 'connectBluetooth' : 'disconnectBluetooth'] (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
-                                            };
-                                            d.unpaire = function (val, cb) {
-                                                self.unpaireBluetooth (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
-                                            };
+                                    if (notifications && Array.isArray(notifications)) {
+                                        notifications.forEach((noti) => {
+                                            if (noti.deviceSerialNumber === device.serialNumber) {
+                                                if (device.notifications === undefined) device.notifications = [];
+                                                device.notifications.push(noti);
+                                                noti.set = self.changeNotification.bind(self, noti);
+                                            }
                                         });
                                     }
-                                });
-                                callback && callback();
-                            });
 
-                        } else {
-                            callback && callback ();
-                        }
+                                    if (Array.isArray (wakeWords)) wakeWords.forEach ((o) => {
+                                        if (o.deviceSerialNumber === device.serialNumber && typeof o.wakeWord === 'string') {
+                                            device.wakeWord = o.wakeWord.toLowerCase();
+                                        }
+                                    });
+
+                                });
+                                this.ownerCustomerId = Object.keys(customerIds)[0];
+                            }
+                            if (opts.bluetooth) {
+                                this.getBluetooth((err, res) => {
+                                    if (err || !res || !Array.isArray(res.bluetoothStates)) return callback && callback (err);
+                                    res.bluetoothStates.forEach((bt) => {
+                                        if (bt.pairedDeviceList && this.serialNumbers[bt.deviceSerialNumber]) {
+                                            this.serialNumbers[bt.deviceSerialNumber].bluetoothState = bt;
+                                            bt.pairedDeviceList.forEach((d) => {
+                                                bt[d.address] = d;
+                                                d.connect = function (on, cb) {
+                                                    self[on ? 'connectBluetooth' : 'disconnectBluetooth'] (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
+                                                };
+                                                d.unpaire = function (val, cb) {
+                                                    self.unpaireBluetooth (self.serialNumbers[bt.deviceSerialNumber], d.address, cb);
+                                                };
+                                            });
+                                        }
+                                    });
+                                    callback && callback();
+                                });
+
+                            } else {
+                                callback && callback ();
+                            }
+                        });
                     });
                 });
             });
@@ -182,7 +239,7 @@ function AlexaRemote (cookie, csrf) {
     let alexaCookie;
     this.generateCookie = function (email, password, callback) {
         if (!alexaCookie) alexaCookie = require('alexa-cookie');
-        alexaCookie(email, password, self._options, callback);
+        alexaCookie.generateAlexaCookie(email, password, self._options, callback);
     };
 
     this.timestamp = this.now = function () {
@@ -233,7 +290,9 @@ function AlexaRemote (cookie, csrf) {
             timeout: 10000,
             headers: {
                 'User-Agent' : self._options.userAgent,
-                'Content-Type': 'text/plain',
+                'Content-Type': 'application/json; charset=UTF-8',
+                'Referer': `https://alexa.${self._options.amazonPage}/spa/index.html`,
+                'Origin': `https://alexa.${self._options.amazonPage}`,
                 //'Content-Type': 'application/json',
                 //'Connection': 'keep-alive', // new
                 'csrf' : csrf,
@@ -263,9 +322,11 @@ function AlexaRemote (cookie, csrf) {
 
         const logOptions = JSON.parse(JSON.stringify(options));
         delete logOptions.headers.Cookie;
+        delete logOptions.headers.csrf;
         delete logOptions.headers['User-Agent'];
         delete logOptions.headers['Content-Type'];
-        delete logOptions.headers.csrf;
+        delete logOptions.headers.Referer;
+        delete logOptions.headers.Origin;
         self._options.logger && self._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST') ? 'and data=' + flags.data : ''));
         let req = https.request(options, (res) => {
             let body  = "";
@@ -330,7 +391,7 @@ AlexaRemote.prototype.getCards = function (limit, beforeCreationTime, callback) 
     this.httpsGet (`/api/cards?limit=${limit}&beforeCreationTime=${beforeCreationTime}000&_=%t`, callback);
 };
 
-AlexaRemote.prototype.getMedia = function (serialOrName, deviceType, callback) {
+AlexaRemote.prototype.getMedia = function (serialOrName, callback) {
     let dev = this.find(serialOrName, callback);
     if (!dev) return;
     this.httpsGet (`/api/media/state?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
@@ -495,6 +556,7 @@ AlexaRemote.prototype.getActivities = function (options, callback) {
                     description: JSON.parse (res.description),
                     data: res
                 };
+                if (!o.description) continue;
                 if (options.filter) {
                     o.description.summary = (o.description.summary || '').trim ();
                     switch (o.description.summary) {
@@ -556,18 +618,7 @@ AlexaRemote.prototype.connectBluetooth = function (serialOrName, btAddress, call
         data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
         method: 'POST'
     };
-    this.httpsGet (`/api/bluetooth/pair-sink/${dev.deviceType}/${dev.serialNumber}&_=%t`, callback, flags);
-};
-
-// TODO
-AlexaRemote.prototype.connectBluetooth = function (serialOrName, btAddress, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
-    this.httpsGet (`/api/bluetooth/pair-sink/${dev.deviceType}/${dev.serialNumber}`,
-        callback, {
-            data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
-            method: 'POST'
-        });
+    this.httpsGet (`/api/bluetooth/pair-sink/${dev.deviceType}/${dev.serialNumber}`, callback, flags);
 };
 
 AlexaRemote.prototype.disconnectBluetooth = function (serialOrName, btAddress, callback) {
@@ -617,16 +668,16 @@ AlexaRemote.prototype.setAlarmVolume = function (serialOrName, volume, callback)
         }),
         method: 'PUT'
     };
-    this.httpsGet (`/api/device-notification-state/${dev.deviceType}/${this.version}/${dev.serialNumber}&_=%t`, callback, flags);
+    this.httpsGet (`/api/device-notification-state/${dev.deviceType}/${this.version}/${dev.serialNumber}`, callback, flags);
 };
 
-//CHECKED!
+
 AlexaRemote.prototype.sendCommand =
 AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, callback) {
     let dev = this.find(serialOrName, callback);
     if (!dev) return;
 
-    let o = { contentFocusClientId: null };
+    const commandObj = { contentFocusClientId: null };
     switch (command) {
         case 'play':
         case 'pause':
@@ -634,22 +685,22 @@ AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, call
         case 'previous':
         case 'forward':
         case 'rewind':
-            o.type = command.substr(0, 1).toUpperCase() + command.substr(1) + 'Command';
+            commandObj.type = command.substr(0, 1).toUpperCase() + command.substr(1) + 'Command';
             break;
         case 'volume':
-            o.type = 'VolumeLevelCommand';
-            o.volumeLevel = ~~value;
-            if (o.volumeLevel < 0 || o.volumeLevel > 100) {
+            commandObj.type = 'VolumeLevelCommand';
+            commandObj.volumeLevel = ~~value;
+            if (commandObj.volumeLevel < 0 || commandObj.volumeLevel > 100) {
                 return callback(new Error('Volume needs to be between 0 and 100'));
             }
             break;
         case 'shuffle':
-            o.type = 'ShuffleCommand';
-            o.shuffle = value === 'on';
+            commandObj.type = 'ShuffleCommand';
+            commandObj.shuffle = value === 'on';
             break;
         case 'repeat':
-            o.type = 'RepeatCommand';
-            o.repeat = value === 'on';
+            commandObj.type = 'RepeatCommand';
+            commandObj.repeat = value === 'on';
             break;
         default:
             return;
@@ -659,17 +710,112 @@ AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, call
         callback,
         {
             method: 'POST',
-            data: JSON.stringify(o),
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-            }
-            // Content-Type: application/x-www-form-urlencoded;
-            // charset=UTF-8",#\r\n
-            // Referer: https://alexa.amazon.de/spa/index.html'
+            data: JSON.stringify(commandObj)
         }
     );
 };
 
+
+AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, value, callback) {
+    let dev = this.find(serialOrName, callback);
+    if (!dev) return;
+
+    if (typeof value === 'function') {
+        callback = value;
+        value = null;
+    }
+
+    let seqCommandObj;
+    if (typeof command === 'object') {
+        seqCommandObj = command.sequence;
+    }
+    else {
+        seqCommandObj = {
+            '@type': 'com.amazon.alexa.behaviors.model.Sequence',
+            'startNode': {
+                '@type': 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode',
+                'operationPayload': {
+                    'deviceType': dev.deviceType,
+                    'deviceSerialNumber': dev.serialNumber,
+                    'locale': 'de-DE', // TODO!!
+                    'customerId': this.ownerCustomerId
+                }
+            }
+        };
+        switch (command) {
+            case 'weather':
+                seqCommandObj.startNode.type = 'Alexa.Weather.Play';
+                break;
+            case 'traffic':
+                seqCommandObj.startNode.type = 'Alexa.Traffic.Play';
+                break;
+            case 'flashbriefing':
+                seqCommandObj.startNode.type = 'Alexa.FlashBriefing.Play';
+                break;
+            case 'goodmorning':
+                seqCommandObj.startNode.type = 'Alexa.GoodMorning.Play';
+                break;
+            case 'singasong':
+                seqCommandObj.startNode.type = 'Alexa.SingASong.Play';
+                break;
+            case 'tellstory':
+                seqCommandObj.startNode.type = 'Alexa.TellStory.Play';
+                break;
+            case 'speak':
+                seqCommandObj.startNode.type = 'Alexa.Speak';
+                value = value.replace(/ä/g,'ae');
+                value = value.replace(/ä/g,'Ae');
+                value = value.replace(/ö/g,'oe');
+                value = value.replace(/Ö/g,'Oe');
+                value = value.replace(/ü/g,'ue');
+                value = value.replace(/Ü/g,'Ue');
+                value = value.replace(/ß/g,'ss');
+                value = value.replace(/&/g,'und');
+                value = value.replace(/é/g,'e');
+                value = value.replace(/á/g,'a');
+                value = value.replace(/ó/g,'o');
+                value = value.replace(/[^-a-zA-Z0-9_,?! ]/g,'');
+                value = value.replace(/ /g,'_');
+                seqCommandObj.startNode.operationPayload.textToSpeak = value;
+                break;
+            default:
+                return;
+        }
+    }
+
+    const reqObj = {
+        'behaviorId': seqCommandObj.sequenceId ? command.automationId : 'PREVIEW',
+        'sequenceJson': JSON.stringify(seqCommandObj),
+        'status': 'ENABLED'
+    };
+    reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceType":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceType":"${dev.deviceType}"`);
+    reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceSerialNumber":"ALEXA_CURRENT_DSN"/g, `"deviceSerialNumber":"${dev.serialNumber}"`);
+    reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${this.ownerCustomerId}"`);
+    reqObj.sequenceJson = reqObj.sequenceJson.replace(/"locale":"ALEXA_CURRENT_LOCALE"/g, `"locale":"de-DE"`);
+
+    this.httpsGet (`/api/behaviors/preview`,
+        callback,
+        {
+            method: 'POST',
+            data: JSON.stringify(reqObj)
+        }
+    );
+};
+
+
+AlexaRemote.prototype.getAutomationRoutines = function (callback) {
+    this.httpsGet (`/api/behaviors/automations`, callback);
+};
+
+
+AlexaRemote.prototype.executeAutomationRoutine = function (serialOrName, automationId, callback) {
+    for (let i = 0; i < this.routines.length; i++) {
+        if (this.routines[i].automationId === automationId) {
+            return this.sendSequenceCommand(serialOrName, this.routines[i], callback);
+        }
+    }
+    return callback(new Error('Automation-ID ' + automationId + ' not found'));
+};
 
 AlexaRemote.prototype.sendTextMessage = function (conversationId, text, callback) {
     let o = {

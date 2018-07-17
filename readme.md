@@ -30,7 +30,7 @@ alexa.init({
         baseUrl: 'layla.amazon.de', // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
         userAgent: '...', // optional, override used user-Agent for all Requests and Cookie determination
         acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
-        amazonPage: '...' // optional, override Amazon-Login-Page for cookie determination
+        amazonPage: '...' // optional, override Amazon-Login-Page for cookie determination and referer for requests
     },
     function (err) {
         if (err) {
@@ -46,7 +46,13 @@ alexa.init({
 
 ## Changelog:
 
+### 0.2.x
+* (Apollon77) 0.2.0: use alexa-cookie@0.2.0 library to also offer proxy support
+* (Apollon77) 0.2.0: retrieve automation routines in prepare
+* (Apollon77) 0.2.0: enhanced sendCommand and added support for Routines and sequencial Commands
+
 ### 0.1.x
+* (Apollon77) 0.1.3: Use specific User-Agents for Win32, MacOS and linux based platforms
 * (Apollon77) 0.1.2: add logging for used Alexa-URL and user-Agent once at init
 * (Apollon77) 0.1.1: rename "shuffle" to "ShuffleCommand" and repeat to RepeatCommand)
 
