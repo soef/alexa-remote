@@ -1,6 +1,6 @@
 {
   "name": "alexa-remote2",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Remote Control for amazon echo devices",
   "author": {
     "name": "Apollon77",
@@ -25,7 +25,7 @@
     "layla.amazon.de"
   ],
   "dependencies": {
-    "alexa-cookie": "^0.2.1",
+    "alexa-cookie2": "^0.2.1",
     "https": "^1.0.0",
     "querystring": "^0.2.0"
   },
