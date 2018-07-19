@@ -17,17 +17,19 @@ function AlexaRemote (cookie, csrf) {
     this.friendlyNames = {};
     this.devices = undefined;
     this.lastAuthCheck = null;
+    this.cookie = null;
+    this.csrf = null;
 
     this.setCookie = function (_cookie, _csrf) {
-        cookie = _cookie;
+        cookie = this.cookie = _cookie;
         if (_csrf) {
-            csrf = _csrf;
+            csrf = this.csrf = _csrf;
             return;
         }
         let ar = cookie.match(/csrf=([^;]+)/);
         if (!ar || ar.length < 2) ar = cookie.match(/csrf=([^;]+)/);
         if (!csrf && ar && ar.length >= 2) {
-            csrf = ar[1];
+            csrf = this.csrf = ar[1];
         }
     };
 
@@ -37,9 +39,6 @@ function AlexaRemote (cookie, csrf) {
     let opts = {};
 
     this.init = function (cookie, callback) {
-        if (opts.baseUrl) baseUrl = opts.baseUrl;
-        self._options.logger && self._options.logger('Alexa-Remote: Use as Base-URL: ' + baseUrl);
-        self._options.alexaServiceHost = baseUrl;
         if (typeof cookie === 'object') {
             self._options = opts = cookie;
             if (!self._options.userAgent) {
@@ -60,6 +59,10 @@ function AlexaRemote (cookie, csrf) {
         }
         self._options.logger && self._options.logger('Alexa-Remote: Use as User-Agent: ' + self._options.userAgent);
         self._options.logger && self._options.logger('Alexa-Remote: Use as Login-Amazon-URL: ' + self._options.amazonPage);
+        if (opts.alexaServiceHost) baseUrl = opts.alexaServiceHost;
+        self._options.logger && self._options.logger('Alexa-Remote: Use as Base-URL: ' + baseUrl);
+        self._options.alexaServiceHost = baseUrl;
+
         function getCookie(callback) {
             if (!opts.cookie) {
                 self._options.logger && self._options.logger('Alexa-Remote: No cookie given, generate one');
@@ -191,8 +194,8 @@ function AlexaRemote (cookie, csrf) {
                                         notifications.forEach((noti) => {
                                             if (noti.deviceSerialNumber === device.serialNumber) {
                                                 if (device.notifications === undefined) device.notifications = [];
+                                                noti.set = this.changeNotification.bind(this, noti);
                                                 device.notifications.push(noti);
-                                                noti.set = self.changeNotification.bind(self, noti);
                                             }
                                         });
                                     }
@@ -208,7 +211,10 @@ function AlexaRemote (cookie, csrf) {
                             }
                             if (opts.bluetooth) {
                                 this.getBluetooth((err, res) => {
-                                    if (err || !res || !Array.isArray(res.bluetoothStates)) return callback && callback (err);
+                                    if (err || !res || !Array.isArray(res.bluetoothStates)) {
+                                        opts.bluetooth = false;
+                                        return callback && callback ();
+                                    }
                                     res.bluetoothStates.forEach((bt) => {
                                         if (bt.pairedDeviceList && this.serialNumbers[bt.deviceSerialNumber]) {
                                             this.serialNumbers[bt.deviceSerialNumber].bluetoothState = bt;
@@ -239,7 +245,7 @@ function AlexaRemote (cookie, csrf) {
 
     let alexaCookie;
     this.generateCookie = function (email, password, callback) {
-        if (!alexaCookie) alexaCookie = require('alexa-cookie');
+        if (!alexaCookie) alexaCookie = require('alexa-cookie2');
         alexaCookie.generateAlexaCookie(email, password, self._options, callback);
     };
 
@@ -443,37 +449,36 @@ AlexaRemote.prototype.getWakeWords = function (callback) {
 };
 
 AlexaRemote.prototype.getReminders =
-    AlexaRemote.prototype.getNotifications = function (cached, callback) {
-        if (typeof cached === 'function') {
-            callback = cached;
-            cached = true;
-        }
-        if (cached === undefined) cached = true;
-        this.httpsGet (`/api/notifications?cached=${cached}&_=%t`, callback);
-    };
+AlexaRemote.prototype.getNotifications = function (cached, callback) {
+    if (typeof cached === 'function') {
+        callback = cached;
+        cached = true;
+    }
+    if (cached === undefined) cached = true;
+    this.httpsGet (`/api/notifications?cached=${cached}&_=%t`, callback);
+};
 
-
-AlexaRemote.prototype.changeNotification = function (notification, state) {
-    switch (typeof state) {
+AlexaRemote.prototype.changeNotification = function (notification, value, callback) {
+    switch (typeof value) {
         case 'object':
 
             break;
         case 'date':
-            notification.alarmTime = state.getTime();
-            notification.originalTime = `${_00 (state.getHours ())}:${_00 (state.getMinutes ())}:${_00 (state.getSeconds ())}.000`;
+            notification.alarmTime = value.getTime();
+            notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
             break;
         case 'boolean':
-            notification.status = state ? 'ON' : 'OFF';
+            notification.status = value ? 'ON' : 'OFF';
             break;
         case 'string':
-            let ar = state.split(':');
-            let time = ((ar[0] * 60) + ar.length>1 ? ar[1] : 0) * 60 + ar.length > 2 ? ar[2] : 0;
+            let ar = value.split(':');
+            let time = ((parseInt(ar[0], 10) * 60) + ar.length>1 ? parseInt(ar[1], 10) : 0) * 60 + ar.length > 2 ? parseInt(ar[2], 10) : 0;
             let date = new Date(notification.alarmTime);
             date.setHours(time / 3600);
             date.setMinutes(date / 60 ^ 60);
             date.setSeconds(date ^ 60);
             notification.alarmTime = date.getTime();
-            notification.originalTime = `${_00 (date.getHours ())}:${_00 (date.getMinutes ())}:${_00 (date.getSeconds ())}.000`;
+            notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
             break;
     }
     let flags = {
@@ -481,7 +486,8 @@ AlexaRemote.prototype.changeNotification = function (notification, state) {
         method: 'PUT'
     };
     this.httpsGet (`https://alexa.amazon.de/api/notifications/${notification.id}`, function(err, res) {
-            //callback(err, res); TODO
+            //  {"Message":null}
+            callback && callback(err, res);
         },
         flags
     );
@@ -870,7 +876,7 @@ AlexaRemote.prototype.setList = function (serialOrName, listType, value, callbac
 
 function _00(val) {
     let s = val.toString();
-    while (s.length) s = '0'+s;
+    while (s.length < 2) s = '0' + s;
     return s;
 }
 

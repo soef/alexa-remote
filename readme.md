@@ -1,5 +1,5 @@
 
-# alexa-remote
+# alexa-remote2
 
 Library to remote control an Alexa (Amazon Echo) device via LAN/WLAN.
 
@@ -13,7 +13,7 @@ Early code version.
 
 
 ```js
-let Alexa = require('alexa-remote');
+let Alexa = require('alexa-remote2');
 let alexa = new Alexa();
 
 /***************************************************************/
@@ -27,7 +27,7 @@ alexa.init({
         password: '...', // optional, amazon password for login to get new cookie
         bluetooth: true,
         logger: console.log, // optional
-        baseUrl: 'layla.amazon.de', // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
+        alexaServiceHost: 'layla.amazon.de', // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
         userAgent: '...', // optional, override used user-Agent for all Requests and Cookie determination
         acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
         amazonPage: '...' // optional, override Amazon-Login-Page for cookie determination and referer for requests
@@ -44,9 +44,13 @@ alexa.init({
 );
 ````
 
+## Known issues/Todos
+* reading notifications works, but changing NOT!
+
 ## Changelog:
 
 ### 0.2.x
+* (Apollon77) 0.2.0: several optimizations and publish as alexa-remote2 on npm
 * (Apollon77) 0.2.0: use alexa-cookie@0.2.0 library to also offer proxy support
 * (Apollon77) 0.2.0: retrieve automation routines in prepare
 * (Apollon77) 0.2.0: enhanced sendCommand and added support for Routines and sequencial Commands
