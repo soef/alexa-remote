@@ -783,6 +783,9 @@ AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, val
                 value = value.replace(/ó/g,'o');
                 value = value.replace(/[^-a-zA-Z0-9_,?! ]/g,'');
                 value = value.replace(/ /g,'_');
+                if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
+                    value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
+                }
                 seqCommandObj.startNode.operationPayload.textToSpeak = value;
                 break;
             default:

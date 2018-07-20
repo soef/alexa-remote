@@ -50,6 +50,7 @@ alexa.init({
 ## Changelog:
 
 ### 0.2.x
+* (Apollon77) 0.2.3: in non .com replace numbers with points into numbers with comma
 * (Apollon77) 0.2.0: several optimizations and publish as alexa-remote2 on npm
 * (Apollon77) 0.2.0: use alexa-cookie@0.2.0 library to also offer proxy support
 * (Apollon77) 0.2.0: retrieve automation routines in prepare
