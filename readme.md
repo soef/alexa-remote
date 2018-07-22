@@ -50,6 +50,9 @@ alexa.init({
 ## Changelog:
 
 ### 0.2.x
+* (Apollon77) 0.2.4: several smaller bugfixes
+* (Apollon77) 0.2.4: an speak call with empty string will return an error
+* (Apollon77) 0.2.4: add infos if multiroom device or member
 * (Apollon77) 0.2.3: in non .com replace numbers with points into numbers with comma
 * (Apollon77) 0.2.0: several optimizations and publish as alexa-remote2 on npm
 * (Apollon77) 0.2.0: use alexa-cookie@0.2.0 library to also offer proxy support

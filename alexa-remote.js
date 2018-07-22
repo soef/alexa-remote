@@ -189,6 +189,8 @@ function AlexaRemote (cookie, csrf) {
                                         device.capabilities.includes('AUDIO_PLAYER') ||
                                         device.capabilities.includes('AMAZON_MUSIC')
                                     );
+                                    device.isMultiroomDevice = (device.clusterMembers.length > 0);
+                                    device.isMultiroomMember = (device.parentClusters.length > 0);
 
                                     if (notifications && Array.isArray(notifications)) {
                                         notifications.forEach((noti) => {
@@ -557,7 +559,7 @@ AlexaRemote.prototype.getActivities = function (options, callback) {
             if (err || !result) return callback.length >= 2 && callback(err, result);
 
             let ret = [];
-            for (let r=0; r<result.activities.length; r++) {
+            for (let r = 0; r < result.activities.length; r++) {
                 let res = result.activities[r];
                 let o = {
                     description: JSON.parse (res.description),
@@ -574,8 +576,9 @@ AlexaRemote.prototype.getActivities = function (options, callback) {
                             continue;
                     }
                 }
-                for (let i=0; i<res.sourceDeviceIds.length; i++) {
+                for (let i = 0; i < res.sourceDeviceIds.length; i++) {
                     o.serialNumber = res.sourceDeviceIds[i].serialNumber;
+                    if (!this.serialNumbers[o.serialNumber]) continue;
                     o.name = this.serialNumbers[o.serialNumber].accountName;
                     let wakeWord = this.serialNumbers[o.serialNumber];
                     if (wakeWord) wakeWord = wakeWord.wakeWord;
@@ -770,6 +773,9 @@ AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, val
                 break;
             case 'speak':
                 seqCommandObj.startNode.type = 'Alexa.Speak';
+                if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
+                    value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
+                }
                 value = value.replace(/ä/g,'ae');
                 value = value.replace(/ä/g,'Ae');
                 value = value.replace(/ö/g,'oe');
@@ -781,10 +787,10 @@ AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, val
                 value = value.replace(/é/g,'e');
                 value = value.replace(/á/g,'a');
                 value = value.replace(/ó/g,'o');
-                value = value.replace(/[^-a-zA-Z0-9_,?! ]/g,'');
+                value = value.replace(/[^-a-zA-Z0-9_,.?! ]/g,'');
                 value = value.replace(/ /g,'_');
-                if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
-                    value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
+                if (value.length === 0) {
+                    return callback && callback(new Error('Can not speak empty string', null));
                 }
                 seqCommandObj.startNode.operationPayload.textToSpeak = value;
                 break;
