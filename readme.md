@@ -55,6 +55,8 @@ Thank you for that work.
 ## Changelog:
 
 ### 0.2.x
+* (Apollon77) 0.2.5: new functions to read musicproviders and send searchphrases for them
+* (Apollon77) 0.2.5: by default direct all calls to "alexa."+amazonPage to be more generic, overwritable
 * (Apollon77) 0.2.4: several smaller bugfixes
 * (Apollon77) 0.2.4: an speak call with empty string will return an error
 * (Apollon77) 0.2.4: add infos if multiroom device or member
