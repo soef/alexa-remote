@@ -355,21 +355,25 @@ function AlexaRemote (cookie, csrf) {
 
                 let ret;
                 if (typeof callback === 'function') {
-                    if(!body) return callback.length >= 2 && callback(new Error('no body'), null);
+                    if (!body) {
+                        self._options.logger && self._options.logger('Alexa-Remote: Response: No body');
+                        return callback/*.length >= 2*/ && callback(new Error('no body'), null);
+                    }
                     try {
                         ret = JSON.parse(body);
                     } catch(e) {
-                        if (callback.length >= 2) return callback (new Error('no JSON'), body);
+                        self._options.logger && self._options.logger('Alexa-Remote: Response: No/Invalid JSON');
+                        if (callback/*.length >= 2*/) return callback (new Error('no JSON'), body);
                     }
                     self._options.logger && self._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
-                    if (callback.length >= 2) return callback (null, ret);
+                    if (callback/*.length >= 2*/) return callback (null, ret);
                     callback(ret);
                 }
             });
         });
 
         req.on('error', function(e) {
-            if(typeof callback === 'function' && callback.length >= 2) {
+            if(typeof callback === 'function'/* && callback.length >= 2*/) {
                 return callback (e, null);
             }
         });
@@ -448,7 +452,7 @@ AlexaRemote.prototype.getLists = function (serialOrName, options, callback) {
         }
         this.getList(dev, 'SHOPPING_ITEM', options, function(err, res) {
             ret.shoppingItems = res;
-            callback.length >= 2 ? callback(null, ret) : callback(ret);
+            callback && callback(null, ret);
         });
     });
 };
@@ -563,7 +567,7 @@ AlexaRemote.prototype.getActivities = function (options, callback) {
         `&size=${options.size || 1}` +
         `&offset=${options.offset || 1}`,
         (err, result) => {
-            if (err || !result) return callback.length >= 2 && callback(err, result);
+            if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
 
             let ret = [];
             for (let r = 0; r < result.activities.length; r++) {
@@ -595,7 +599,7 @@ AlexaRemote.prototype.getActivities = function (options, callback) {
                     if (o.description.summary) ret.push (o);
                 }
             }
-            if (typeof callback === 'function') return callback.length >= 2 ? callback (err, ret) : callback(ret);
+            if (typeof callback === 'function') return callback (err, ret);
         }
     );
 };
@@ -669,7 +673,7 @@ AlexaRemote.prototype.find = function(serialOrName, callback) {
     dev = this.names[serialOrName];
     if (!dev) dev = this.names [serialOrName.toLowerCase()];
     if (!dev) dev = this.friendlyNames[serialOrName];
-    if (!dev) callback.length >= 2 && callback('wrong serial or name', null);
+    //if (!dev) callback.length >= 2 && callback('wrong serial or name', null);
     return dev;
 };
 
