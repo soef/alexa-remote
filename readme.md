@@ -55,6 +55,7 @@ Thank you for that work.
 ## Changelog:
 
 ### 0.2.x
+* (Apollon77) 0.2.7: speak maximum are 250 characters, routines will now queried 2000 at once (instead of only 20 before)
 * (Apollon77) 0.2.6: fixes
 * (Apollon77) 0.2.5: new functions to read musicproviders and send searchphrases for them
 * (Apollon77) 0.2.5: by default direct all calls to "alexa."+amazonPage to be more generic, overwritable

@@ -412,20 +412,23 @@ AlexaRemote.prototype.getCards = function (limit, beforeCreationTime, callback) 
 };
 
 AlexaRemote.prototype.getMedia = function (serialOrName, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     this.httpsGet (`/api/media/state?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
 };
 
 AlexaRemote.prototype.getPlayerInfo = function (serialOrName, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     this.httpsGet (`/api/np/player?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
 };
 
 AlexaRemote.prototype.getList = function (serialOrName, listType, options, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     if (typeof options === 'function') {
         callback = options;
         options = {};
@@ -443,8 +446,9 @@ AlexaRemote.prototype.getList = function (serialOrName, listType, options, callb
 };
 
 AlexaRemote.prototype.getLists = function (serialOrName, options, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     this.getList(dev, 'TASK', options, function(err, res) {
         let ret = {};
         if (!err && res) {
@@ -514,8 +518,9 @@ AlexaRemote.prototype.getDeviceStatusList = function (callback) {
 
 // alarm volume
 AlexaRemote.prototype.getDeviceNotificationState = function (serialOrName, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     this.httpsGet (`/api/device-notification-state/${dev.deviceType}/${dev.softwareVersion}/${dev.serialNumber}&_=%t`, callback);
 };
 
@@ -537,14 +542,14 @@ AlexaRemote.prototype.tuneinSearch = function (query, callback) {
     this.tuneinSearchRaw(query, callback);
 };
 
-//CHECKED!
 AlexaRemote.prototype.setTunein = function (serialOrName, guideId, contentType, callback) {
     if (typeof contentType === 'function') {
         callback = contentType;
         contentType = 'station';
     }
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     this.httpsGet (`/api/tunein/queue-and-play
        ?deviceSerialNumber=${dev.serialNumber}
        &deviceType=${dev.deviceType}
@@ -633,8 +638,9 @@ AlexaRemote.prototype.getConversations = function (options, callback) {
 };
 
 AlexaRemote.prototype.connectBluetooth = function (serialOrName, btAddress, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let flags = {
         data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
         method: 'POST'
@@ -643,8 +649,9 @@ AlexaRemote.prototype.connectBluetooth = function (serialOrName, btAddress, call
 };
 
 AlexaRemote.prototype.disconnectBluetooth = function (serialOrName, btAddress, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let flags = {
         data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
         method: 'POST'
@@ -653,8 +660,9 @@ AlexaRemote.prototype.disconnectBluetooth = function (serialOrName, btAddress, c
 };
 
 AlexaRemote.prototype.setDoNotDisturb = function (serialOrName, enabled, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let flags = {
         data: JSON.stringify({
             deviceSerialNumber: dev.serialNumber,
@@ -663,7 +671,7 @@ AlexaRemote.prototype.setDoNotDisturb = function (serialOrName, enabled, callbac
         }),
         method: 'PUT'
     };
-    this.httpsGet (`//api/dnd/status`, callback, flags);
+    this.httpsGet (`/api/dnd/status`, callback, flags);
 };
 
 AlexaRemote.prototype.find = function(serialOrName, callback) {
@@ -673,13 +681,13 @@ AlexaRemote.prototype.find = function(serialOrName, callback) {
     dev = this.names[serialOrName];
     if (!dev) dev = this.names [serialOrName.toLowerCase()];
     if (!dev) dev = this.friendlyNames[serialOrName];
-    //if (!dev) callback.length >= 2 && callback('wrong serial or name', null);
     return dev;
 };
 
 AlexaRemote.prototype.setAlarmVolume = function (serialOrName, volume, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let flags = {
         data: JSON.stringify ({
             deviceSerialNumber: dev.serialNumber,
@@ -695,8 +703,8 @@ AlexaRemote.prototype.setAlarmVolume = function (serialOrName, volume, callback)
 
 AlexaRemote.prototype.sendCommand =
 AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
 
     const commandObj = { contentFocusClientId: null };
     switch (command) {
@@ -738,8 +746,8 @@ AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, call
 
 
 AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, value, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
 
     if (typeof value === 'function') {
         callback = value;
@@ -825,6 +833,9 @@ AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, val
                 if (value.length === 0) {
                     return callback && callback(new Error('Can not speak empty string', null));
                 }
+                if (value.length > 250) {
+                    return callback && callback(new Error('text too long, limit are 250 characters', null));
+                }
                 seqCommandObj.startNode.operationPayload.textToSpeak = value;
                 break;
             default:
@@ -852,8 +863,13 @@ AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, val
 };
 
 
-AlexaRemote.prototype.getAutomationRoutines = function (callback) {
-    this.httpsGet (`/api/behaviors/automations`, callback);
+AlexaRemote.prototype.getAutomationRoutines = function (limit, callback) {
+    if (typeof limit === 'function') {
+        callback = limit;
+        limit = 0;
+    }
+    limit = limit || 2000;
+    this.httpsGet (`/api/behaviors/automations?limit=${limit}`, callback);
 };
 
 
@@ -879,9 +895,9 @@ AlexaRemote.prototype.getMusicProviders = function (callback) {
 };
 
 AlexaRemote.prototype.playMusicProvider = function (serialOrName, providerId, searchPhrase, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
-    if (searchPhrase === '') return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+    if (searchPhrase === '') return callback && callback(new Error ('Searchphrase empty', null));
 
     const operationPayload = {
         'deviceType': dev.deviceType,
@@ -947,8 +963,9 @@ AlexaRemote.prototype.sendTextMessage = function (conversationId, text, callback
 
 
 AlexaRemote.prototype.setList = function (serialOrName, listType, value, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let o = {
         type: listType,
         text: value,
@@ -979,8 +996,8 @@ function _00(val) {
 }
 
 AlexaRemote.prototype.setReminder = function (serialOrName, timestamp, label, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
 
     let time = new Date(timestamp);
     let o = {
@@ -1015,68 +1032,6 @@ AlexaRemote.prototype.getHomeGroup = function (callback) {
     this.httpsGet (`https://alexa-comms-mobile-service.amazon.com/users/${this.commsId}/identities?includeUserName=true`, callback);
 };
 
-/*
-function test () {
-    AlexaRemote.prototype.getFeatureAlertLocation = function (callback) {
-        alexa.httpsGet (`https://alexa.amazon.de/api/feature-alert-location?`, callback);
-    };
-
-    let alexa = AlexaRemote ().init (cookie, function () {
-
-        alexa.getHomeGroup (function (err, res) {
-            res = res;
-        });
-        // alexa.getPlayer('wohnzimmer', function(err, res) {
-        //     res = res;
-        // })
-        alexa.httpsGet (`https://alexa.amazon.de/api/devices-v2/device?cached=true&"`, function (err, res) {
-            res = res;
-        });
-
-
-        //alexa.sendCommand('Wohnzimmer', 'volume', 20, function(res) {
-        //alexa.sendCommand('Küche (Sonos)', 'play', 0, function(res) {
-        alexa.sendCommand ('wohnzimmer', 'play', 0, function (res) {
-            res = res;
-        });
-
-        // alexa.tuneinSearch('wdr 4', alexa.ownerCustomerId, function(err, res) {
-        //     res = res;
-        //
-        //     alexa.setTunein ('Schlafzimmer', res.browseList[0].id, alexa.ownerCustomerId, function(err, res) {
-        //         res = res;
-        //     });
-        // })
-
-
-        return;
-        alexa.getHistory ({filter: true}, function (res) {
-            res = res;
-        });
-        alexa.tuneinSearch ('wdr 4', alexa.ownerCustomerId, function (err, res) {
-            res = res;
-
-            //alexa.setTunein ('Schlafzimmer', res.browseList[0].id, alexa.ownerCustomerId, function(err, res) {
-            alexa.setTunein ('Wohnzimmer', res.browseList[0].id, alexa.ownerCustomerId, function (err, res) {
-                res = res;
-            });
-        });
-        // alexa.getDeviceStatusList((ret) => {
-        //     ret = ret;
-        // })
-        // alexa.getDevices((err, res) => {
-        //     res = res;
-        // });
-        // alexa.getNotifications((err, res) => {
-        //     res = res;
-        // })
-        // alexa.getBluetooth((err, res) => {
-        //     res = res;
-        // })
-    });
-
-}
-*/
 
 AlexaRemote.prototype.getDevicePreferences = function (callback) {
     this.httpsGet ('https://alexa.amazon.de/api/device-preferences?cached=true&_=%t', callback);
@@ -1096,8 +1051,9 @@ AlexaRemote.prototype.getSmarthomeDevices = function (callback) {
 };
 
 AlexaRemote.prototype.renameDevice = function (serialOrName, newName, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let o = {
         accountName: newName,
         serialNumber: dev.serialNumber,
@@ -1143,8 +1099,9 @@ AlexaRemote.prototype.discoverSmarthomeDevice = function (callback) {
 
 
 AlexaRemote.prototype.unpaireBluetooth = function (serialOrName, btAddress, callback) {
-    let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    let dev = this.find(serialOrName);
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let flags = {
         method: 'POST',
         data: JSON.stringify ({
@@ -1157,7 +1114,8 @@ AlexaRemote.prototype.unpaireBluetooth = function (serialOrName, btAddress, call
 
 AlexaRemote.prototype.deleteDevice = function (serialOrName, callback) {
     let dev = this.find(serialOrName, callback);
-    if (!dev) return;
+    if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
     let flags = {
         method: 'DELETE',
         data: JSON.stringify ({
