@@ -676,6 +676,7 @@ AlexaRemote.prototype.setDoNotDisturb = function (serialOrName, enabled, callbac
 
 AlexaRemote.prototype.find = function(serialOrName, callback) {
     if (typeof serialOrName === 'object') return serialOrName;
+    if (!serialOrName) return null;
     let dev = this.serialNumbers[serialOrName];
     if (dev !== undefined) return dev;
     dev = this.names[serialOrName];
@@ -725,11 +726,11 @@ AlexaRemote.prototype.sendMessage = function (serialOrName, command, value, call
             break;
         case 'shuffle':
             commandObj.type = 'ShuffleCommand';
-            commandObj.shuffle = value === 'on';
+            commandObj.shuffle = (value === 'on' || value === true);
             break;
         case 'repeat':
             commandObj.type = 'RepeatCommand';
-            commandObj.repeat = value === 'on';
+            commandObj.repeat = (value === 'on' || value === true);
             break;
         default:
             return;
@@ -800,6 +801,7 @@ AlexaRemote.prototype.sendSequenceCommand = function (serialOrName, command, val
                 break;
             case 'speak':
                 seqCommandObj.startNode.type = 'Alexa.Speak';
+                if (typeof value !== 'string') value = String(value);
                 if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
                     value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
                 }
