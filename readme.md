@@ -30,7 +30,8 @@ alexa.init({
         alexaServiceHost: 'layla.amazon.de', // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
         userAgent: '...', // optional, override used user-Agent for all Requests and Cookie determination
         acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
-        amazonPage: '...' // optional, override Amazon-Login-Page for cookie determination and referer for requests
+        amazonPage: '...', // optional, override Amazon-Login-Page for cookie determination and referer for requests
+        useWsMqtt: true // optional, true to use the Websocket/MQTT direct push connection
     },
     function (err) {
         if (err) {
@@ -50,9 +51,16 @@ Thank you for that work.
 
 ## Known issues/Todos
 * getNotification works, changeNotification not ... maybe change is DELETE +Create :-) (+ source for createNotification: https://github.com/noelportugal/alexa-reminders/blob/master/alexa-reminders.js#L75, and Delete/create: https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol/src/main/java/org/openhab/binding/amazonechocontrol/internal/Connection.java#L829)
-*
+* docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### 0.3.0 (2018-08-13)
+* (Apollon77) Added Websocket/MQTT connection class and also initialize it when requested via alexa-remote class.
+* (Apollon77) Websocet/MQTT class and also Alexa-Remote are now event emitters to be able to notify on push changes
+* (Apollon77) many fixes and optimizations, changed code to be an ES6 class
+* (Apollon77) reworked the "prepare" step and only initialize what's really needed and allow extra "init" methods also to update Devices, Bluetooth and such. Docs will follow
+* (Apollon77) API breaking: executeAutomationRoutine is not expecting a routineId anymore, but the complete routine definition.
 
 ### 0.2.x
 * (Apollon77) 0.2.8: fixes, fix shuffle/repeat commands, make sure speak object is a string
