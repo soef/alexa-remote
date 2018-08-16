@@ -55,6 +55,12 @@ Thank you for that work.
 
 ## Changelog:
 
+### 0.5.0 (2018-08-16)
+* (Apollon77) fix an error when getting new cookie
+* (Apollon77) Add Reminder and Alarms support.
+* (Apollon77) Enhance Push Connection
+* (Apollon77) Added some more deviceTypes
+
 ### 0.3.0 (2018-08-13)
 * (Apollon77) Added Websocket/MQTT connection class and also initialize it when requested via alexa-remote class.
 * (Apollon77) Websocet/MQTT class and also Alexa-Remote are now event emitters to be able to notify on push changes

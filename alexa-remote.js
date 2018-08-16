@@ -85,7 +85,7 @@ class AlexaRemote extends EventEmitter {
                         cookie = res.cookie;
                         self._options.csrf = res.csrf;
                         self._options.cookie = res.cookie;
-                        this.alexaCookie.stopProxyServer();
+                        self.alexaCookie.stopProxyServer();
                         return callback (null);
                     }
                     callback(err);
@@ -148,9 +148,11 @@ class AlexaRemote extends EventEmitter {
         this.getNotifications((err, res) => {
             if (err || !res || !res.notifications || !Array.isArray(res.notifications)) return callback && callback();
 
-            this.serialNumbers.forEach((device) => {
-                device.notifications = [];
-            });
+            for (var serialNumber in this.serialNumbers) {
+                if (this.serialNumbers.hasOwnProperty(serialNumber)) {
+                    this.serialNumbers[serialNumber].notifications = [];
+                }
+            }
 
             res.notifications.forEach((noti) => {
                 let device = this.find(noti.deviceSerialNumber);
@@ -158,7 +160,10 @@ class AlexaRemote extends EventEmitter {
                     //TODO: new stuff
                     return;
                 }
-                if (device.notifications === undefined) device.notifications = [];
+                if (noti.alarmTime && !noti.originalTime && noti.originalDate && noti.type !== 'Timer') {
+                    const now = new Date(noti.alarmTime);
+                    noti.originalTime = `${_00(now.getHours())}:${_00(now.getMinutes())}:${_00(now.getSeconds())}.000`;
+                }
                 noti.set = this.changeNotification.bind(this, noti);
                 device.notifications.push(noti);
             });
@@ -406,6 +411,28 @@ class AlexaRemote extends EventEmitter {
                         deviceComponent: payload.deviceComponent
                     });
                     return;
+                case 'PUSH_EQUALIZER_STATE_CHANGE':
+                    /*
+                    {
+                        "destinationUserId": "A3NSX4MMJVG96V",
+                        "bass": 0,
+                        "treble": 0,
+                        "dopplerId": {
+                            "deviceSerialNumber": "G090LA09751707NU",
+                            "deviceType": "A2M35JJZWCQOMZ"
+                        },
+                        "midrange": 0
+                    }
+                    */
+                    this.emit('ws-equilizer-state-change', {
+                        destinationUserId: payload.destinationUserId,
+                        deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
+                        deviceType: payload.dopplerId.deviceType,
+                        bass: payload.bass,
+                        treble: payload.treble,
+                        midrange: payload.midrange
+                    });
+                    return;
                 case 'PUSH_NOTIFICATION_CHANGE':
                     /*
                     {
@@ -428,6 +455,16 @@ class AlexaRemote extends EventEmitter {
                         notificationVersion: payload.notificationVersion
                     });
                     return;
+
+                /*
+                case 'PUSH_TODO_CHANGE':
+                case 'PUSH_LIST_ITEM_CHANGE':
+                case 'PUSH_LIST_CHANGE':
+
+                case 'PUSH_MICROPHONE_STATE':
+                case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
+                */
+
                 case 'PUSH_ACTIVITY':
                     /*
                     {
@@ -483,7 +520,7 @@ class AlexaRemote extends EventEmitter {
                     return;
             }
 
-            this.emit('ws-unknown-command', payload);
+            this.emit('ws-unknown-command', command, payload);
         });
 
         this.alexaWsMqtt.connect();
@@ -574,7 +611,7 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers['Content-Type'];
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
-        this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST') ? 'and data=' + flags.data : ''));
+        this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT') ? 'and data=' + flags.data : ''));
         let req = https.request(options, (res) => {
             let body  = "";
 
@@ -708,34 +745,173 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet (`/api/notifications?cached=${cached}&_=%t`, callback);
     }
 
-    changeNotification(notification, value, callback) {
+    createNotificationObject(serialOrName, type, label, value, status, sound) { // type = Reminder, Alarm
+        if (status && typeof status === 'object') {
+            sound = status;
+            status = 'ON';
+        }
+        if (value === null || value === undefined) {
+            value = new Date().getTime() + 5000;
+        }
+
+        let dev = this.find(serialOrName);
+        if (!dev) return null;
+
+        const now = new Date();
+        const notification = {
+            'alarmTime': now.getTime(), // will be overwritten
+            'createdDate': now.getTime(),
+            'type': type, // Alarm ...
+            'deviceSerialNumber': dev.serialNumber,
+            'deviceType': dev.deviceType,
+            'reminderLabel': label || null,
+            'sound': sound || null,
+            /*{
+                'displayName': 'Countertop',
+                'folder': null,
+                'id': 'system_alerts_repetitive_04',
+                'providerId': 'ECHO',
+                'sampleUrl': 'https://s3.amazonaws.com/deeappservice.prod.notificationtones/system_alerts_repetitive_04.mp3'
+            }*/
+            'originalDate': `${now.getFullYear()}-${_00(now.getMonth() + 1)}-${_00(now.getDate())}`,
+            'originalTime': `${_00(now.getHours())}:${_00(now.getMinutes())}:${_00(now.getSeconds())}.000`,
+            'id': 'create' + type,
+
+            'isRecurring' : false,
+            'recurringPattern': null,
+
+            'timeZoneId': null,
+            'reminderIndex': null,
+
+            'isSaveInFlight': true,
+
+            'status': 'ON' // OFF
+        };
+        /*if (type === 'Timer') {
+            notification.originalDate = null;
+            notification.originalTime = null;
+            notification.alarmTime = 0;
+        }*/
+        return this.parseValue4Notification(notification, value);
+    }
+
+    parseValue4Notification(notification, value) {
         switch (typeof value) {
             case 'object':
-
+                notification = extend(notification, value); // we combine the objects
+                /*
+                {
+                    "alarmTime": 0,
+                    "createdDate": 1522585752734,
+                    "deferredAtTime": null,
+                    "deviceSerialNumber": "G090LF09643202VS",
+                    "deviceType": "A3S5BH2HU6VAYF",
+                    "geoLocationTriggerData": null,
+                    "id": "A3S5BH2HU6VAYF-G090LF09643202VS-17ef9b04-cb1d-31ed-ab2c-245705d904be",
+                    "musicAlarmId": null,
+                    "musicEntity": null,
+                    "notificationIndex": "17ef9b04-cb1d-31ed-ab2c-245705d904be",
+                    "originalDate": "2018-04-01",
+                    "originalTime": "20:00:00.000",
+                    "provider": null,
+                    "recurringPattern": null,
+                    "remainingTime": 0,
+                    "reminderLabel": null,
+                    "sound": {
+                        "displayName": "Countertop",
+                        "folder": null,
+                        "id": "system_alerts_repetitive_04",
+                        "providerId": "ECHO",
+                        "sampleUrl": "https://s3.amazonaws.com/deeappservice.prod.notificationtones/system_alerts_repetitive_04.mp3"
+                    },
+                    "status": "OFF",
+                    "timeZoneId": null,
+                    "timerLabel": null,
+                    "triggerTime": 0,
+                    "type": "Alarm",
+                    "version": "4"
+                }
+                */
+                break;
+            case 'number':
+                if (notification.type !== 'Timer') {
+                    value = new Date(value);
+                    notification.alarmTime = value.getTime();
+                    notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
+                }
+                else {
+                    //notification.remainingTime = value;
+                }
                 break;
             case 'date':
-                notification.alarmTime = value.getTime();
-                notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
+                if (notification.type !== 'Timer') {
+                    notification.alarmTime = value.getTime();
+                    notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
+                }
+                else {
+                    /*let duration = value.getTime() - Date.now();
+                    if (duration < 0) duration = value.getTime();
+                    notification.remainingTime = duration;*/
+                }
                 break;
             case 'boolean':
                 notification.status = value ? 'ON' : 'OFF';
                 break;
             case 'string':
                 let ar = value.split(':');
-                let time = ((parseInt(ar[0], 10) * 60) + ar.length>1 ? parseInt(ar[1], 10) : 0) * 60 + ar.length > 2 ? parseInt(ar[2], 10) : 0;
-                let date = new Date(notification.alarmTime);
-                date.setHours(time / 3600);
-                date.setMinutes(date / 60 ^ 60);
-                date.setSeconds(date ^ 60);
-                notification.alarmTime = date.getTime();
-                notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
+                if (notification.type !== 'Timer') {
+                    let date = new Date(notification.alarmTime);
+                    date.setHours(parseInt(ar[0], 10), ar.length>1 ? parseInt(ar[1], 10) : 0, ar.length > 2 ? parseInt(ar[2], 10) : 0);
+                    notification.alarmTime = date.getTime();
+                    notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
+                }
+                else {
+                    /*let duration = 0;
+                    let multi = 1;
+                    for (let i = ar.length -1; i > 0; i--) {
+                        duration += ar[i] * multi;
+                        multi *= 60;
+                    }
+                    notification.remainingTime = duration;*/
+                }
                 break;
         }
+        return notification;
+    }
+
+    createNotification(notification, callback) {
         let flags = {
-            data: JSON.stringify (notification),
+            data: JSON.stringify(notification),
             method: 'PUT'
         };
-        this.httpsGet (`https://alexa.amazon.de/api/notifications/${notification.id}`, function(err, res) {
+        this.httpsGet (`/api/notifications/createReminder`, function(err, res) {
+                //  {"Message":null}
+                callback && callback(err, res);
+            },
+            flags
+        );
+    }
+
+    changeNotification(notification, value, callback) {
+        notification = this.parseValue4Notification(notification, value);
+        let flags = {
+            data: JSON.stringify(notification),
+            method: 'PUT'
+        };
+        this.httpsGet (`/api/notifications/${notification.id}`, function(err, res) {
+                //  {"Message":null}
+                callback && callback(err, res);
+            },
+            flags
+        );
+    }
+
+    deleteNotification(notification, callback) {
+        let flags = {
+            data: JSON.stringify (notification),
+            method: 'DELETE'
+        };
+        this.httpsGet (`/api/notifications/${notification.id}`, function(err, res) {
                 //  {"Message":null}
                 callback && callback(err, res);
             },
