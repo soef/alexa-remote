@@ -55,6 +55,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 0.5.1 (2018-08-16)
+* (Apollon77) also allow new reminder on next day :-)
+
 ### 0.5.0 (2018-08-16)
 * (Apollon77) fix an error when getting new cookie
 * (Apollon77) Add Reminder and Alarms support.

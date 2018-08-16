@@ -876,6 +876,16 @@ class AlexaRemote extends EventEmitter {
                 }
                 break;
         }
+
+        const originalDateTime = notification.originalDate + ' ' + notification.originalTime;
+        const bits = originalDateTime.split(/\D/);
+        let date = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4], bits[5]);
+        if (date.getTime() < Date.now()) {
+            date = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+            notification.originalDate =  `${date.getFullYear()}-${_00(date.getMonth() + 1)}-${_00(date.getDate())}`;
+            notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
+        }
+
         return notification;
     }
 
@@ -1098,7 +1108,7 @@ class AlexaRemote extends EventEmitter {
         let dev = this.serialNumbers[serialOrName];
         if (dev !== undefined) return dev;
         dev = this.names[serialOrName];
-        if (!dev) dev = this.names [serialOrName.toLowerCase()];
+        if (!dev && typeof serialOrName === 'string') dev = this.names [serialOrName.toLowerCase()];
         if (!dev) dev = this.friendlyNames[serialOrName];
         return dev;
     }
