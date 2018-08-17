@@ -976,7 +976,7 @@ class AlexaRemote extends EventEmitter {
            &guideId=${guideId}
            &contentType=${contentType}
            &callSign=
-           &mediaOwnerCustomerId=${this.ownerCustomerId}`,
+           &mediaOwnerCustomerId=${dev.deviceOwnerCustomerId}`,
             callback,
             { method: 'POST' });
     }
@@ -1196,7 +1196,7 @@ class AlexaRemote extends EventEmitter {
                         'deviceType': dev.deviceType,
                         'deviceSerialNumber': dev.serialNumber,
                         'locale': 'de-DE', // TODO!!
-                        'customerId': this.ownerCustomerId
+                        'customerId': dev.deviceOwnerCustomerId
                     }
                 }
             };
@@ -1280,7 +1280,7 @@ class AlexaRemote extends EventEmitter {
         };
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceType":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceType":"${dev.deviceType}"`);
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceSerialNumber":"ALEXA_CURRENT_DSN"/g, `"deviceSerialNumber":"${dev.serialNumber}"`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${this.ownerCustomerId}"`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${dev.deviceOwnerCustomerId}"`);
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"locale":"ALEXA_CURRENT_LOCALE"/g, `"locale":"de-DE"`);
 
         this.httpsGet (`/api/behaviors/preview`,
@@ -1325,7 +1325,7 @@ class AlexaRemote extends EventEmitter {
             'deviceType': dev.deviceType,
             'deviceSerialNumber': dev.serialNumber,
             'locale': 'de-DE', // TODO!!
-            'customerId': this.ownerCustomerId,
+            'customerId': dev.deviceOwnerCustomerId,
             'musicProviderId': providerId,
             'searchPhrase': searchPhrase
         };
