@@ -55,7 +55,12 @@ Thank you for that work.
 
 ## Changelog:
 
-### 0.5.1 (2018-08-16)
+### 0.6.0 (2018-08-24)
+* (Apollon77) several fixes and optimizations
+* (Apollon77) enhance methods for smart home device and group handling
+
+
+### 0.5.2 (2018-08-16)
 * (Apollon77) also allow new reminder on next day :-)
 
 ### 0.5.0 (2018-08-16)

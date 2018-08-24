@@ -3,7 +3,7 @@
 /* jshint strict: false */
 /* jslint node: true */
 /* jslint esversion: 6 */
-"use strict";
+'use strict';
 
 const https = require('https');
 const querystring = require('querystring');
@@ -287,12 +287,12 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_DOPPLER_CONNECTION_CHANGE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "dopplerId": {
-                            "deviceSerialNumber": "c6c113ab49ff498185aa1ee5eb50cd73",
-                            "deviceType": "A3H674413M2EKB"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'dopplerId': {
+                            'deviceSerialNumber': 'c6c113ab49ff498185aa1ee5eb50cd73',
+                            'deviceType': 'A3H674413M2EKB'
                         },
-                        "dopplerConnectionState": "OFFLINE" / "ONLINE"
+                        'dopplerConnectionState': 'OFFLINE' / 'ONLINE'
                     }
                     */
                     this.emit('ws-device-connection-change', {
@@ -305,14 +305,14 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_BLUETOOTH_STATE_CHANGE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "dopplerId": {
-                            "deviceSerialNumber": "G090LF09643202VS",
-                            "deviceType": "A3S5BH2HU6VAYF"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'dopplerId': {
+                            'deviceSerialNumber': 'G090LF09643202VS',
+                            'deviceType': 'A3S5BH2HU6VAYF'
                         },
-                        "bluetoothEvent": "DEVICE_DISCONNECTED",
-                        "bluetoothEventPayload": null,
-                        "bluetoothEventSuccess": false/true
+                        'bluetoothEvent': 'DEVICE_DISCONNECTED',
+                        'bluetoothEventPayload': null,
+                        'bluetoothEventSuccess': false/true
                     }
                     */
                     this.emit('ws-bluetooth-state-change', {
@@ -327,15 +327,15 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_AUDIO_PLAYER_STATE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "mediaReferenceId": "2868373f-058d-464c-aac4-12e12aa58883:2",
-                        "dopplerId": {
-                            "deviceSerialNumber": "G090LF09643202VS",
-                            "deviceType": "A3S5BH2HU6VAYF"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'mediaReferenceId': '2868373f-058d-464c-aac4-12e12aa58883:2',
+                        'dopplerId': {
+                            'deviceSerialNumber': 'G090LF09643202VS',
+                            'deviceType': 'A3S5BH2HU6VAYF'
                         },
-                        "error": false,
-                        "audioPlayerState": "INTERRUPTED", / "FINISHED" / "PLAYING"
-                        "errorMessage": null
+                        'error': false,
+                        'audioPlayerState': 'INTERRUPTED', / 'FINISHED' / 'PLAYING'
+                        'errorMessage': null
                     }
                     */
                     this.emit('ws-audio-player-state-change', {
@@ -343,7 +343,7 @@ class AlexaRemote extends EventEmitter {
                         deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
                         deviceType: payload.dopplerId.deviceType,
                         mediaReferenceId: payload.mediaReferenceId,
-                        audioPlayerState: payload.audioPlayerState, //  "INTERRUPTED", / "FINISHED" / "PLAYING"
+                        audioPlayerState: payload.audioPlayerState, //  'INTERRUPTED', / 'FINISHED' / 'PLAYING'
                         error: payload.error,
                         errorMessage: payload.errorMessage
                     });
@@ -351,14 +351,14 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_MEDIA_QUEUE_CHANGE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "changeType": "NEW_QUEUE",
-                        "playBackOrder": null,
-                        "trackOrderChanged": false,
-                        "loopMode": null,
-                        "dopplerId": {
-                            "deviceSerialNumber": "G090LF09643202VS",
-                            "deviceType": "A3S5BH2HU6VAYF"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'changeType': 'NEW_QUEUE',
+                        'playBackOrder': null,
+                        'trackOrderChanged': false,
+                        'loopMode': null,
+                        'dopplerId': {
+                            'deviceSerialNumber': 'G090LF09643202VS',
+                            'deviceType': 'A3S5BH2HU6VAYF'
                         }
                     }
                     */
@@ -372,16 +372,34 @@ class AlexaRemote extends EventEmitter {
                         loopMode: payload.loopMode
                     });
                     return;
+                case 'PUSH_MEDIA_CHANGE':
+                    /*
+                    {
+                        'destinationUserId': 'A3NT1OXG4QHVPX',
+                        'mediaReferenceId': '71c4d721-0e94-4b3e-b912-e1f27fcebba1:1',
+                        'dopplerId': {
+                            'deviceSerialNumber': 'G000JN0573370K82',
+                            'deviceType': 'A1NL4BVLQ4L3N3'
+                        }
+                    }
+                    */
+                    this.emit('ws-media-change', {
+                        destinationUserId: payload.destinationUserId,
+                        deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
+                        deviceType: payload.dopplerId.deviceType,
+                        mediaReferenceId: payload.mediaReferenceId
+                    });
+                    return;
                 case 'PUSH_VOLUME_CHANGE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "dopplerId": {
-                            "deviceSerialNumber": "c6c113ab49ff498185aa1ee5eb50cd73",
-                            "deviceType": "A3H674413M2EKB"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'dopplerId': {
+                            'deviceSerialNumber': 'c6c113ab49ff498185aa1ee5eb50cd73',
+                            'deviceType': 'A3H674413M2EKB'
                         },
-                        "isMuted": false,
-                        "volumeSetting": 50
+                        'isMuted': false,
+                        'volumeSetting': 50
                     }
                     */
                     this.emit('ws-volume-change', {
@@ -395,13 +413,13 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_CONTENT_FOCUS_CHANGE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "clientId": "{value=Dee-Domain-Music}",
-                        "dopplerId": {
-                            "deviceSerialNumber": "G090LF09643202VS",
-                            "deviceType": "A3S5BH2HU6VAYF"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'clientId': '{value=Dee-Domain-Music}',
+                        'dopplerId': {
+                            'deviceSerialNumber': 'G090LF09643202VS',
+                            'deviceType': 'A3S5BH2HU6VAYF'
                         },
-                        "deviceComponent": "com.amazon.dee.device.capability.audioplayer.AudioPlayer"
+                        'deviceComponent': 'com.amazon.dee.device.capability.audioplayer.AudioPlayer'
                     }
                     */
                     this.emit('ws-content-focus-change', {
@@ -414,14 +432,14 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_EQUALIZER_STATE_CHANGE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "bass": 0,
-                        "treble": 0,
-                        "dopplerId": {
-                            "deviceSerialNumber": "G090LA09751707NU",
-                            "deviceType": "A2M35JJZWCQOMZ"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'bass': 0,
+                        'treble': 0,
+                        'dopplerId': {
+                            'deviceSerialNumber': 'G090LA09751707NU',
+                            'deviceType': 'A2M35JJZWCQOMZ'
                         },
-                        "midrange": 0
+                        'midrange': 0
                     }
                     */
                     this.emit('ws-equilizer-state-change', {
@@ -436,14 +454,14 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_NOTIFICATION_CHANGE':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "dopplerId": {
-                            "deviceSerialNumber": "G090LF09643202VS",
-                            "deviceType": "A3S5BH2HU6VAYF"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'dopplerId': {
+                            'deviceSerialNumber': 'G090LF09643202VS',
+                            'deviceType': 'A3S5BH2HU6VAYF'
                         },
-                        "eventType": "UPDATE",
-                        "notificationId": "d676d954-3c34-3559-83ac-606754ff6ec1",
-                        "notificationVersion": 2
+                        'eventType': 'UPDATE',
+                        'notificationId': 'd676d954-3c34-3559-83ac-606754ff6ec1',
+                        'notificationVersion': 2
                     }
                     */
                     this.emit('ws-notification-change', {
@@ -468,40 +486,40 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_ACTIVITY':
                     /*
                     {
-                        "destinationUserId": "A3NSX4MMJVG96V",
-                        "key": {
-                            "entryId": "1533932315288#A3S5BH2HU6VAYF#G090LF09643202VS",
-                            "registeredUserId": "A3NSX4MMJVG96V"
+                        'destinationUserId': 'A3NSX4MMJVG96V',
+                        'key': {
+                            'entryId': '1533932315288#A3S5BH2HU6VAYF#G090LF09643202VS',
+                            'registeredUserId': 'A3NSX4MMJVG96V'
                         },
-                        "timestamp": 1533932316865
+                        'timestamp': 1533932316865
                     }
 
                     {
-                        "_disambiguationId": null,
-                        "activityStatus": "SUCCESS", // DISCARDED_NON_DEVICE_DIRECTED_INTENT // FAULT
-                        "creationTimestamp": 1533932315288,
-                        "description": "{\"summary\":\"spiel Mike Oldfield von meine bibliothek\",\"firstUtteranceId\":\"TextClient:1.0/2018/08/10/20/G090LF09643202VS/18:35::TNIH_2V.cb0c133b-3f90-4f7f-a052-3d105529f423LPM\",\"firstStreamId\":\"TextClient:1.0/2018/08/10/20/G090LF09643202VS/18:35::TNIH_2V.cb0c133b-3f90-4f7f-a052-3d105529f423LPM\"}",
-                        "domainAttributes": "{\"disambiguated\":false,\"nBestList\":[{\"entryType\":\"PlayMusic\",\"mediaOwnerCustomerId\":\"A3NSX4MMJVG96V\",\"playQueuePrime\":false,\"marketplace\":\"A1PA6795UKMFR9\",\"imageURL\":\"https://album-art-storage-eu.s3.amazonaws.com/93fff3ba94e25a666e300facd1ede29bf84e6e17083dc7e60c6074a77de71a1e_256x256.jpg?response-content-type=image%2Fjpeg&x-amz-security-token=FQoGZXIvYXdzEP3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaDInhZqxchOhE%2FCQ3bSKrAWGE9OKTrShkN7rSKEYzYXH486T6c%2Bmcbru4RGEGu9Sq%2BL%2FpG5o2EWsHnRULSM4cpreC1KG%2BIfzo8nuskQk8fklDgIyrK%2B%2B%2BFUm7rxmTKWBjavbKQxEtrnQATgo7%2FghmztEmXC5r742uvyUyAjZcZ4chCezxa%2Fkbr00QTv1HX18Hj5%2FK4cgItr5Kyv2bfmFTZ2Jlvr8IbAQn0X0my1XpGJyjUuW8IGIPhqiCQyi627fbBQ%3D%3D&AWSAccessKeyId=ASIAZZLLX6KM4MGDNROA&Expires=1533935916&Signature=OozE%2FmJbIVVvK2CRhpa2VJPYudE%3D\",\"artistName\":\"Mike Oldfield\",\"serviceName\":\"CLOUD_PLAYER\",\"isAllSongs\":true,\"isPrime\":false}]}",
-                        "domainType": null,
-                        "feedbackAttributes": null,
-                        "id": "A3NSX4MMJVG96V#1533932315288#A3S5BH2HU6VAYF#G090LF09643202VS",
-                        "intentType": null,
-                        "providerInfoDescription": null,
-                        "registeredCustomerId": "A3NSX4MMJVG96V",
-                        "sourceActiveUsers": null,
-                        "sourceDeviceIds": [{
-                            "deviceAccountId": null,
-                            "deviceType": "A3S5BH2HU6VAYF",
-                            "serialNumber": "G090LF09643202VS"
+                        '_disambiguationId': null,
+                        'activityStatus': 'SUCCESS', // DISCARDED_NON_DEVICE_DIRECTED_INTENT // FAULT
+                        'creationTimestamp': 1533932315288,
+                        'description': '{\'summary\':\'spiel Mike Oldfield von meine bibliothek\',\'firstUtteranceId\':\'TextClient:1.0/2018/08/10/20/G090LF09643202VS/18:35::TNIH_2V.cb0c133b-3f90-4f7f-a052-3d105529f423LPM\',\'firstStreamId\':\'TextClient:1.0/2018/08/10/20/G090LF09643202VS/18:35::TNIH_2V.cb0c133b-3f90-4f7f-a052-3d105529f423LPM\'}',
+                        'domainAttributes': '{\'disambiguated\':false,\'nBestList\':[{\'entryType\':\'PlayMusic\',\'mediaOwnerCustomerId\':\'A3NSX4MMJVG96V\',\'playQueuePrime\':false,\'marketplace\':\'A1PA6795UKMFR9\',\'imageURL\':\'https://album-art-storage-eu.s3.amazonaws.com/93fff3ba94e25a666e300facd1ede29bf84e6e17083dc7e60c6074a77de71a1e_256x256.jpg?response-content-type=image%2Fjpeg&x-amz-security-token=FQoGZXIvYXdzEP3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaDInhZqxchOhE%2FCQ3bSKrAWGE9OKTrShkN7rSKEYzYXH486T6c%2Bmcbru4RGEGu9Sq%2BL%2FpG5o2EWsHnRULSM4cpreC1KG%2BIfzo8nuskQk8fklDgIyrK%2B%2B%2BFUm7rxmTKWBjavbKQxEtrnQATgo7%2FghmztEmXC5r742uvyUyAjZcZ4chCezxa%2Fkbr00QTv1HX18Hj5%2FK4cgItr5Kyv2bfmFTZ2Jlvr8IbAQn0X0my1XpGJyjUuW8IGIPhqiCQyi627fbBQ%3D%3D&AWSAccessKeyId=ASIAZZLLX6KM4MGDNROA&Expires=1533935916&Signature=OozE%2FmJbIVVvK2CRhpa2VJPYudE%3D\',\'artistName\':\'Mike Oldfield\',\'serviceName\':\'CLOUD_PLAYER\',\'isAllSongs\':true,\'isPrime\':false}]}',
+                        'domainType': null,
+                        'feedbackAttributes': null,
+                        'id': 'A3NSX4MMJVG96V#1533932315288#A3S5BH2HU6VAYF#G090LF09643202VS',
+                        'intentType': null,
+                        'providerInfoDescription': null,
+                        'registeredCustomerId': 'A3NSX4MMJVG96V',
+                        'sourceActiveUsers': null,
+                        'sourceDeviceIds': [{
+                            'deviceAccountId': null,
+                            'deviceType': 'A3S5BH2HU6VAYF',
+                            'serialNumber': 'G090LF09643202VS'
                         }],
-                        "utteranceId": "TextClient:1.0/2018/08/10/20/G090LF09643202VS/18:35::TNIH_2V.cb0c133b-3f90-4f7f-a052-3d105529f423LPM",
-                        "version": 1
+                        'utteranceId': 'TextClient:1.0/2018/08/10/20/G090LF09643202VS/18:35::TNIH_2V.cb0c133b-3f90-4f7f-a052-3d105529f423LPM',
+                        'version': 1
                     }
                     */
                     this.getActivities({size: 3, filter: false}, (err, res) => {
-                        let activity;
+                        let activity = null;
                         for (let i = 0; i < res.length; i++) {
-                            if (res[i].data.id.includes('#' + payload.key.entryId) && res[i].data.registeredCustomerId === payload.key.registeredUserId) {
+                            if (res[i].data.id.endsWith('#' + payload.key.entryId) && res[i].data.registeredCustomerId === payload.key.registeredUserId) {
                                 activity = res[i];
                                 break;
                             }
@@ -513,7 +531,6 @@ class AlexaRemote extends EventEmitter {
                         }
                         //this._options.logger && this._options.logger('Alexa-Remote: Activity found for id ' + payload.key.entryId + ': ' + JSON.stringify(activity));
 
-                        const entryArr = payload.key.entryId.split('#');
                         activity.destinationUserId = payload.destinationUserId;
                         this.emit('ws-device-activity', activity);
                     });
@@ -613,7 +630,7 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers.Origin;
         this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT') ? 'and data=' + flags.data : ''));
         let req = https.request(options, (res) => {
-            let body  = "";
+            let body  = '';
 
             res.on('data', (chunk) => {
                 body += chunk;
@@ -801,35 +818,35 @@ class AlexaRemote extends EventEmitter {
                 notification = extend(notification, value); // we combine the objects
                 /*
                 {
-                    "alarmTime": 0,
-                    "createdDate": 1522585752734,
-                    "deferredAtTime": null,
-                    "deviceSerialNumber": "G090LF09643202VS",
-                    "deviceType": "A3S5BH2HU6VAYF",
-                    "geoLocationTriggerData": null,
-                    "id": "A3S5BH2HU6VAYF-G090LF09643202VS-17ef9b04-cb1d-31ed-ab2c-245705d904be",
-                    "musicAlarmId": null,
-                    "musicEntity": null,
-                    "notificationIndex": "17ef9b04-cb1d-31ed-ab2c-245705d904be",
-                    "originalDate": "2018-04-01",
-                    "originalTime": "20:00:00.000",
-                    "provider": null,
-                    "recurringPattern": null,
-                    "remainingTime": 0,
-                    "reminderLabel": null,
-                    "sound": {
-                        "displayName": "Countertop",
-                        "folder": null,
-                        "id": "system_alerts_repetitive_04",
-                        "providerId": "ECHO",
-                        "sampleUrl": "https://s3.amazonaws.com/deeappservice.prod.notificationtones/system_alerts_repetitive_04.mp3"
+                    'alarmTime': 0,
+                    'createdDate': 1522585752734,
+                    'deferredAtTime': null,
+                    'deviceSerialNumber': 'G090LF09643202VS',
+                    'deviceType': 'A3S5BH2HU6VAYF',
+                    'geoLocationTriggerData': null,
+                    'id': 'A3S5BH2HU6VAYF-G090LF09643202VS-17ef9b04-cb1d-31ed-ab2c-245705d904be',
+                    'musicAlarmId': null,
+                    'musicEntity': null,
+                    'notificationIndex': '17ef9b04-cb1d-31ed-ab2c-245705d904be',
+                    'originalDate': '2018-04-01',
+                    'originalTime': '20:00:00.000',
+                    'provider': null,
+                    'recurringPattern': null,
+                    'remainingTime': 0,
+                    'reminderLabel': null,
+                    'sound': {
+                        'displayName': 'Countertop',
+                        'folder': null,
+                        'id': 'system_alerts_repetitive_04',
+                        'providerId': 'ECHO',
+                        'sampleUrl': 'https://s3.amazonaws.com/deeappservice.prod.notificationtones/system_alerts_repetitive_04.mp3'
                     },
-                    "status": "OFF",
-                    "timeZoneId": null,
-                    "timerLabel": null,
-                    "triggerTime": 0,
-                    "type": "Alarm",
-                    "version": "4"
+                    'status': 'OFF',
+                    'timeZoneId': null,
+                    'timerLabel': null,
+                    'triggerTime': 0,
+                    'type': 'Alarm',
+                    'version': '4'
                 }
                 */
                 break;
@@ -895,7 +912,7 @@ class AlexaRemote extends EventEmitter {
             method: 'PUT'
         };
         this.httpsGet (`/api/notifications/createReminder`, function(err, res) {
-                //  {"Message":null}
+                //  {'Message':null}
                 callback && callback(err, res);
             },
             flags
@@ -909,7 +926,7 @@ class AlexaRemote extends EventEmitter {
             method: 'PUT'
         };
         this.httpsGet (`/api/notifications/${notification.id}`, function(err, res) {
-                //  {"Message":null}
+                //  {'Message':null}
                 callback && callback(err, res);
             },
             flags
@@ -922,7 +939,7 @@ class AlexaRemote extends EventEmitter {
             method: 'DELETE'
         };
         this.httpsGet (`/api/notifications/${notification.id}`, function(err, res) {
-                //  {"Message":null}
+                //  {'Message':null}
                 callback && callback(err, res);
             },
             flags
@@ -1000,9 +1017,14 @@ class AlexaRemote extends EventEmitter {
                 for (let r = 0; r < result.activities.length; r++) {
                     let res = result.activities[r];
                     let o = {
-                        description: JSON.parse(res.description),
                         data: res
                     };
+                    try {
+                        o.description = JSON.parse(res.description);
+                    }
+                    catch (e) {
+                        o.description = res.description;
+                    }
                     if (!o.description) continue;
                     if (options.filter) {
                         o.description.summary = (o.description.summary || '').trim ();
@@ -1028,7 +1050,12 @@ class AlexaRemote extends EventEmitter {
 
                         o.creationTimestamp = res.creationTimestamp || null;
                         o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
-                        o.domainAttributes = res.domainAttributes ? JSON.parse(res.domainAttributes) : null;
+                        try {
+                            o.domainAttributes = res.domainAttributes ? JSON.parse(res.domainAttributes) : null;
+                        }
+                        catch(e) {
+                            o.domainAttributes = res.domainAttributes || null;
+                        }
                         if (o.description.summary || !options.filter) ret.push (o);
                     }
                 }
@@ -1234,30 +1261,30 @@ class AlexaRemote extends EventEmitter {
                         value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
                     }
                     value = value
-                        .replace(/Â|À|Å|Ã/g, "A")
-                        .replace(/á|â|à|å|ã/g, "a")
-                        .replace(/Ä/g, "Ae")
-                        .replace(/ä/g, "ae")
-                        .replace(/Ç/g, "C")
-                        .replace(/ç/g, "c")
-                        .replace(/É|Ê|È|Ë/g, "E")
-                        .replace(/é|ê|è|ë/g, "e")
-                        .replace(/Ó|Ô|Ò|Õ|Ø/g, "O")
-                        .replace(/ó|ô|ò|õ/g, "o")
-                        .replace(/Ö/g, "Oe")
-                        .replace(/ö/g, "oe")
-                        .replace(/Š/g, "S")
-                        .replace(/š/g, "s")
-                        .replace(/ß/g, "ss")
-                        .replace(/Ú|Û|Ù/g, "U")
-                        .replace(/ú|û|ù/g, "u")
-                        .replace(/Ü/g, "Ue")
-                        .replace(/ü/g, "ue")
-                        .replace(/Ý|Ÿ/g, "Y")
-                        .replace(/ý|ÿ/g, "y")
-                        .replace(/Ž/g, "Z")
-                        .replace(/ž/, "z")
-                        .replace(/&/, "und")
+                        .replace(/Â|À|Å|Ã/g, 'A')
+                        .replace(/á|â|à|å|ã/g, 'a')
+                        .replace(/Ä/g, 'Ae')
+                        .replace(/ä/g, 'ae')
+                        .replace(/Ç/g, 'C')
+                        .replace(/ç/g, 'c')
+                        .replace(/É|Ê|È|Ë/g, 'E')
+                        .replace(/é|ê|è|ë/g, 'e')
+                        .replace(/Ó|Ô|Ò|Õ|Ø/g, 'O')
+                        .replace(/ó|ô|ò|õ/g, 'o')
+                        .replace(/Ö/g, 'Oe')
+                        .replace(/ö/g, 'oe')
+                        .replace(/Š/g, 'S')
+                        .replace(/š/g, 's')
+                        .replace(/ß/g, 'ss')
+                        .replace(/Ú|Û|Ù/g, 'U')
+                        .replace(/ú|û|ù/g, 'u')
+                        .replace(/Ü/g, 'Ue')
+                        .replace(/ü/g, 'ue')
+                        .replace(/Ý|Ÿ/g, 'Y')
+                        .replace(/ý|ÿ/g, 'y')
+                        .replace(/Ž/g, 'Z')
+                        .replace(/ž/, 'z')
+                        .replace(/&/, 'und')
                         .replace(/[^-a-zA-Z0-9_,.?! ]/g,'')
                         .replace(/ /g,'_');
                     if (value.length === 0) {
@@ -1278,10 +1305,10 @@ class AlexaRemote extends EventEmitter {
             'sequenceJson': JSON.stringify(seqCommandObj),
             'status': 'ENABLED'
         };
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceType":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceType":"${dev.deviceType}"`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceSerialNumber":"ALEXA_CURRENT_DSN"/g, `"deviceSerialNumber":"${dev.serialNumber}"`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${dev.deviceOwnerCustomerId}"`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"locale":"ALEXA_CURRENT_LOCALE"/g, `"locale":"de-DE"`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'deviceType':'ALEXA_CURRENT_DEVICE_TYPE'/g, `'deviceType':'${dev.deviceType}'`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'deviceSerialNumber':'ALEXA_CURRENT_DSN'/g, `'deviceSerialNumber':'${dev.serialNumber}'`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'customerId':'ALEXA_CUSTOMER_ID'/g, `'customerId':'${dev.deviceOwnerCustomerId}'`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'locale':'ALEXA_CURRENT_LOCALE'/g, `'locale':'de-DE'`);
 
         this.httpsGet (`/api/behaviors/preview`,
             callback,
@@ -1310,7 +1337,7 @@ class AlexaRemote extends EventEmitter {
             callback,
             {
                 headers: {
-                    'Routines-Version': '1.1.207871'
+                    'Routines-Version': '1.1.208722'
                 }
             }
         );
@@ -1377,7 +1404,7 @@ class AlexaRemote extends EventEmitter {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 }
                 // Content-Type: application/x-www-form-urlencoded;
-                // charset=UTF-8",#\r\n
+                // charset=UTF-8',#\r\n
                 // Referer: https://alexa.amazon.de/spa/index.html'
             }
         );
@@ -1404,43 +1431,15 @@ class AlexaRemote extends EventEmitter {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 }
                 // Content-Type: application/x-www-form-urlencoded;
-                // charset=UTF-8",#\r\n
+                // charset=UTF-8',#\r\n
                 // Referer: https://alexa.amazon.de/spa/index.html'
             }
         );
     }
 
     setReminder(serialOrName, timestamp, label, callback) {
-        let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
-
-        let time = new Date(timestamp);
-        let o = {
-            type: '"Reminder',
-            status: "ON",
-            alarmTime: timestamp,
-            originalTime: `${_00 (time.getHours ())}:${_00 (time.getMinutes ())}:${_00 (time.getSeconds ())}.000`,
-            originalDate: `${time.getFullYear ()}-${_00 (time.getMonth () + 1)}.${_00 (time.getDay ())}`,
-            deviceSerialNumber: dev.serialNumber,
-            deviceType: dev.deviceType,
-            reminderLabel: label,
-            isSaveInFlight: true,
-            id: 'createReminder',
-            createdDate: new Date().getTime()
-        };
-        this.httpsGet (`/api/notifications/createReminder`,
-            callback,
-            {
-                method: 'PUT',
-                data: JSON.stringify (o),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                }
-                // Content-Type: application/x-www-form-urlencoded;
-                // charset=UTF-8",#\r\n
-                // Referer: https://alexa.amazon.de/spa/index.html'
-            }
-        );
+        const notification = this.createNotificationObject(serialOrName, 'Reminder', label, new Date(timestamp));
+        this.createNotification(notification, callback);
     }
 
     getHomeGroup(callback) {
@@ -1463,6 +1462,23 @@ class AlexaRemote extends EventEmitter {
             callback (err, res.locationDetails);
         });
     }
+
+    getSmarthomeGroups(callback) {
+        this.httpsGet ('https://alexa.amazon.de/api/phoenix/group?_=%t', callback);
+    }
+
+    getSmarthomeBehaviours(callback) {
+        this.httpsGet ('/api/behaviors/entities?skillId=amzn1.ask.1p.smarthome',
+            callback,
+            {
+                headers: {
+                    'Routines-Version': '1.1.208722'
+                }
+            }
+        );
+    }
+
+
 
     renameDevice(serialOrName, newName, callback) {
         let dev = this.find(serialOrName);
@@ -1492,12 +1508,20 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet (`https://alexa.amazon.de/api/phoenix/appliance/${smarthomeDevice}`, callback, flags);
     }
 
+    deleteSmarthomeGroup(smarthomeGroup, callback) {
+        let flags = {
+            method: 'DELETE'
+            //data: JSON.stringify (o),
+        };
+        this.httpsGet (`https://alexa.amazon.de/api/phoenix/group/${smarthomeGroup}`, callback, flags);
+    }
+
     deleteAllSmarthomeDevices(callback) {
         let flags = {
             method: 'DELETE'
             //data: JSON.stringify (o),
         };
-        this.httpsGet (`https://alexa.amazon.de/api/phoenix`, callback, flags);
+        this.httpsGet (`/api/phoenix`, callback, flags);
     }
 
     discoverSmarthomeDevice(callback) {
@@ -1505,8 +1529,105 @@ class AlexaRemote extends EventEmitter {
             method: 'POST'
             //data: JSON.stringify (o),
         };
-        this.httpsGet ('https://alexa.amazon.de/api/phoenix/discovery', callback, flags);
+        this.httpsGet ('/api/phoenix/discovery', callback, flags);
     }
+
+    querySmarthomeDevices(applicanceIds, entityType, callback) {
+        if (typeof entityType === 'function') {
+            callback = entityType;
+            entityType = 'APPLIANCE'; // other value 'GROUP'
+        }
+
+        let reqArr = [];
+        if (!Array.isArray(applicanceIds)) applicanceIds = [applicanceIds];
+        for (let id of applicanceIds) {
+            reqArr.push({
+                'entityId': id,
+                'entityType': entityType
+            });
+        }
+
+        let flags = {
+            method: 'POST',
+            data: JSON.stringify ({
+                'stateRequests': reqArr
+            })
+        };
+        this.httpsGet (`/api/phoenix/state`, callback, flags);
+        /*
+        {
+            'stateRequests': [
+                {
+                    'entityId': 'AAA_SonarCloudService_00:17:88:01:04:1D:4C:A0',
+                    'entityType': 'APPLIANCE'
+                }
+            ]
+        }
+        {
+        	'deviceStates': [],
+        	'errors': [{
+        		'code': 'ENDPOINT_UNREACHABLE',
+        		'data': null,
+        		'entity': {
+        			'entityId': 'AAA_SonarCloudService_00:17:88:01:04:1D:4C:A0',
+        			'entityType': ''
+        		},
+        		'message': null
+        	}]
+        }
+        */
+    }
+
+    executeSmarthomeDeviceAction(entityIds, parameters, entityType, callback) {
+        if (typeof entityType === 'function') {
+            callback = entityType;
+            entityType = 'APPLIANCE'; // other value 'GROUP'
+        }
+
+        let reqArr = [];
+        if (!Array.isArray(entityIds)) entityIds = [entityIds];
+        for (let id of entityIds) {
+            reqArr.push({
+                'entityId': id,
+                'entityType': entityType,
+                'parameters': parameters
+            });
+        }
+
+        let flags = {
+            method: 'PUT',
+            data: JSON.stringify ({
+                'controlRequests': reqArr
+            })
+        };
+        this.httpsGet (`/api/phoenix/state`, callback, flags);
+        /*
+        {
+            'controlRequests': [
+                {
+                    'entityId': 'bbd72582-4b16-4d1f-ab1b-28a9826b6799',
+                    'entityType':'APPLIANCE',
+                    'parameters':{
+                        'action':'turnOn'
+                    }
+                }
+            ]
+        }
+        {
+        	'controlResponses': [],
+        	'errors': [{
+        		'code': 'ENDPOINT_UNREACHABLE',
+        		'data': null,
+        		'entity': {
+        			'entityId': 'bbd72582-4b16-4d1f-ab1b-28a9826b6799',
+        			'entityType': 'APPLIANCE'
+        		},
+        		'message': null
+        	}]
+        }
+        */
+    }
+
 
     unpaireBluetooth(serialOrName, btAddress, callback) {
         let dev = this.find(serialOrName);
@@ -1516,7 +1637,7 @@ class AlexaRemote extends EventEmitter {
             method: 'POST',
             data: JSON.stringify ({
                 bluetoothDeviceAddress: btAddress,
-                bluetoothDeviceClass: "OTHER"
+                bluetoothDeviceClass: 'OTHER'
             })
         };
         this.httpsGet (`https://alexa.amazon.de/api/bluetooth/unpair-sink/${dev.deviceType}/${dev.serialNumber}`, callback, flags);
