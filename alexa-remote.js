@@ -1201,6 +1201,117 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
+    createSequenceNode(command, value, callback) {
+        const seqNode = {
+            '@type': 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode',
+            'operationPayload': {
+                'deviceType': 'ALEXA_CURRENT_DEVICE_TYPE',
+                'deviceSerialNumber': 'ALEXA_CURRENT_DSN',
+                'locale': 'ALEXA_CURRENT_LOCALE',
+                'customerId':'ALEXA_CUSTOMER_ID'
+            }
+        };
+        switch (command) {
+            case 'weather':
+                seqNode.type = 'Alexa.Weather.Play';
+                break;
+            case 'traffic':
+                seqNode.type = 'Alexa.Traffic.Play';
+                break;
+            case 'flashbriefing':
+                seqNode.type = 'Alexa.FlashBriefing.Play';
+                break;
+            case 'goodmorning':
+                seqNode.type = 'Alexa.GoodMorning.Play';
+                break;
+            case 'singasong':
+                seqNode.type = 'Alexa.SingASong.Play';
+                break;
+            case 'tellstory':
+                seqNode.type = 'Alexa.TellStory.Play';
+                break;
+            case 'volume':
+                seqNode.type = 'Alexa.DeviceControls.Volume';
+                value = ~~value;
+                if (value < 0 || value > 100) {
+                    return callback(new Error('Volume needs to be between 0 and 100'));
+                }
+                seqNode.operationPayload.value = value;
+                break;
+            case 'speak':
+                seqNode.type = 'Alexa.Speak';
+                if (typeof value !== 'string') value = String(value);
+                if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
+                    value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
+                }
+                value = value
+                    .replace(/Â|À|Å|Ã/g, 'A')
+                    .replace(/á|â|à|å|ã/g, 'a')
+                    .replace(/Ä/g, 'Ae')
+                    .replace(/ä/g, 'ae')
+                    .replace(/Ç/g, 'C')
+                    .replace(/ç/g, 'c')
+                    .replace(/É|Ê|È|Ë/g, 'E')
+                    .replace(/é|ê|è|ë/g, 'e')
+                    .replace(/Ó|Ô|Ò|Õ|Ø/g, 'O')
+                    .replace(/ó|ô|ò|õ/g, 'o')
+                    .replace(/Ö/g, 'Oe')
+                    .replace(/ö/g, 'oe')
+                    .replace(/Š/g, 'S')
+                    .replace(/š/g, 's')
+                    .replace(/ß/g, 'ss')
+                    .replace(/Ú|Û|Ù/g, 'U')
+                    .replace(/ú|û|ù/g, 'u')
+                    .replace(/Ü/g, 'Ue')
+                    .replace(/ü/g, 'ue')
+                    .replace(/Ý|Ÿ/g, 'Y')
+                    .replace(/ý|ÿ/g, 'y')
+                    .replace(/Ž/g, 'Z')
+                    .replace(/ž/, 'z')
+                    .replace(/&/, 'und')
+                    .replace(/[^-a-zA-Z0-9_,.?! ]/g,'')
+                    .replace(/ /g,'_');
+                if (value.length === 0) {
+                    return callback && callback(new Error('Can not speak empty string', null));
+                }
+                if (value.length > 250) {
+                    return callback && callback(new Error('text too long, limit are 250 characters', null));
+                }
+                seqNode.operationPayload.textToSpeak = value;
+                break;
+            default:
+                return;
+        }
+        return seqNode;
+    }
+
+    sendMultiSequenceCommand(serialOrName, commands, sequenceType, callback) {
+        if (typeof sequenceType === 'function') {
+            callback = sequenceType;
+            sequenceType = null;
+        }
+        if (!sequenceType) sequenceType = 'SerialNode'; // or ParallelNode
+
+        let nodes = [];
+        for (let command of commands) {
+            const commandNode = this.createSequenceNode(command.command, command.value, callback);
+            if (commandNode) nodes.push(commandNode);
+        }
+
+        const sequenceObj = {
+            'sequence': {
+                '@type': 'com.amazon.alexa.behaviors.model.Sequence',
+                'startNode': {
+                    '@type': 'com.amazon.alexa.behaviors.model.' + sequenceType,
+                    'name': null,
+                    'nodesToExecute': nodes
+                }
+            }
+        };
+
+        this.sendSequenceCommand(serialOrName, sequenceObj, callback);
+    }
+
     sendSequenceCommand(serialOrName, command, value, callback) {
         let dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
@@ -1217,87 +1328,8 @@ class AlexaRemote extends EventEmitter {
         else {
             seqCommandObj = {
                 '@type': 'com.amazon.alexa.behaviors.model.Sequence',
-                'startNode': {
-                    '@type': 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode',
-                    'operationPayload': {
-                        'deviceType': dev.deviceType,
-                        'deviceSerialNumber': dev.serialNumber,
-                        'locale': 'de-DE', // TODO!!
-                        'customerId': dev.deviceOwnerCustomerId
-                    }
-                }
+                'startNode': this.createSequenceNode(command, value)
             };
-            switch (command) {
-                case 'weather':
-                    seqCommandObj.startNode.type = 'Alexa.Weather.Play';
-                    break;
-                case 'traffic':
-                    seqCommandObj.startNode.type = 'Alexa.Traffic.Play';
-                    break;
-                case 'flashbriefing':
-                    seqCommandObj.startNode.type = 'Alexa.FlashBriefing.Play';
-                    break;
-                case 'goodmorning':
-                    seqCommandObj.startNode.type = 'Alexa.GoodMorning.Play';
-                    break;
-                case 'singasong':
-                    seqCommandObj.startNode.type = 'Alexa.SingASong.Play';
-                    break;
-                case 'tellstory':
-                    seqCommandObj.startNode.type = 'Alexa.TellStory.Play';
-                    break;
-                case 'volume':
-                    seqCommandObj.startNode.type = 'Alexa.DeviceControls.Volume';
-                    value = ~~value;
-                    if (value < 0 || value > 100) {
-                        return callback(new Error('Volume needs to be between 0 and 100'));
-                    }
-                    seqCommandObj.startNode.operationPayload.value = value;
-                    break;
-                case 'speak':
-                    seqCommandObj.startNode.type = 'Alexa.Speak';
-                    if (typeof value !== 'string') value = String(value);
-                    if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
-                        value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
-                    }
-                    value = value
-                        .replace(/Â|À|Å|Ã/g, 'A')
-                        .replace(/á|â|à|å|ã/g, 'a')
-                        .replace(/Ä/g, 'Ae')
-                        .replace(/ä/g, 'ae')
-                        .replace(/Ç/g, 'C')
-                        .replace(/ç/g, 'c')
-                        .replace(/É|Ê|È|Ë/g, 'E')
-                        .replace(/é|ê|è|ë/g, 'e')
-                        .replace(/Ó|Ô|Ò|Õ|Ø/g, 'O')
-                        .replace(/ó|ô|ò|õ/g, 'o')
-                        .replace(/Ö/g, 'Oe')
-                        .replace(/ö/g, 'oe')
-                        .replace(/Š/g, 'S')
-                        .replace(/š/g, 's')
-                        .replace(/ß/g, 'ss')
-                        .replace(/Ú|Û|Ù/g, 'U')
-                        .replace(/ú|û|ù/g, 'u')
-                        .replace(/Ü/g, 'Ue')
-                        .replace(/ü/g, 'ue')
-                        .replace(/Ý|Ÿ/g, 'Y')
-                        .replace(/ý|ÿ/g, 'y')
-                        .replace(/Ž/g, 'Z')
-                        .replace(/ž/, 'z')
-                        .replace(/&/, 'und')
-                        .replace(/[^-a-zA-Z0-9_,.?! ]/g,'')
-                        .replace(/ /g,'_');
-                    if (value.length === 0) {
-                        return callback && callback(new Error('Can not speak empty string', null));
-                    }
-                    if (value.length > 250) {
-                        return callback && callback(new Error('text too long, limit are 250 characters', null));
-                    }
-                    seqCommandObj.startNode.operationPayload.textToSpeak = value;
-                    break;
-                default:
-                    return;
-            }
         }
 
         const reqObj = {
@@ -1305,10 +1337,10 @@ class AlexaRemote extends EventEmitter {
             'sequenceJson': JSON.stringify(seqCommandObj),
             'status': 'ENABLED'
         };
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'deviceType':'ALEXA_CURRENT_DEVICE_TYPE'/g, `'deviceType':'${dev.deviceType}'`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'deviceSerialNumber':'ALEXA_CURRENT_DSN'/g, `'deviceSerialNumber':'${dev.serialNumber}'`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'customerId':'ALEXA_CUSTOMER_ID'/g, `'customerId':'${dev.deviceOwnerCustomerId}'`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/'locale':'ALEXA_CURRENT_LOCALE'/g, `'locale':'de-DE'`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceType":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceType":"${dev.deviceType}"`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceSerialNumber":"ALEXA_CURRENT_DSN"/g, `"deviceSerialNumber":"${dev.serialNumber}"`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${dev.deviceOwnerCustomerId}"`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"locale":"ALEXA_CURRENT_LOCALE"/g, `"locale":"de-DE"`);
 
         this.httpsGet (`/api/behaviors/preview`,
             callback,
@@ -1337,7 +1369,7 @@ class AlexaRemote extends EventEmitter {
             callback,
             {
                 headers: {
-                    'Routines-Version': '1.1.208722'
+                    'Routines-Version': '1.1.210292'
                 }
             }
         );
@@ -1467,17 +1499,27 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet ('https://alexa.amazon.de/api/phoenix/group?_=%t', callback);
     }
 
-    getSmarthomeBehaviours(callback) {
+    getSmarthomeEntities(callback) {
         this.httpsGet ('/api/behaviors/entities?skillId=amzn1.ask.1p.smarthome',
             callback,
             {
                 headers: {
-                    'Routines-Version': '1.1.208722'
+                    'Routines-Version': '1.1.210292'
                 }
             }
         );
     }
 
+    getSmarthomeBehaviourActionDefinitions(callback) {
+        this.httpsGet ('/api/behaviors/actionDefinitions?skillId=amzn1.ask.1p.smarthome',
+            callback,
+            {
+                headers: {
+                    'Routines-Version': '1.1.210292'
+                }
+            }
+        );
+    }
 
 
     renameDevice(serialOrName, newName, callback) {
