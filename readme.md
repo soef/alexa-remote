@@ -55,6 +55,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 1.0.0 (2018-09-06)
+* (Apollon77) polishing and finalization and make it 1.0.0
+
 ### 0.6.1 (2018-08-28)
 * (Apollon77) rework scenes and add option  to send Parallel or Sequencial commands
 * (Apollon77) enhance methods for smart home device and group handling

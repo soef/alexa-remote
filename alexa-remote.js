@@ -474,15 +474,6 @@ class AlexaRemote extends EventEmitter {
                     });
                     return;
 
-                /*
-                case 'PUSH_TODO_CHANGE':
-                case 'PUSH_LIST_ITEM_CHANGE':
-                case 'PUSH_LIST_CHANGE':
-
-                case 'PUSH_MICROPHONE_STATE':
-                case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
-                */
-
                 case 'PUSH_ACTIVITY':
                     /*
                     {
@@ -517,6 +508,7 @@ class AlexaRemote extends EventEmitter {
                     }
                     */
                     this.getActivities({size: 3, filter: false}, (err, res) => {
+                        if (err || !res) return;
                         let activity = null;
                         for (let i = 0; i < res.length; i++) {
                             if (res[i].data.id.endsWith('#' + payload.key.entryId) && res[i].data.registeredCustomerId === payload.key.registeredUserId) {
@@ -535,6 +527,14 @@ class AlexaRemote extends EventEmitter {
                         this.emit('ws-device-activity', activity);
                     });
                     return;
+                case 'PUSH_TODO_CHANGE':
+                case 'PUSH_LIST_ITEM_CHANGE':
+                case 'PUSH_LIST_CHANGE':
+
+                case 'PUSH_MICROPHONE_STATE':
+                case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
+                    break;
+
             }
 
             this.emit('ws-unknown-command', command, payload);
