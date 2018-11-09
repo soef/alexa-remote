@@ -38,8 +38,8 @@ alexa.init({
             console.log (err);
             return;
         }
-        for (let device of this.devices) {
-            console.log (device._name);
+        for (let deviceSerial of Object.keys(alexa.serialNumbers)) {
+            console.log (deviceSerial);
         }
     }
 );
@@ -54,6 +54,10 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### 1.0.1 (2018-11-09)
+* (Apollon77) upgrade amazon-cookie lib
+* (Apollon77) small fix for strange history summary content
 
 ### 1.0.0 (2018-09-06)
 * (Apollon77) polishing and finalization and make it 1.0.0

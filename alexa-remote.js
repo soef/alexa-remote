@@ -1023,7 +1023,12 @@ class AlexaRemote extends EventEmitter {
                         o.description = JSON.parse(res.description);
                     }
                     catch (e) {
-                        o.description = res.description;
+                        if (res.description) {
+                            o.description = {'summary': res.description};
+                        }
+                        else {
+                            return;
+                        }
                     }
                     if (!o.description) continue;
                     if (options.filter) {
