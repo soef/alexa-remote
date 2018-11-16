@@ -55,6 +55,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 1.0.2 (2018-11-17)
+* (Apollon77) upgrade amazon-cookie lib
+
 ### 1.0.1 (2018-11-09)
 * (Apollon77) upgrade amazon-cookie lib
 * (Apollon77) small fix for strange history summary content
