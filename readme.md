@@ -55,6 +55,10 @@ Thank you for that work.
 
 ## Changelog:
 
+### 1.0.3 (2018-11-17)
+* (Apollon77) upgrade amazon-cookie lib
+* (Apollon77) better handle ws errors and upgrade ws version to still support nodejs 6
+
 ### 1.0.2 (2018-11-17)
 * (Apollon77) upgrade amazon-cookie lib
 

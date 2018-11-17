@@ -34,26 +34,32 @@ class AlexaWsMqtt extends EventEmitter {
         let amazonPage = '.' + this._options.amazonPage;
         if (amazonPage === '.amazon.com') amazonPage = '-js.amazon.com'; // Special Handling for US!
         const url = `https://dp-gw-na${amazonPage}/?x-amz-device-type=ALEGCNGL9K0HM&x-amz-device-serial=${this.accountSerial}-${urlTime}`;
-        this.websocket = new WebSocket(url, [],
-            {
-                'perMessageDeflate': true,
-                'protocolVersion': 13,
+        try {
+            this.websocket = new WebSocket(url, [],
+                {
+                    'perMessageDeflate': true,
+                    'protocolVersion': 13,
 
-                'headers': {
-                    'Connection': 'keep-alive, Upgrade',
-                    'Upgrade': 'websocket',
-                    'Host': 'dp-gw-na.' + this._options.amazonPage,
-                    'Origin': 'https://alexa.' + this._options.amazonPage,
-                    'Pragma': 'no-cache',
-                    'Cache-Control': 'no-cache',
-                    //'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    //'Accept-Language': 'de,en-US;q=0.7,en;q=0.3',
-                    //'Sec-WebSocket-Key': 'aV/ud2q+G4pTtOhlt/Amww==',
-                    //'Sec-WebSocket-Extensions': 'permessage-deflate', // 'x-webkit-deflate-frame',
-                    //'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15G77 PitanguiBridge/2.2.219248.0-[HARDWARE=iPhone10_4][SOFTWARE=11.4.1]',
-                    'Cookie': this._options.cookie,
-                }
-            });
+                    'headers': {
+                        'Connection': 'keep-alive, Upgrade',
+                        'Upgrade': 'websocket',
+                        'Host': 'dp-gw-na.' + this._options.amazonPage,
+                        'Origin': 'https://alexa.' + this._options.amazonPage,
+                        'Pragma': 'no-cache',
+                        'Cache-Control': 'no-cache',
+                        //'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        //'Accept-Language': 'de,en-US;q=0.7,en;q=0.3',
+                        //'Sec-WebSocket-Key': 'aV/ud2q+G4pTtOhlt/Amww==',
+                        //'Sec-WebSocket-Extensions': 'permessage-deflate', // 'x-webkit-deflate-frame',
+                        //'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15G77 PitanguiBridge/2.2.219248.0-[HARDWARE=iPhone10_4][SOFTWARE=11.4.1]',
+                        'Cookie': this._options.cookie,
+                    }
+                });
+        }
+        catch (err) {
+            this.emit('error', err);
+            return;
+        }
         let msgCounter = 0;
         let initTimeout = null;
 
