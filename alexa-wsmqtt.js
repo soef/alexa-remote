@@ -8,12 +8,14 @@ const EventEmitter = require('events');
 
 class AlexaWsMqtt extends EventEmitter {
 
-    constructor(options) {
+    constructor(options, cookie) {
         super();
 
         this._options = options;
+        this.stop = false;
         let serialArr = null;
-        if (options.cookie) serialArr = options.cookie.match(/ubid-acbde=([^;]+);/);
+        this.cookie = cookie;
+        if (cookie) serialArr = cookie.match(/ubid-acbde=([^;]+);/);
         if (!serialArr || !serialArr[1]) {
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Cookie incomplete : ' + JSON.stringify(serialArr));
             return undefined;
@@ -52,7 +54,7 @@ class AlexaWsMqtt extends EventEmitter {
                         //'Sec-WebSocket-Key': 'aV/ud2q+G4pTtOhlt/Amww==',
                         //'Sec-WebSocket-Extensions': 'permessage-deflate', // 'x-webkit-deflate-frame',
                         //'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15G77 PitanguiBridge/2.2.219248.0-[HARDWARE=iPhone10_4][SOFTWARE=11.4.1]',
-                        'Cookie': this._options.cookie,
+                        'Cookie': this.cookie,
                     }
                 });
         }
@@ -100,11 +102,13 @@ class AlexaWsMqtt extends EventEmitter {
                 this.emit('disconnect', false, 'Cookie invalid');
                 return;
             }
-            if (this.errorRetryCounter > 10) {
+            if (this.stop) return;
+            if (this.errorRetryCounter > 100) {
                 this.emit('disconnect', false, 'Too many failed retries. Check cookie and data');
                 return;
             }
-            const retryDelay = this.errorRetryCounter * 60 + 5;
+            let retryDelay = this.errorRetryCounter * 60 + 5;
+            if (retryDelay > 3600) retryDelay = 3600;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Retry Connection in ' + retryDelay + 's');
             this.emit('disconnect', true, 'Retry Connection in ' + retryDelay + 's');
             this.reconnectTimeout = setTimeout(() => {
@@ -448,6 +452,7 @@ class AlexaWsMqtt extends EventEmitter {
 
     disconnect() {
         if (!this.websocket) return;
+        this.stop = true;
         this.websocket.close();
     }
 }

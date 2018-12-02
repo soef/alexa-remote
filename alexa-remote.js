@@ -22,7 +22,7 @@ function _00(val) {
 
 class AlexaRemote extends EventEmitter {
 
-    constructor(cookie, csrf) {
+    constructor() {
         super();
 
         this.serialNumbers = {};
@@ -31,22 +31,34 @@ class AlexaRemote extends EventEmitter {
         this.lastAuthCheck = null;
         this.cookie = null;
         this.csrf = null;
+        this.cookieData = null;
 
-        if (cookie) this.setCookie(cookie);
-        this.baseUrl = 'alexa.amazon.de'; //'layla.amazon.de';
+        this.baseUrl = 'alexa.amazon.de';
     }
 
-    setCookie(_cookie, _csrf) {
-        this.cookie = _cookie;
-        if (_csrf) {
-            this.csrf = _csrf;
-            return;
+    setCookie(_cookie) {
+        if (!_cookie) return;
+        if (typeof _cookie === 'string') {
+            this.cookie = _cookie;
         }
+        else if (_cookie && _cookie.cookie && typeof _cookie.cookie === 'string') {
+            this.cookie = _cookie.cookie;
+        }
+        else if (_cookie && _cookie.localCookie && typeof _cookie.localCookie === 'string') {
+            this.cookie = _cookie.localCookie;
+            this._options.formerRegistrationData = this.cookieData = _cookie;
+        }
+        else if (_cookie && _cookie.cookie && typeof _cookie.cookie === 'object') {
+            return this.setCookie(_cookie.cookie);
+        }
+
         let ar = this.cookie.match(/csrf=([^;]+)/);
         if (!ar || ar.length < 2) ar = this.cookie.match(/csrf=([^;]+)/);
         if (!this.csrf && ar && ar.length >= 2) {
             this.csrf = ar[1];
         }
+        this._options.csrf = this.csrf;
+        this._options.cookie = this.cookie;
     }
 
     init(cookie, callback) {
@@ -74,45 +86,77 @@ class AlexaRemote extends EventEmitter {
         if (this._options.alexaServiceHost) this.baseUrl = this._options.alexaServiceHost;
         this._options.logger && this._options.logger('Alexa-Remote: Use as Base-URL: ' + this.baseUrl);
         this._options.alexaServiceHost = this.baseUrl;
+        if (this._options.refreshCookieInterval !== 0) {
+            this._options.refreshCookieInterval = this._options.refreshCookieInterval || 7*24*60*1000; // Auto Refresh after 7 days
+        }
 
         const self = this;
         function getCookie(callback) {
-            if (!self._options.cookie) {
+            if (!self.cookie) {
                 self._options.logger && self._options.logger('Alexa-Remote: No cookie given, generate one');
                 self._options.cookieJustCreated = true;
                 self.generateCookie(self._options.email, self._options.password, function(err, res) {
                     if (!err && res) {
-                        cookie = res.cookie;
-                        self._options.csrf = res.csrf;
-                        self._options.cookie = res.cookie;
+                        self.setCookie(res); // update
                         self.alexaCookie.stopProxyServer();
                         return callback (null);
                     }
                     callback(err);
                 });
-                return;
             }
-            self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
-            callback(null);
+            else {
+                self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
+                if (self._options.formerRegistrationData) {
+                    const tokensValidSince = Date.now() - self._options.formerRegistrationData.tokenDate;
+                    if (tokensValidSince < 24 * 60 * 60 * 1000) {
+                        return callback(null);
+                    }
+                    self._options.logger && self._options.logger('Alexa-Remote: former registration data exist, try refresh');
+                    self.refreshCookie(function(err, res) {
+                        if (err || !res) {
+                            self._options.logger && self._options.logger('Alexa-Remote: Error from refreshing cookies');
+                            self.cookie = null;
+                            return getCookie(callback); // error on refresh
+                        }
+                        self.setCookie(res); // update
+                        return callback(null);
+                    });
+                }
+                else {
+                    callback(null);
+                }
+            }
         }
 
+        this.setCookie(cookie); // set initial cookie
         getCookie((err) => {
             if (typeof callback === 'function') callback = callback.bind(this);
             if (err) {
                 this._options.logger && this._options.logger('Alexa-Remote: Error from retrieving cookies');
                 return callback && callback(err);
             }
-            this.setCookie(cookie, this._options.csrf);
             if (!this.csrf) return callback && callback(new Error('no csrf found'));
             this.checkAuthentication((authenticated) => {
                 this._options.logger && this._options.logger('Alexa-Remote: Authentication checked: ' + authenticated);
                 if (! authenticated && !this._options.cookieJustCreated) {
-                    this._options.logger && this._options.logger('Alexa-Remote: Cookie was set, but authentication invalid, retry with email/password ...');
+                    this._options.logger && this._options.logger('Alexa-Remote: Cookie was set, but authentication invalid');
                     delete this._options.cookie;
                     delete this._options.csrf;
                     return this.init(this._options, callback);
                 }
                 this.lastAuthCheck = new Date().getTime();
+                if (this.cookieRefreshTimeout) {
+                    clearTimeout(this.cookieRefreshTimeout);
+                    this.cookieRefreshTimeout = null;
+                }
+                if (this._options.cookieRefreshInterval) {
+                    this.cookieRefreshTimeout = setTimeout(() => {
+                        this.cookieRefreshTimeout = null;
+                        this._options.cookie = this.cookieData;
+                        delete this._options.csrf;
+                        this.init(this._options, callback);
+                    }, this._options.cookieRefreshInterval);
+                }
                 this.prepare(() => {
                     if (this._options.useWsMqtt) {
                         this.initWsMqttConnection();
@@ -267,7 +311,12 @@ class AlexaRemote extends EventEmitter {
     }
 
     initWsMqttConnection() {
-        this.alexaWsMqtt = new AlexaWsMqtt(this._options);
+        if (this.alexaWsMqtt) {
+            this.alexaWsMqtt.removeAllListeners();
+            this.alexaWsMqtt.disconnect();
+            this.alexaWsMqtt = null;
+        }
+        this.alexaWsMqtt = new AlexaWsMqtt(this._options, this.cookie);
         if (!this.alexaWsMqtt) return;
 
         this.alexaWsMqtt.on('disconnect', (retries, msg) => {
@@ -543,9 +592,24 @@ class AlexaRemote extends EventEmitter {
         this.alexaWsMqtt.connect();
     }
 
+    stop() {
+        if (this.cookieRefreshTimeout) {
+            clearTimeout(this.cookieRefreshTimeout);
+            this.cookieRefreshTimeout = null;
+        }
+        if (this.alexaWsMqtt) {
+            this.alexaWsMqtt.disconnect();
+        }
+    }
+
     generateCookie(email, password, callback) {
         if (!this.alexaCookie) this.alexaCookie = require('alexa-cookie2');
         this.alexaCookie.generateAlexaCookie(email, password, this._options, callback);
+    }
+
+    refreshCookie(callback) {
+        if (!this.alexaCookie) this.alexaCookie = require('alexa-cookie2');
+        this.alexaCookie.refreshAlexaCookie(this._options, callback);
     }
 
     httpsGet(noCheck, path, callback, flags = {}) {
@@ -856,20 +920,20 @@ class AlexaRemote extends EventEmitter {
                     notification.alarmTime = value.getTime();
                     notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
                 }
-                else {
+                /*else {
                     //notification.remainingTime = value;
-                }
+                }*/
                 break;
             case 'date':
                 if (notification.type !== 'Timer') {
                     notification.alarmTime = value.getTime();
                     notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
                 }
-                else {
-                    /*let duration = value.getTime() - Date.now();
+                /*else {
+                    let duration = value.getTime() - Date.now();
                     if (duration < 0) duration = value.getTime();
-                    notification.remainingTime = duration;*/
-                }
+                    notification.remainingTime = duration;
+                }*/
                 break;
             case 'boolean':
                 notification.status = value ? 'ON' : 'OFF';
@@ -882,15 +946,15 @@ class AlexaRemote extends EventEmitter {
                     notification.alarmTime = date.getTime();
                     notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
                 }
-                else {
-                    /*let duration = 0;
+                /*else {
+                    let duration = 0;
                     let multi = 1;
                     for (let i = ar.length -1; i > 0; i--) {
                         duration += ar[i] * multi;
                         multi *= 60;
                     }
-                    notification.remainingTime = duration;*/
-                }
+                    notification.remainingTime = duration;
+                }*/
                 break;
         }
 

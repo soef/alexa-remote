@@ -12,38 +12,10 @@ Early code version.
 -->
 
 
-```js
-let Alexa = require('alexa-remote2');
-let alexa = new Alexa();
+## Example
 
-/***************************************************************/
-// see: https://www.gehrig.info/alexa/Alexa.html
-// cookie starts with x-amzn-dat and ends with =" csrf=12345780
-let cookie = 'x-amzn-dat.../ /...=" csrf=12345780';
+see example folder
 
-alexa.init({
-        cookie: cookie,  // cookie if already known, else can be generated using email/password
-        email: '...',    // optional, amazon email for login to get new cookie
-        password: '...', // optional, amazon password for login to get new cookie
-        bluetooth: true,
-        logger: console.log, // optional
-        alexaServiceHost: 'layla.amazon.de', // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
-        userAgent: '...', // optional, override used user-Agent for all Requests and Cookie determination
-        acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
-        amazonPage: '...', // optional, override Amazon-Login-Page for cookie determination and referer for requests
-        useWsMqtt: true // optional, true to use the Websocket/MQTT direct push connection
-    },
-    function (err) {
-        if (err) {
-            console.log (err);
-            return;
-        }
-        for (let deviceSerial of Object.keys(alexa.serialNumbers)) {
-            console.log (deviceSerial);
-        }
-    }
-);
-````
 
 ## Thanks:
 Partly based on [Amazon Alexa Remote Control](http://blog.loetzimmer.de/2017/10/amazon-alexa-hort-auf-die-shell-echo.html) (PLAIN shell) and [alexa-remote-control](https://github.com/thorsten-gehrig/alexa-remote-control) and [OpenHab-Addon](https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol)
@@ -54,6 +26,9 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### 2.0.0 (2018-12-02)
+* (Apollon77) upgrade amazon-cookie lib to 2.0
 
 ### 1.0.3 (2018-11-17)
 * (Apollon77) upgrade amazon-cookie lib
