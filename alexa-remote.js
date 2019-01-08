@@ -112,6 +112,7 @@ class AlexaRemote extends EventEmitter {
                         return callback(null);
                     }
                     self._options.logger && self._options.logger('Alexa-Remote: former registration data exist, try refresh');
+                    self._options.logger && self._options.logger(JSON.stringify(self._options.formerRegistrationData));
                     self.refreshCookie(function(err, res) {
                         if (err || !res) {
                             self._options.logger && self._options.logger('Alexa-Remote: Error from refreshing cookies');
@@ -1382,13 +1383,13 @@ class AlexaRemote extends EventEmitter {
     }
 
     sendSequenceCommand(serialOrName, command, value, callback) {
+        let dev = this.find(serialOrName);
+        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+
         if (typeof value === 'function') {
             callback = value;
             value = null;
         }
-
-        let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
 
         let seqCommandObj;
         if (typeof command === 'object') {
