@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.1.0 (2019-01-12)
+* (Apollon77) add new sequenceCommands "deviceStop", "notification", "announcement" and finally "ssml"
+
 ### 2.0.0 (2018-12-02)
 * (Apollon77) upgrade amazon-cookie lib to 2.0
 

@@ -1308,13 +1308,26 @@ class AlexaRemote extends EventEmitter {
                 }
                 seqNode.operationPayload.value = value;
                 break;
+            case 'deviceStop':
+                seqNode.type = 'Alexa.DeviceControls.Stop';
+                seqNode.operationPayload.devices = [
+                    {
+                        "deviceSerialNumber": "ALEXA_CURRENT_DSN",
+                        "deviceType": "ALEXA_CURRENT_DEVICE_TYPE"
+                    }
+                ]
+                seqNode.operationPayload.isAssociatedDevice = false;
+                delete seqNode.operationPayload.deviceType;
+                delete seqNode.operationPayload.deviceSerialNumber;
+                delete seqNode.operationPayload.locale;
+                break;
             case 'speak':
                 seqNode.type = 'Alexa.Speak';
                 if (typeof value !== 'string') value = String(value);
                 if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
                     value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
                 }
-                value = value
+                /*value = value
                     .replace(/Â|À|Å|Ã/g, 'A')
                     .replace(/á|â|à|å|ã/g, 'a')
                     .replace(/Ä/g, 'Ae')
@@ -1340,7 +1353,8 @@ class AlexaRemote extends EventEmitter {
                     .replace(/ž/, 'z')
                     .replace(/&/, 'und')
                     .replace(/[^-a-zA-Z0-9_,.?! ]/g,'')
-                    .replace(/ /g,'_');
+                    .replace(/ /g,'_');*/
+                value = value.replace(/[ ]+/g, ' ');
                 if (value.length === 0) {
                     return callback && callback(new Error('Can not speak empty string', null));
                 }
@@ -1348,6 +1362,64 @@ class AlexaRemote extends EventEmitter {
                     return callback && callback(new Error('text too long, limit are 250 characters', null));
                 }
                 seqNode.operationPayload.textToSpeak = value;
+                break;
+            case 'notification':
+                seqNode.type = 'Alexa.Notifications.SendMobilePush';
+                if (typeof value !== 'string') value = String(value);
+                if (value.length === 0) {
+                    return callback && callback(new Error('Can not notify empty string', null));
+                }
+                seqNode.operationPayload.notificationMessage = value;
+                seqNode.operationPayload.alexaUrl = '#v2/behaviors';
+                seqNode.operationPayload.title = 'ioBroker';
+                delete seqNode.operationPayload.deviceType;
+                delete seqNode.operationPayload.deviceSerialNumber;
+                delete seqNode.operationPayload.locale;
+                break;
+            case 'announcement':
+            case 'ssml':
+                seqNode.type = 'AlexaAnnouncement';
+                if (typeof value !== 'string') value = String(value);
+                if (command === 'announcement') {
+                    if (!this._options.amazonPage || !this._options.amazonPage.endsWith('.com')) {
+                        value = value.replace(/([^0-9]?[0-9]+)\.([0-9]+[^0-9])?/g, '$1,$2');
+                    }
+                    value = value.replace(/[ ]+/g, ' ');
+                    if (value.length === 0) {
+                        return callback && callback(new Error('Can not speak empty string', null));
+                    }
+                }
+                else if (command === 'ssml') {
+                    if (!value.startsWith('<speak>')) {
+                        return callback && callback(new Error('Vlue needs to be a valid SSML XML string', null));
+                    }
+                }
+                seqNode.operationPayload.expireAfter = 'PT5S';
+                seqNode.operationPayload.content = [
+                    {
+                        "locale": "de-DE",
+                        "display": {
+                            "title": "ioBroker",
+                            "body": value
+                        },
+                        "speak": {
+                            "type": (command === 'ssml') ? 'ssml' : 'text',
+                            "value": value
+                        }
+                    }
+                ];
+                seqNode.operationPayload.target = {
+                    "customerId": "ALEXA_CUSTOMER_ID",
+                    "devices": [
+                        {
+                            "deviceSerialNumber": "ALEXA_CURRENT_DSN",
+                            "deviceTypeId": "ALEXA_CURRENT_DEVICE_TYPE"
+                        }
+                    ]
+                }
+                delete seqNode.operationPayload.deviceType;
+                delete seqNode.operationPayload.deviceSerialNumber;
+                delete seqNode.operationPayload.locale;
                 break;
             default:
                 return;
@@ -1408,6 +1480,7 @@ class AlexaRemote extends EventEmitter {
             'status': 'ENABLED'
         };
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceType":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceType":"${dev.deviceType}"`);
+        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceTypeId":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceTypeId":"${dev.deviceType}"`);
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceSerialNumber":"ALEXA_CURRENT_DSN"/g, `"deviceSerialNumber":"${dev.serialNumber}"`);
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${dev.deviceOwnerCustomerId}"`);
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"locale":"ALEXA_CURRENT_LOCALE"/g, `"locale":"de-DE"`);
