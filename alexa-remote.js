@@ -1303,6 +1303,15 @@ class AlexaRemote extends EventEmitter {
             case 'tellstory':
                 seqNode.type = 'Alexa.TellStory.Play';
                 break;
+            case 'calendarToday':
+                seqNode.type = 'Alexa.Calendar.PlayToday';
+                break;
+            case 'calendarTomorrow':
+                seqNode.type = 'Alexa.Calendar.PlayTomorrow';
+                break;
+            case 'calendarNext':
+                seqNode.type = 'Alexa.Calendar.PlayNext';
+                break;
             case 'volume':
                 seqNode.type = 'Alexa.DeviceControls.Volume';
                 value = ~~value;
