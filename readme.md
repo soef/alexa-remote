@@ -27,6 +27,10 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.2.0 (2019-01-xx)
+* (Apollon77) add new sequenceCommands "calendarNext", "calendarToday", "calendarTomorrow"
+* (Apollon77) fix wake word handling and history sanitizing
+
 ### 2.1.0 (2019-01-12)
 * (Apollon77) add new sequenceCommands "deviceStop", "notification", "announcement" and finally "ssml"
 
