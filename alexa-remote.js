@@ -218,7 +218,7 @@ class AlexaRemote extends EventEmitter {
 
     initWakewords(callback) {
         this.getWakeWords((err, wakeWords) => {
-            if (err || !wakeWords || !Array.isArray(wakeWords)) return callback && callback();
+            if (err || !wakeWords || !Array.isArray(wakeWords.wakeWords)) return callback && callback();
 
             wakeWords.wakeWords.forEach((o) => {
                 let device = this.find(o.deviceSerialNumber);
@@ -1096,11 +1096,14 @@ class AlexaRemote extends EventEmitter {
                         }
                     }
                     if (!o.description) continue;
+                    o.description.summary = (o.description.summary || '').trim ();
                     if (options.filter) {
-                        o.description.summary = (o.description.summary || '').trim ();
                         switch (o.description.summary) {
                             case 'stopp':
                             case 'alexa':
+                            case 'echo':
+                            case 'computer':
+                            case 'amazon':
                             case ',':
                             case '':
                                 continue;
@@ -1110,8 +1113,8 @@ class AlexaRemote extends EventEmitter {
                         o.deviceSerialNumber = res.sourceDeviceIds[i].serialNumber;
                         if (!this.serialNumbers[o.deviceSerialNumber]) continue;
                         o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
-                        let wakeWord = this.serialNumbers[o.deviceSerialNumber];
-                        if (wakeWord) wakeWord = wakeWord.wakeWord;
+                        const dev = this.find(o.deviceSerialNumber);
+                        let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
                         if (wakeWord && o.description.summary.startsWith(wakeWord)) {
                             o.description.summary = o.description.summary.substr(wakeWord.length).trim();
                         }
@@ -1315,7 +1318,7 @@ class AlexaRemote extends EventEmitter {
                         "deviceSerialNumber": "ALEXA_CURRENT_DSN",
                         "deviceType": "ALEXA_CURRENT_DEVICE_TYPE"
                     }
-                ]
+                ];
                 seqNode.operationPayload.isAssociatedDevice = false;
                 delete seqNode.operationPayload.deviceType;
                 delete seqNode.operationPayload.deviceSerialNumber;
@@ -1416,7 +1419,7 @@ class AlexaRemote extends EventEmitter {
                             "deviceTypeId": "ALEXA_CURRENT_DEVICE_TYPE"
                         }
                     ]
-                }
+                };
                 delete seqNode.operationPayload.deviceType;
                 delete seqNode.operationPayload.deviceSerialNumber;
                 delete seqNode.operationPayload.locale;
