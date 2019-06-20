@@ -87,7 +87,7 @@ class AlexaRemote extends EventEmitter {
         this._options.logger && this._options.logger('Alexa-Remote: Use as Base-URL: ' + this.baseUrl);
         this._options.alexaServiceHost = this.baseUrl;
         if (this._options.refreshCookieInterval !== 0) {
-            this._options.refreshCookieInterval = this._options.refreshCookieInterval || 7*24*60*1000; // Auto Refresh after 7 days
+            this._options.refreshCookieInterval = this._options.refreshCookieInterval || 7*24*60*60*1000; // Auto Refresh after 7 days
         }
 
         const self = this;
@@ -438,6 +438,30 @@ class AlexaRemote extends EventEmitter {
                         deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
                         deviceType: payload.dopplerId.deviceType,
                         mediaReferenceId: payload.mediaReferenceId
+                    });
+                    return;
+                case 'PUSH_MEDIA_PROGRESS_CHANGE':
+                    /*
+                    {
+                        "destinationUserId": "A2Z2SH760RV43M",
+                        "progress": {
+                            "mediaProgress": 899459,
+                            "mediaLength": 0
+                        },
+                        "dopplerId": {
+                            "deviceSerialNumber": "G2A0V7048513067J",
+                            "deviceType": "A18O6U1UQFJ0XK"
+                        },
+                        "mediaReferenceId": "c4a72dbe-ef6b-42b7-8104-0766aa32386f:1"
+                    }
+                    */
+                    this.emit('ws-media-progress-change', {
+                        destinationUserId: payload.destinationUserId,
+                        deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
+                        deviceType: payload.dopplerId.deviceType,
+                        mediaReferenceId: payload.mediaReferenceId,
+                        mediaProgress: payload.progress.mediaProgress,
+                        mediaLength: payload.progress.mediaLength
                     });
                     return;
                 case 'PUSH_VOLUME_CHANGE':
@@ -1403,23 +1427,25 @@ class AlexaRemote extends EventEmitter {
                 }
                 else if (command === 'ssml') {
                     if (!value.startsWith('<speak>')) {
-                        return callback && callback(new Error('Vlue needs to be a valid SSML XML string', null));
+                        return callback && callback(new Error('Value needs to be a valid SSML XML string', null));
                     }
                 }
                 seqNode.operationPayload.expireAfter = 'PT5S';
                 seqNode.operationPayload.content = [
                     {
                         "locale": "de-DE",
-                        "display": {
-                            "title": "ioBroker",
-                            "body": value
-                        },
                         "speak": {
                             "type": (command === 'ssml') ? 'ssml' : 'text',
                             "value": value
                         }
                     }
                 ];
+                if (command !== 'ssml') {
+                    seqNode.operationPayload.content.display = {
+                        "title": "ioBroker",
+                        "body": value
+                    };
+                }
                 seqNode.operationPayload.target = {
                     "customerId": "ALEXA_CUSTOMER_ID",
                     "devices": [

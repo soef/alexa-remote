@@ -27,6 +27,13 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.3.0 (2019-06-20)
+* (Apollon77) use alexa-cookie lib 2.1 with latest adoptions to Amazon changes (Cookie CSRF was missing)
+* (Apollon77) fixed default cookie refresh interval
+* (Apollon77) When Speak via SSML is done this is not send as card value
+* (Apollon77) add PUSH_MEDIA_PROGRESS_CHANGE to known WS-MQTT topics
+* (Apollon77) change WS reconnection logic to try once per minute
+
 ### 2.2.0 (2019-01-xx)
 * (Apollon77) add new sequenceCommands "calendarNext", "calendarToday", "calendarTomorrow"
 * (Apollon77) fix wake word handling and history sanitizing

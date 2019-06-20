@@ -107,8 +107,8 @@ class AlexaWsMqtt extends EventEmitter {
                 this.emit('disconnect', false, 'Too many failed retries. Check cookie and data');
                 return;
             }
-            let retryDelay = this.errorRetryCounter * 60 + 5;
-            if (retryDelay > 3600) retryDelay = 3600;
+            let retryDelay = this.errorRetryCounter * 5 + 5;
+            if (retryDelay > 60) retryDelay = 60;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Retry Connection in ' + retryDelay + 's');
             this.emit('disconnect', true, 'Retry Connection in ' + retryDelay + 's');
             this.reconnectTimeout = setTimeout(() => {
