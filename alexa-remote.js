@@ -52,10 +52,15 @@ class AlexaRemote extends EventEmitter {
             return this.setCookie(_cookie.cookie);
         }
 
+        if (!this.cookie || typeof this.cookie !== 'string') return;
         let ar = this.cookie.match(/csrf=([^;]+)/);
         if (!ar || ar.length < 2) ar = this.cookie.match(/csrf=([^;]+)/);
         if (!this.csrf && ar && ar.length >= 2) {
             this.csrf = ar[1];
+        }
+        if (!this.csrf) {
+            this.cookie = null;
+            return;
         }
         this._options.csrf = this.csrf;
         this._options.cookie = this.cookie;

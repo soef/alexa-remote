@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.3.1 (2019-06-21)
+* (Apollon77) optimize handling for missing csrf cases
+
 ### 2.3.0 (2019-06-20)
 * (Apollon77) use alexa-cookie lib 2.1 with latest adoptions to Amazon changes (Cookie CSRF was missing)
 * (Apollon77) fixed default cookie refresh interval
