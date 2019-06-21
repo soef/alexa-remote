@@ -1439,18 +1439,16 @@ class AlexaRemote extends EventEmitter {
                 seqNode.operationPayload.content = [
                     {
                         "locale": "de-DE",
+                        "display": {
+                            "title": "ioBroker",
+                            "body": value.replace(/<[^>]+>/g, '')
+                        },
                         "speak": {
                             "type": (command === 'ssml') ? 'ssml' : 'text',
                             "value": value
                         }
                     }
                 ];
-                if (command !== 'ssml') {
-                    seqNode.operationPayload.content.display = {
-                        "title": "ioBroker",
-                        "body": value
-                    };
-                }
                 seqNode.operationPayload.target = {
                     "customerId": "ALEXA_CUSTOMER_ID",
                     "devices": [

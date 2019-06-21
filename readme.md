@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.3.2 (2019-06-21)
+* (Apollon77) fix ssml
+
 ### 2.3.1 (2019-06-21)
 * (Apollon77) optimize handling for missing csrf cases
 
