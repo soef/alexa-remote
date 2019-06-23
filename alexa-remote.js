@@ -142,7 +142,10 @@ class AlexaRemote extends EventEmitter {
                 return callback && callback(err);
             }
             if (!this.csrf) return callback && callback(new Error('no csrf found'));
-            this.checkAuthentication((authenticated) => {
+            this.checkAuthentication((authenticated, err) => {
+                if (err) {
+                    return callback && callback(new Error('Error while checking Authentication: ' + err));
+                }
                 this._options.logger && this._options.logger('Alexa-Remote: Authentication checked: ' + authenticated);
                 if (! authenticated && !this._options.cookieJustCreated) {
                     this._options.logger && this._options.logger('Alexa-Remote: Cookie was set, but authentication invalid');
@@ -654,26 +657,26 @@ class AlexaRemote extends EventEmitter {
             this._options.logger && this._options.logger('Alexa-Remote: No authentication check needed (time elapsed ' + (new Date().getTime() - this.lastAuthCheck) + ')');
             return this.httpsGetCall(path, callback, flags);
         }
-        this.checkAuthentication((authenticated) => {
+        this.checkAuthentication((authenticated, err) => {
             if (authenticated) {
                 this._options.logger && this._options.logger('Alexa-Remote: Authentication check successfull');
                 this.lastAuthCheck = new Date().getTime();
                 return this.httpsGetCall(path, callback, flags);
             }
-            if (this._options.email && this.options.password) {
-                this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error, but email and password, get new cookie');
-                delete this._options.csrf;
-                delete this._options.cookie;
-                this.init(this._options, function(err) {
-                    if (err) {
-                        this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error and renew unsuccessfull. STOP');
-                        return callback(new Error('Cookie invalid, Renew unsuccessfull'));
-                    }
-                    return this.httpsGet(path, callback, flags);
-                });
+            else if (err && authenticated === null) {
+                this._options.logger && this._options.logger('Alexa-Remote: Authentication check returned error: ' + err + '. Still try request');
+                return this.httpsGetCall(path, callback, flags);
             }
-            this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error and no email and password. STOP');
-            callback(new Error('Cookie invalid'));
+            this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error, try re-init');
+            delete this._options.csrf;
+            delete this._options.cookie;
+            this.init(this._options, function(err) {
+                if (err) {
+                    this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error and renew unsuccessfull. STOP');
+                    return callback(new Error('Cookie invalid, Renew unsuccessfull'));
+                }
+                return this.httpsGet(path, callback, flags);
+            });
         });
     }
 
@@ -751,7 +754,7 @@ class AlexaRemote extends EventEmitter {
         });
 
         req.on('error', function(e) {
-            if(typeof callback === 'function'/* && callback.length >= 2*/) {
+            if (typeof callback === 'function'/* && callback.length >= 2*/) {
                 return callback (e, null);
             }
         });
@@ -766,9 +769,12 @@ class AlexaRemote extends EventEmitter {
     checkAuthentication(callback) {
         this.httpsGetCall ('/api/bootstrap?version=0', function (err, res) {
             if (res && res.authentication && res.authentication.authenticated !== undefined) {
-                return callback(res.authentication.authenticated);
+                return callback(res.authentication.authenticated, err);
             }
-            return callback(false);
+            if (err) {
+                return callback(null, err);
+            }
+            callback(false, err);
         });
     }
 

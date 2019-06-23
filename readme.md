@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.3.3 (2019-06-23)
+* (Apollon77) change authentication check to hopefully better handle DNS or other "Network unavailable" errors
+
 ### 2.3.2 (2019-06-21)
 * (Apollon77) fix ssml
 
