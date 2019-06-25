@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.3.4 (2019-06-25)
+* (Apollon77) fix potential error on PUSH_MEDIA_PROGRESS_CHANGE push infos
+
 ### 2.3.3 (2019-06-23)
 * (Apollon77) change authentication check to hopefully better handle DNS or other "Network unavailable" errors
 

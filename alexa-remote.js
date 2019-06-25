@@ -468,8 +468,8 @@ class AlexaRemote extends EventEmitter {
                         deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
                         deviceType: payload.dopplerId.deviceType,
                         mediaReferenceId: payload.mediaReferenceId,
-                        mediaProgress: payload.progress.mediaProgress,
-                        mediaLength: payload.progress.mediaLength
+                        mediaProgress: payload.progress ? payload.progress.mediaProgress : null,
+                        mediaLength: payload.progress ? payload.progress.mediaLength : null
                     });
                     return;
                 case 'PUSH_VOLUME_CHANGE':
