@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.3.5 (2019-07-01)
+* (Apollon77) fix special case on authentication check
+
 ### 2.3.4 (2019-06-25)
 * (Apollon77) fix potential error on PUSH_MEDIA_PROGRESS_CHANGE push infos
 

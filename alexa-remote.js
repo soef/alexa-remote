@@ -771,7 +771,7 @@ class AlexaRemote extends EventEmitter {
             if (res && res.authentication && res.authentication.authenticated !== undefined) {
                 return callback(res.authentication.authenticated, err);
             }
-            if (err) {
+            if (err && !err.message.includes('no body')) {
                 return callback(null, err);
             }
             callback(false, err);
