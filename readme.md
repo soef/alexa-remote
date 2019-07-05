@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.3.6 (2019-07-05)
+* (Apollon77) fix (finally) special case on authentication check
+
 ### 2.3.5 (2019-07-01)
 * (Apollon77) fix special case on authentication check
 

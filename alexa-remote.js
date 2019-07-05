@@ -143,7 +143,7 @@ class AlexaRemote extends EventEmitter {
             }
             if (!this.csrf) return callback && callback(new Error('no csrf found'));
             this.checkAuthentication((authenticated, err) => {
-                if (err) {
+                if (err && authenticated === null) {
                     return callback && callback(new Error('Error while checking Authentication: ' + err));
                 }
                 this._options.logger && this._options.logger('Alexa-Remote: Authentication checked: ' + authenticated);
