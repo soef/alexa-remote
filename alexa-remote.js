@@ -151,6 +151,7 @@ class AlexaRemote extends EventEmitter {
                     this._options.logger && this._options.logger('Alexa-Remote: Cookie was set, but authentication invalid');
                     delete this._options.cookie;
                     delete this._options.csrf;
+                    delete this._options.localCookie;
                     return this.init(this._options, callback);
                 }
                 this.lastAuthCheck = new Date().getTime();
