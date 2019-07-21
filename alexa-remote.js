@@ -10,6 +10,7 @@ const querystring = require('querystring');
 const os = require('os');
 const extend = require('extend');
 const AlexaWsMqtt = require('./alexa-wsmqtt.js');
+const uuidv1 = require('uuid/v1');
 
 const EventEmitter = require('events');
 
@@ -1174,7 +1175,35 @@ class AlexaRemote extends EventEmitter {
     }
 
     getAccount(callback) {
-        this.httpsGet (`https://alexa-comms-mobile-service.amazon.com/accounts`, callback);
+        this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/accounts`, callback);
+    }
+
+    getContacts(options, callback) {
+        if (typeof options === 'function') {
+            callback = options;
+            options = undefined;
+        }
+        if (options === undefined) options = {};
+        if (options.includePreferencesByLevel === undefined) options.includePreferencesByLevel = 'HomeGroup';
+        if (options.includeNonAlexaContacts === undefined) options.includeNonAlexaContacts = true;
+        if (options.includeHomeGroupMembers === undefined) options.includeHomeGroupMembers = true;
+        if (options.bulkImportOnly === undefined) options.bulkImportOnly = false;
+        if (options.includeBlockStatus === undefined) options.includeBlockStatus = false;
+        if (options.dedupeMode === undefined) options.dedupeMode = 'RemoveCloudOnlyContactDuplicates';
+        if (options.homeGroupId === undefined) options.homeGroupId = '';
+
+        this.httpsGet (
+            `https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/contacts
+            ?includePreferencesByLevel=${options.includePreferencesByLevel}
+            &includeNonAlexaContacts=${options.includeNonAlexaContacts}
+            &includeHomeGroupMembers=${options.includeHomeGroupMembers}
+            &bulkImportOnly=${options.bulkImportOnly}
+            &includeBlockStatus=${options.includeBlockStatus}
+            &dedupeMode=${options.dedupeMode}
+            &homeGroupId=${options.homeGroupId}`,
+            function (err, result) {
+                callback (err, result);
+            });
     }
 
     getConversations(options, callback) {
@@ -1190,7 +1219,7 @@ class AlexaRemote extends EventEmitter {
         if (options.includeUserName === undefined) options.includeUserName = true;
 
         this.httpsGet (
-            `https://alexa-comms-mobile-service.amazon.com/users/${this.commsId}/conversations
+            `https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/conversations
             ?latest=${options.latest}
             &includeHomegroup=${options.includeHomegroup}
             &unread=${options.unread}
@@ -1611,26 +1640,46 @@ class AlexaRemote extends EventEmitter {
     }
 
     sendTextMessage(conversationId, text, callback) {
-        let o = {
+        // [{
+        // 	"conversationId": "amzn1.comms.messaging.id.conversationV2~e48ea7a9-b358-44fa-9be4-e45ae6a37c6a",
+        // 	"clientMessageId": "36772d6a-c2ba-4294-955f-afc3336a444c",
+        // 	"messageId": 1.001,
+        // 	"time": "2019-07-18T21:32:26.863Z",
+        // 	"sender": "amzn1.comms.id.person.amzn1~amzn1.account.AEQ4CW5IVBICJ5PQNYI5RYKBSDXQ",
+        // 	"type": "message/text",
+        // 	"payload": {
+        // 		"text": "Test atest"
+        // 	},
+        // 	"status": 1
+        // }]
+
+        let message = [{
+            conversationId: 'amzn1.comms.messaging.id.conversationV2~' + uuidv1(),
+            clientMessageId: uuidv1(),
+            messageId: 0.001,
+            time: new Date().toISOString(),
+            sender: this.commsId,
             type: 'message/text',
             payload: {
                 text: text
-            }
-        };
+            },
+            status: 1
+        }];
 
-        this.httpsGet (`https://alexa-comms-mobile-service.amazon.com/users/${this.commsId}/conversations/${conversationId}/messages`,
+        this.httpsGet(`https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/conversations/${conversationId}/messages`,
             callback,
             {
                 method: 'POST',
-                data: JSON.stringify (o),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                }
-                // Content-Type: application/x-www-form-urlencoded;
-                // charset=UTF-8',#\r\n
-                // Referer: https://alexa.amazon.de/spa/index.html'
+                data: JSON.stringify (message)
             }
         );
+    }
+
+    deleteConversation(conversationId, callback) {
+        let flags = {
+            method: 'DELETE'
+        };
+        this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/conversations/${conversationId}`, callback, flags);
     }
 
     setList(serialOrName, listType, value, callback) {
@@ -1666,7 +1715,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     getHomeGroup(callback) {
-        this.httpsGet (`https://alexa-comms-mobile-service.amazon.com/users/${this.commsId}/identities?includeUserName=true`, callback);
+        this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/identities?includeUserName=true`, callback);
     }
 
     getDevicePreferences(callback) {

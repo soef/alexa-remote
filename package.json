@@ -1,6 +1,6 @@
 {
   "name": "alexa-remote2",
-  "version": "2.3.7",
+  "version": "2.4.0",
   "description": "Remote Control for amazon echo devices",
   "author": {
     "name": "Apollon77",
@@ -29,7 +29,8 @@
     "https": "^1.0.0",
     "querystring": "^0.2.0",
     "ws": "^6.2.1",
-    "extend": "^3.0.2"
+    "extend": "^3.0.2",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "mocha": "^6.1.4",
