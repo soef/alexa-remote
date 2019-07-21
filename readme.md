@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.5.0 (2019-07-21)
+* (Apollon77) enhance announce/ssml to allow send to multiple devices using one command
+
 ### 2.4.0 (2019-07-21)
 * (Apollon77) Finalize methods and logix to send and read and delete messages and what's needed for this 
 

@@ -1339,12 +1339,23 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
-    createSequenceNode(command, value, callback) {
+    createSequenceNode(command, value, serialOrName, callback) {
+        if (typeof serialOrName === 'function') {
+            callback = serialOrName;
+            serialOrName = undefined;
+        }
+        let deviceSerialNumber = 'ALEXA_CURRENT_DSN';
+        let deviceType= 'ALEXA_CURRENT_DEVICE_TYPE';
+        if (serialOrName && !Array.isArray(serialOrName)) {
+            const currDevice = this.find(serialOrName);
+            deviceSerialNumber = currDevice.serialNumber;
+            deviceType = currDevice.deviceType;
+        }
         const seqNode = {
             '@type': 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode',
             'operationPayload': {
-                'deviceType': 'ALEXA_CURRENT_DEVICE_TYPE',
-                'deviceSerialNumber': 'ALEXA_CURRENT_DSN',
+                'deviceType': deviceType,
+                'deviceSerialNumber': deviceSerialNumber,
                 'locale': 'ALEXA_CURRENT_LOCALE',
                 'customerId':'ALEXA_CUSTOMER_ID'
             }
@@ -1389,8 +1400,8 @@ class AlexaRemote extends EventEmitter {
                 seqNode.type = 'Alexa.DeviceControls.Stop';
                 seqNode.operationPayload.devices = [
                     {
-                        "deviceSerialNumber": "ALEXA_CURRENT_DSN",
-                        "deviceType": "ALEXA_CURRENT_DEVICE_TYPE"
+                        "deviceSerialNumber": deviceSerialNumber,
+                        "deviceType": deviceType
                     }
                 ];
                 seqNode.operationPayload.isAssociatedDevice = false;
@@ -1489,11 +1500,23 @@ class AlexaRemote extends EventEmitter {
                     "customerId": "ALEXA_CUSTOMER_ID",
                     "devices": [
                         {
-                            "deviceSerialNumber": "ALEXA_CURRENT_DSN",
-                            "deviceTypeId": "ALEXA_CURRENT_DEVICE_TYPE"
+                            "deviceSerialNumber": deviceSerialNumber,
+                            "deviceTypeId": deviceType
                         }
                     ]
                 };
+                if (serialOrName && Array.isArray(serialOrName)) {
+                    seqNode.operationPayload.target.devices = [];
+                    serialOrName.forEach((deviceId) => {
+                        const currDevice = this.find(deviceId);
+                        if (!currDevice) return;
+                        seqNode.operationPayload.target.devices.push({
+                            "deviceSerialNumber": currDevice.serialNumber,
+                            "deviceTypeId": currDevice.deviceType
+                        });
+                    });
+                }
+
                 delete seqNode.operationPayload.deviceType;
                 delete seqNode.operationPayload.deviceSerialNumber;
                 delete seqNode.operationPayload.locale;
@@ -1513,7 +1536,7 @@ class AlexaRemote extends EventEmitter {
 
         let nodes = [];
         for (let command of commands) {
-            const commandNode = this.createSequenceNode(command.command, command.value, callback);
+            const commandNode = this.createSequenceNode(command.command, command.value, command.device ? command.device : serialOrName, callback);
             if (commandNode) nodes.push(commandNode);
         }
 
@@ -1532,7 +1555,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     sendSequenceCommand(serialOrName, command, value, callback) {
-        let dev = this.find(serialOrName);
+        let dev = this.find(Array.isArray(serialOrName) ? serialOrName[0] : serialOrName);
         if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
 
         if (typeof value === 'function') {
