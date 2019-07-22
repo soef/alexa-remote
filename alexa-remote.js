@@ -956,6 +956,9 @@ class AlexaRemote extends EventEmitter {
                 if (notification.type !== 'Timer') {
                     value = new Date(value);
                     notification.alarmTime = value.getTime();
+                    if (value.getTime() > new Date().getTime()) {
+                        notification.originalDate = `${value.getFullYear()}-${_00(value.getMonth() + 1)}-${_00(value.getDate())}`;
+                    }
                     notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
                 }
                 /*else {

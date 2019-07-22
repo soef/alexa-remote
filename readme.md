@@ -27,7 +27,10 @@ Thank you for that work.
 
 ## Changelog:
 
-### 2.5.0 (2019-07-21)
+### 2.5.3 (2019-07-22)
+* (Apollon77) also allow Reminders in Future >+1 day
+
+### 2.5.0/1 (2019-07-21)
 * (Apollon77) enhance announce/ssml to allow send to multiple devices using one command
 
 ### 2.4.0 (2019-07-21)
