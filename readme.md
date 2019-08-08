@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.5.4 (2019-08-08)
+* (Apollon77) make sure amazon domains are used as configured instead of "amazon.de" sometimes
+
 ### 2.5.3 (2019-07-22)
 * (Apollon77) also allow Reminders in Future >+1 day
 

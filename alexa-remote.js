@@ -1745,11 +1745,11 @@ class AlexaRemote extends EventEmitter {
     }
 
     getDevicePreferences(callback) {
-        this.httpsGet ('https://alexa.amazon.de/api/device-preferences?cached=true&_=%t', callback);
+        this.httpsGet ('/api/device-preferences?cached=true&_=%t', callback);
     }
 
     getSmarthomeDevices(callback) {
-        this.httpsGet ('https://alexa.amazon.de/api/phoenix?_=%t', function (err, res) {
+        this.httpsGet ('/api/phoenix?_=%t', function (err, res) {
             if (err || !res || !res.networkDetail) return callback(err, res);
             try {
                 res = JSON.parse(res.networkDetail);
@@ -1762,7 +1762,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     getSmarthomeGroups(callback) {
-        this.httpsGet ('https://alexa.amazon.de/api/phoenix/group?_=%t', callback);
+        this.httpsGet ('/api/phoenix/group?_=%t', callback);
     }
 
     getSmarthomeEntities(callback) {
@@ -1799,7 +1799,7 @@ class AlexaRemote extends EventEmitter {
             deviceType: dev.deviceType,
             //deviceOwnerCustomerId: oo.deviceOwnerCustomerId
         };
-        this.httpsGet (`https://alexa.amazon.de/api/devices-v2/device/${dev.serialNumber}`,
+        this.httpsGet (`/api/devices-v2/device/${dev.serialNumber}`,
             callback,
             {
                 method: 'PUT',
@@ -1813,7 +1813,7 @@ class AlexaRemote extends EventEmitter {
             method: 'DELETE'
             //data: JSON.stringify (o),
         };
-        this.httpsGet (`https://alexa.amazon.de/api/phoenix/appliance/${smarthomeDevice}`, callback, flags);
+        this.httpsGet (`/api/phoenix/appliance/${smarthomeDevice}`, callback, flags);
     }
 
     deleteSmarthomeGroup(smarthomeGroup, callback) {
@@ -1821,7 +1821,7 @@ class AlexaRemote extends EventEmitter {
             method: 'DELETE'
             //data: JSON.stringify (o),
         };
-        this.httpsGet (`https://alexa.amazon.de/api/phoenix/group/${smarthomeGroup}`, callback, flags);
+        this.httpsGet (`/api/phoenix/group/${smarthomeGroup}`, callback, flags);
     }
 
     deleteAllSmarthomeDevices(callback) {
@@ -1948,7 +1948,7 @@ class AlexaRemote extends EventEmitter {
                 bluetoothDeviceClass: 'OTHER'
             })
         };
-        this.httpsGet (`https://alexa.amazon.de/api/bluetooth/unpair-sink/${dev.deviceType}/${dev.serialNumber}`, callback, flags);
+        this.httpsGet (`/api/bluetooth/unpair-sink/${dev.deviceType}/${dev.serialNumber}`, callback, flags);
     }
 
     deleteDevice(serialOrName, callback) {
@@ -1961,7 +1961,7 @@ class AlexaRemote extends EventEmitter {
                 deviceType: dev.deviceType
             })
         };
-        this.httpsGet (`https://alexa.amazon.de/api/devices/device/${dev.serialNumber}?deviceType=${dev.deviceType}`, callback, flags);
+        this.httpsGet (`/api/devices/device/${dev.serialNumber}?deviceType=${dev.deviceType}`, callback, flags);
     }
 }
 
