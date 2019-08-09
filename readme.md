@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.5.5 (2019-08-09)
+* (Apollon77) user different mqtt regex to hopefully support other countries better
+
 ### 2.5.4 (2019-08-08)
 * (Apollon77) make sure amazon domains are used as configured instead of "amazon.de" sometimes
 

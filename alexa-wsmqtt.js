@@ -15,7 +15,7 @@ class AlexaWsMqtt extends EventEmitter {
         this.stop = false;
         let serialArr = null;
         this.cookie = cookie;
-        if (cookie) serialArr = cookie.match(/ubid-acbde=([^;]+);/);
+        if (cookie) serialArr = cookie.match(/ubid-[a-z]+=([^;]+);/);
         if (!serialArr || !serialArr[1]) {
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Cookie incomplete : ' + JSON.stringify(serialArr));
             return undefined;
