@@ -343,6 +343,9 @@ class AlexaRemote extends EventEmitter {
             this.emit('ws-unknown-message', incomingMsg);
         });
         this.alexaWsMqtt.on('command', (command, payload) => {
+			
+			this.emit('command', { 'command': command, 'payload': payload });
+			
             switch(command) {
                 case 'PUSH_DOPPLER_CONNECTION_CHANGE':
                     /*
@@ -611,10 +614,28 @@ class AlexaRemote extends EventEmitter {
                         this.emit('ws-device-activity', activity);
                     });
                     return;
-                case 'PUSH_TODO_CHANGE':
+				
+                case 'PUSH_TODO_CHANGE': // does not exist?
+                case 'PUSH_LIST_CHANGE': // does not exist?
                 case 'PUSH_LIST_ITEM_CHANGE':
-                case 'PUSH_LIST_CHANGE':
-
+					/*
+					{
+						destinationUserId:'A12XXXXXWISGT',
+						listId:'YW16bjEuYWNjb3VudC5BRzJGWEpGWE5DRDZNVzNRSUdFM0xLWkZCWFhRLVRBU0s=',
+						eventName:'itemCreated',
+						version:1,
+						listItemId:'c6852978-bb79-44dc-b7e5-8f5e577432cf'
+					}
+					*/
+					this.emit('ws-todo-change', {
+						destinationUserId: payload.destinationUserId,
+						eventType: payload.eventName, // itemCreated, itemUpdated (including checked ToDo), itemDeleted
+						listId: payload.listId,
+						listItemVersion: payload.version,
+						listItemId: payload.listItemId
+					});
+                    return;
+					
                 case 'PUSH_MICROPHONE_STATE':
                 case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
                     break;
@@ -683,6 +704,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     httpsGetCall(path, callback, flags = {}) {
+		
         let options = {
             host: this.baseUrl,
             path: '',
@@ -727,9 +749,10 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers['Content-Type'];
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
-        this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT') ? 'and data=' + flags.data : ''));
-        let req = https.request(options, (res) => {
-            let body  = '';
+        this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
+        
+		let req = https.request(options, (res) => {
+            let body  = '';
 
             res.on('data', (chunk) => {
                 body += chunk;
@@ -737,19 +760,22 @@ class AlexaRemote extends EventEmitter {
 
             res.on('end', () => {
                 let ret;
+				
                 if (typeof callback === 'function') {
-                    if (!body) {
+                    if (!body) { // Method 'DELETE' may return HTTP STATUS 200 without body
                         this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
-                        return callback/*.length >= 2*/ && callback(new Error('no body'), null);
+                        return res.statusCode.toString().substr(0,1) == '2' ? callback(null, { 'success': true }) : callback(new Error('no body'), null);
                     }
+					
                     try {
                         ret = JSON.parse(body);
                     } catch(e) {
                         this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
-                        if (callback/*.length >= 2*/) return callback (new Error('no JSON'), body);
+                        return callback (new Error('no JSON'), body);
                     }
+					
                     this._options.logger && this._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
-                    if (callback/*.length >= 2*/) return callback (null, ret);
+                    return callback (null, ret);
                     callback(ret);
                 }
             });
@@ -760,9 +786,11 @@ class AlexaRemote extends EventEmitter {
                 return callback (e, null);
             }
         });
+		
         if (flags && flags.data) {
             req.write(flags.data);
         }
+		
         req.end();
     }
 
@@ -812,42 +840,121 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet (`/api/np/player?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
     }
 
-    getList(serialOrName, listType, options, callback) {
-        let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+    getLists(callback) {
+        this.httpsGet ('/api/namedLists?_=%t', (err, res) => callback && callback(err, res && res.lists));
+	}
 
+    getList(listId, callback) {
+        this.httpsGet ('/api/namedLists/' + listId + '?_=%t', callback);
+	}
+	
+	/**
+	 * Get items from a list.
+	 *
+	 * @param {String} listId List ID to retrieve items from
+	 * @param {Object} [options] additional options to filter items
+	 * @param {String} [options.startTime] filter items regarding start time
+	 * @param {String} [options.endTime] filter items regarding end time
+	 * @param {String} [options.completed] filter items regarding completion
+	 * @param {String} [options.listIds] list IDs
+	 *
+	 */
+    getListItems(listId, options, callback) {
+		
+        // get function params
         if (typeof options === 'function') {
             callback = options;
             options = {};
         }
-        this.httpsGet (`
-            /api/todos?size=${options.size || 100}
-            &startTime=${options.startTime || ''}
-            &endTime=${options.endTime || ''}
-            &completed=${options.completed || false}
-            &type=${listType}
-            &deviceSerialNumber=${dev.serialNumber}
-            &deviceType=${dev.deviceType}
-            &_=%t`,
-            callback);
-    }
-
-    getLists(serialOrName, options, callback) {
-        let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
-
-        this.getList(dev, 'TASK', options, function(err, res) {
-            let ret = {};
-            if (!err && res) {
-                ret.tasks = res;
-            }
-            this.getList(dev, 'SHOPPING_ITEM', options, function(err, res) {
-                ret.shoppingItems = res;
-                callback && callback(null, ret);
-            });
-        });
-    }
-
+		
+		// get params by options
+		let params = '';
+		for (let option in options) {
+			params += '&' + option + '=' + options[option];	
+		}
+		
+		// send request
+        this.httpsGet ('/api/namedLists/' + listId + '/items?_=%t' + params, (err, res) => callback && callback(err, res && res.list));
+	}
+	
+	addListItem(listId, options, callback) {
+		
+        // get function params
+        if (typeof options === 'string') {
+            options = { 'value': options };
+        }
+		
+		// request options
+        let request = {
+			'method': 'POST',
+			'data': JSON.stringify({
+				'listId': listId,
+				'createdDateTime': new Date().getTime(),
+				'completed': false,
+				...options
+			})
+        };
+		
+		// send request
+        this.httpsGet ('/api/namedLists/' + listId + '/item', callback, request);
+	}
+	
+	updateListItem(listId, listItem, options, callback) {
+		
+		// providing a version is mandatory
+		if (typeof options !== 'object' || !options.version || !options.value) {
+			let errors = [];
+			
+			if (!options.version && callback) {
+				errors.push('Providing the current version via options is mandatory!');
+			}
+			
+			if (!options.value && callback) {
+				errors.push('Providing a new value (description) via options is mandatory!');
+			}
+			
+			callback && callback(errors);
+			return false;
+		}
+		
+		// request options
+        let request = {
+			'method': 'PUT',
+			'data': JSON.stringify({
+				'listId': listId,
+				'id': listItem,
+				'updatedDateTime': new Date().getTime(),
+				...options
+			})
+        };
+		
+		// send request
+        this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
+	}
+	
+	deleteListItem(listId, listItem, callback) {
+		
+		// data
+		let data = JSON.stringify({
+			'listId': listId,
+			'id': listItem,
+			'value': '' // must be provided, but value doesn't matter
+		});
+		
+		// request options
+        let request = {
+			'method': 'DELETE',
+			'data': data,
+			'headers': {
+				'Content-Type': 'application/json',
+				'Content-Length': data.length
+			}
+        };
+		
+		// send request
+        this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
+	}
+	
     getWakeWords(callback) {
         this.httpsGet (`/api/wake-word?_=%t`, callback);
     }
@@ -1706,33 +1813,6 @@ class AlexaRemote extends EventEmitter {
             method: 'DELETE'
         };
         this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/conversations/${conversationId}`, callback, flags);
-    }
-
-    setList(serialOrName, listType, value, callback) {
-        let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
-
-        let o = {
-            type: listType,
-            text: value,
-            createdDate: new Date().getTime(),
-            complete: false,
-            deleted: false
-        };
-
-        this.httpsGet (`/api/todos?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}`,
-            callback,
-            {
-                method: 'POST',
-                data: JSON.stringify (o),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                }
-                // Content-Type: application/x-www-form-urlencoded;
-                // charset=UTF-8',#\r\n
-                // Referer: https://alexa.amazon.de/spa/index.html'
-            }
-        );
     }
 
     setReminder(serialOrName, timestamp, label, callback) {
