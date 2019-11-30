@@ -1,6 +1,6 @@
 {
   "name": "alexa-remote2",
-  "version": "2.5.5",
+  "version": "2.6.0",
   "description": "Remote Control for amazon echo devices",
   "author": {
     "name": "Apollon77",
@@ -25,17 +25,14 @@
     "layla.amazon.de"
   ],
   "dependencies": {
-    "alexa-cookie2": "^2.1.0",
+    "alexa-cookie2": "^3.0.0",
     "https": "^1.0.0",
     "querystring": "^0.2.0",
     "ws": "^7.2.0",
     "extend": "^3.0.2",
-    "uuid": "^3.3.2"
+    "uuid": "^3.3.3"
   },
-  "devDependencies": {
-    "mocha": "^6.1.4",
-    "chai": "^4.2.0"
-  },
+  "devDependencies": {},
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha"
   },
