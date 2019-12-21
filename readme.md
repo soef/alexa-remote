@@ -27,9 +27,10 @@ Thank you for that work.
 
 ## Changelog:
 
-### 2.6.0 (2019-11-30)
+### 3.0.0 (2019-12-xx)
 * (Apollon77) dependency updates
 * (Zefau) add functionality for handling of lists
+* nodejs 8.x is minimum now!
 
 ### 2.5.5 (2019-08-09)
 * (Apollon77) user different mqtt regex to hopefully support other countries better

@@ -638,7 +638,7 @@ class AlexaRemote extends EventEmitter {
 					
                 case 'PUSH_MICROPHONE_STATE':
                 case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
-                    break;
+                    return;
 
             }
 
@@ -1226,57 +1226,56 @@ class AlexaRemote extends EventEmitter {
                 if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
 
                 let ret = [];
-                for (let r = 0; r < result.activities.length; r++) {
-                    let res = result.activities[r];
-                    let o = {
-                        data: res
-                    };
-                    try {
-                        o.description = JSON.parse(res.description);
-                    }
-                    catch (e) {
-                        if (res.description) {
-                            o.description = {'summary': res.description};
-                        }
-                        else {
-                            return;
-                        }
-                    }
-                    if (!o.description) continue;
-                    o.description.summary = (o.description.summary || '').trim ();
-                    if (options.filter) {
-                        switch (o.description.summary) {
-                            case 'stopp':
-                            case 'alexa':
-                            case 'echo':
-                            case 'computer':
-                            case 'amazon':
-                            case ',':
-                            case '':
-                                continue;
-                        }
-                    }
-                    for (let i = 0; i < res.sourceDeviceIds.length; i++) {
-                        o.deviceSerialNumber = res.sourceDeviceIds[i].serialNumber;
-                        if (!this.serialNumbers[o.deviceSerialNumber]) continue;
-                        o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
-                        const dev = this.find(o.deviceSerialNumber);
-                        let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
-                        if (wakeWord && o.description.summary.startsWith(wakeWord)) {
-                            o.description.summary = o.description.summary.substr(wakeWord.length).trim();
-                        }
-                        o.deviceType = res.sourceDeviceIds[i].deviceType || null;
-                        o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
-
-                        o.creationTimestamp = res.creationTimestamp || null;
-                        o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
+                if (result.activities) {
+                    for (let r = 0; r < result.activities.length; r++) {
+                        let res = result.activities[r];
+                        let o = {
+                            data: res
+                        };
                         try {
-                            o.domainAttributes = res.domainAttributes ? JSON.parse(res.domainAttributes) : null;
+                            o.description = JSON.parse(res.description);
+                        } catch (e) {
+                            if (res.description) {
+                                o.description = {'summary': res.description};
+                            } else {
+                                return;
+                            }
                         }
-                        catch(e) {
-                            o.domainAttributes = res.domainAttributes || null;
+                        if (!o.description) continue;
+                        o.description.summary = (o.description.summary || '').trim();
+                        if (options.filter) {
+                            switch (o.description.summary) {
+                                case 'stopp':
+                                case 'alexa':
+                                case 'echo':
+                                case 'computer':
+                                case 'amazon':
+                                case ',':
+                                case '':
+                                    continue;
+                            }
                         }
-                        if (o.description.summary || !options.filter) ret.push (o);
+                        for (let i = 0; i < res.sourceDeviceIds.length; i++) {
+                            o.deviceSerialNumber = res.sourceDeviceIds[i].serialNumber;
+                            if (!this.serialNumbers[o.deviceSerialNumber]) continue;
+                            o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
+                            const dev = this.find(o.deviceSerialNumber);
+                            let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
+                            if (wakeWord && o.description.summary.startsWith(wakeWord)) {
+                                o.description.summary = o.description.summary.substr(wakeWord.length).trim();
+                            }
+                            o.deviceType = res.sourceDeviceIds[i].deviceType || null;
+                            o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
+
+                            o.creationTimestamp = res.creationTimestamp || null;
+                            o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
+                            try {
+                                o.domainAttributes = res.domainAttributes ? JSON.parse(res.domainAttributes) : null;
+                            } catch (e) {
+                                o.domainAttributes = res.domainAttributes || null;
+                            }
+                            if (o.description.summary || !options.filter) ret.push(o);
+                        }
                     }
                 }
                 if (typeof callback === 'function') return callback (err, ret);
