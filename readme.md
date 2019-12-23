@@ -27,7 +27,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### 3.0.0 (2019-12-xx)
+### 3.0.0 (2019-12-24)
 * (Apollon77) dependency updates
 * (Zefau) add functionality for handling of lists
 * nodejs 8.x is minimum now!
