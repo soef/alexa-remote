@@ -5,3 +5,6 @@ node_modules
 .idea
 .github
 package-lock.json
+.gitattributes
+.travis.yml
+appveyor.yml
