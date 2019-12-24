@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 3.0.1 (2019-12-24)
+* (Apollon77) Prevent some errors, dependency update
+
 ### 3.0.0 (2019-12-24)
 * (Apollon77) dependency updates
 * (Zefau) add functionality for handling of lists
