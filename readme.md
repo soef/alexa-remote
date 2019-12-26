@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 3.0.2 (2019-12-26)
+* (Apollon77) Prevent some errors
+
 ### 3.0.1 (2019-12-24)
 * (Apollon77) Prevent some errors, dependency update
 

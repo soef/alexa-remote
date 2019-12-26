@@ -120,7 +120,7 @@ class AlexaWsMqtt extends EventEmitter {
         this.websocket.on('error', (error) => {
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Error: ' + error);
             this.emit('error', error);
-            this.websocket.terminate();
+            this.websocket && this.websocket.terminate();
         });
 
         this.websocket.on('unexpected-response', (request, response) => {
@@ -170,7 +170,7 @@ class AlexaWsMqtt extends EventEmitter {
                     this.pongTimeout = setTimeout(() => {
                         this.pongTimeout = null;
                         this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: No Pong received after 30s');
-                        this.websocket.close();
+                        this.websocket && this.websocket.close();
                     }, 30000);
                 }, 180000);
             }
