@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 3.0.3 (2019-12-28)
+* (Apollon77) update cookie lib
+
 ### 3.0.2 (2019-12-26)
 * (Apollon77) Prevent some errors
 
