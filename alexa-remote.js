@@ -10,7 +10,7 @@ const querystring = require('querystring');
 const os = require('os');
 const extend = require('extend');
 const AlexaWsMqtt = require('./alexa-wsmqtt.js');
-const uuidv1 = require('uuid/v1');
+const { v1: uuidv1 } = require('uuid');
 
 const EventEmitter = require('events');
 
@@ -92,8 +92,12 @@ class AlexaRemote extends EventEmitter {
         if (this._options.alexaServiceHost) this.baseUrl = this._options.alexaServiceHost;
         this._options.logger && this._options.logger('Alexa-Remote: Use as Base-URL: ' + this.baseUrl);
         this._options.alexaServiceHost = this.baseUrl;
-        if (this._options.refreshCookieInterval !== 0) {
-            this._options.refreshCookieInterval = this._options.refreshCookieInterval || 7*24*60*60*1000; // Auto Refresh after 7 days
+        if (this._options.refreshCookieInterval !== undefined && this._options.cookieRefreshInterval === undefined) {
+            this._options.cookieRefreshInterval = this._options.refreshCookieInterval;
+            delete this._options.refreshCookieInterval;
+        }
+        if (this._options.cookieRefreshInterval !== 0) {
+            this._options.cookieRefreshInterval = this._options.cookieRefreshInterval || 7*24*60*60*1000; // Auto Refresh after 7 days
         }
 
         const self = this;
@@ -264,7 +268,7 @@ class AlexaRemote extends EventEmitter {
                         this.names [name] = device;
                         this.names [name.toLowerCase()] = device;
                     }
-                    device._orig = JSON.parse(JSON.stringify(device));
+                    //device._orig = JSON.parse(JSON.stringify(device));
                     device._name = name;
                     device.sendCommand = this.sendCommand.bind(this, device);
                     device.setTunein = this.setTunein.bind(this, device);
@@ -329,6 +333,11 @@ class AlexaRemote extends EventEmitter {
         }
         this.alexaWsMqtt = new AlexaWsMqtt(this._options, this.cookie);
         if (!this.alexaWsMqtt) return;
+
+        this.activityUpdateQueue = [];
+        this.activityUpdateNotFoundCounter = 0;
+        this.activityUpdateTimeout = null;
+        this.activityUpdateRunning = false;
 
         this.alexaWsMqtt.on('disconnect', (retries, msg) => {
             this.emit('ws-disconnect', retries, msg);
@@ -594,25 +603,15 @@ class AlexaRemote extends EventEmitter {
                         'version': 1
                     }
                     */
-                    this.getActivities({size: 3, filter: false}, (err, res) => {
-                        if (err || !res) return;
-                        let activity = null;
-                        for (let i = 0; i < res.length; i++) {
-                            if (res[i].data.id.endsWith('#' + payload.key.entryId) && res[i].data.registeredCustomerId === payload.key.registeredUserId) {
-                                activity = res[i];
-                                break;
-                            }
-                        }
-
-                        if (!activity) {
-                            this._options.logger && this._options.logger('Alexa-Remote: Activity for id ' + payload.key.entryId + ' not found');
-                            return;
-                        }
-                        //this._options.logger && this._options.logger('Alexa-Remote: Activity found for id ' + payload.key.entryId + ': ' + JSON.stringify(activity));
-
-                        activity.destinationUserId = payload.destinationUserId;
-                        this.emit('ws-device-activity', activity);
-                    });
+                    this.activityUpdateQueue.push(payload);
+                    if (this.activityUpdateTimeout) {
+                        clearTimeout(this.activityUpdateTimeout);
+                        this.activityUpdateTimeout = null;
+                    }
+                    this.activityUpdateTimeout = setTimeout(() => {
+                        this.activityUpdateTimeout = null;
+                        this.getPushedActivities();
+                    }, 200);
                     return;
 				
                 case 'PUSH_TODO_CHANGE': // does not exist?
@@ -646,6 +645,56 @@ class AlexaRemote extends EventEmitter {
         });
 
         this.alexaWsMqtt.connect();
+    }
+
+    getPushedActivities() {
+        if (this.activityUpdateRunning || !this.activityUpdateQueue.length) return;
+        this.activityUpdateRunning = true;
+        this.getActivities({size: this.activityUpdateQueue.length + 2, filter: false}, (err, res) => {
+            this.activityUpdateRunning = false;
+            if (!err && res) {
+
+                let lastFoundQueueIndex = -1;
+                this.activityUpdateQueue.forEach((entry, queueIndex) => {
+                    const found = res.findIndex(activity => activity.data.id.endsWith('#' + entry.key.entryId) && activity.data.registeredCustomerId === entry.key.registeredUserId);
+
+                    if (found === -1) {
+                        this._options.logger && this._options.logger('Alexa-Remote: Activity for id ' + entry.key.entryId + ' not found');
+                    }
+                    else {
+                        lastFoundQueueIndex = queueIndex;
+                        const activity = res.splice(found, 1)[0];
+                        this._options.logger && this._options.logger('Alexa-Remote: Activity found ' + found + ' for Activity ID ' + entry.key.entryId);
+                        activity.destinationUserId = entry.destinationUserId;
+                        this.emit('ws-device-activity', activity);
+                    }
+                });
+
+                if (lastFoundQueueIndex === -1) {
+                    this._options.logger && this._options.logger('Alexa-Remote: No activities from stored ' + this.activityUpdateQueue.length + ' entries found in queue (' + this.activityUpdateNotFoundCounter + ')');
+                    this.activityUpdateNotFoundCounter++;
+                    if (this.activityUpdateNotFoundCounter > 2) {
+                        this._options.logger && this._options.logger('Alexa-Remote: Reset expected activities');
+                        this.activityUpdateQueue = [];
+                        this.activityUpdateNotFoundCounter = 0;
+                    }
+                }
+                else {
+                    this.activityUpdateNotFoundCounter = 0;
+                    this.activityUpdateQueue.splice(0, lastFoundQueueIndex + 1);
+                    this._options.logger && this._options.logger('Alexa-Remote: ' + this.activityUpdateQueue.length + ' entries left in activity queue');
+                }
+            }
+
+            if (this.activityUpdateQueue.length) {
+                this.activityUpdateTimeout = setTimeout(() => {
+                    this.activityUpdateTimeout = null;
+                    this.getPushedActivities();
+                }, 200);
+
+            }
+
+        });
     }
 
     stop() {
@@ -1501,7 +1550,7 @@ class AlexaRemote extends EventEmitter {
                 seqNode.type = 'Alexa.DeviceControls.Volume';
                 value = ~~value;
                 if (value < 0 || value > 100) {
-                    return callback(new Error('Volume needs to be between 0 and 100'));
+                    return callback && callback(new Error('Volume needs to be between 0 and 100'));
                 }
                 seqNode.operationPayload.value = value;
                 break;

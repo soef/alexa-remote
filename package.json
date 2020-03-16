@@ -1,10 +1,10 @@
 {
   "name": "alexa-remote2",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "description": "Remote Control for amazon echo devices",
   "author": {
     "name": "Apollon77",
-    "email": "ingo@fischer-ka.de"
+    "email": "iobroker@fischer-ka.de"
   },
   "contributors": [
     {
@@ -13,7 +13,7 @@
     },
     {
       "name": "Apollon77",
-      "email": "ingo@fischer-ka.de"
+      "email": "iobroker@fischer-ka.de"
     }
   ],
   "homepage": "https://github.com/Apollon77/alexa-remote",
@@ -25,12 +25,12 @@
     "layla.amazon.de"
   ],
   "dependencies": {
-    "alexa-cookie2": "^3.0.2",
+    "alexa-cookie2": "^3.0.3",
     "https": "^1.0.0",
     "querystring": "^0.2.0",
-    "ws": "^7.2.1",
+    "ws": "^7.2.3",
     "extend": "^3.0.2",
-    "uuid": "^3.3.3"
+    "uuid": "^7.0.2"
   },
   "devDependencies": {},
   "scripts": {

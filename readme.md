@@ -27,6 +27,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 3.1.0 (2019-12-30)
+* (Apollon77) remove device._orig because really big objects happened and got exceptions on deep copy using JSION.stringify 
+
 ### 3.0.3 (2019-12-28)
 * (Apollon77) update cookie lib
 
