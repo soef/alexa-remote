@@ -26,7 +26,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.2.0 (2020-06-16)
 * (Apollon77) Update Cookie Library to allow Proxy Signup again after Amazon changes
 * (hive) add new commands, jokes/facts/goodnight/cleanup
 * (hive) add new command curatedtts with allowed values ["goodbye", "confirmations", "goodmorning", "compliments", "birthday", "goodnight", "iamhome"] to play random curated sentences
