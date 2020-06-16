@@ -25,16 +25,19 @@
     "layla.amazon.de"
   ],
   "dependencies": {
-    "alexa-cookie2": "^3.0.3",
+    "alexa-cookie2": "^3.2.0",
     "https": "^1.0.0",
     "querystring": "^0.2.0",
-    "ws": "^7.2.3",
+    "ws": "^7.3.0",
     "extend": "^3.0.2",
-    "uuid": "^7.0.2"
+    "uuid": "^8.1.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@alcalzone/release-script": "^1.4.1"
+  },
   "scripts": {
-    "test": "node node_modules/mocha/bin/mocha"
+    "test": "node node_modules/mocha/bin/mocha",
+    "release": "release-script"
   },
   "repository": {
     "type": "git",

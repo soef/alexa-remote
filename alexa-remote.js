@@ -745,7 +745,7 @@ class AlexaRemote extends EventEmitter {
             this.init(this._options, function(err) {
                 if (err) {
                     this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error and renew unsuccessfull. STOP');
-                    return callback(new Error('Cookie invalid, Renew unsuccessfull'));
+                    return callback && callback(new Error('Cookie invalid, Renew unsuccessfull'));
                 }
                 return this.httpsGet(path, callback, flags);
             });
@@ -820,19 +820,22 @@ class AlexaRemote extends EventEmitter {
                         ret = JSON.parse(body);
                     } catch(e) {
                         this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
-                        return callback (new Error('no JSON'), body);
+                        callback && callback (new Error('no JSON'), body);
+                        callback = null;
+                        return;
                     }
 					
                     this._options.logger && this._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
-                    return callback (null, ret);
-                    callback(ret);
+                    callback (null, ret);
+                    callback = null;
                 }
             });
         });
 
         req.on('error', function(e) {
             if (typeof callback === 'function'/* && callback.length >= 2*/) {
-                return callback (e, null);
+                callback (e, null);
+                callback = null;
             }
         });
 		
@@ -1557,6 +1560,12 @@ class AlexaRemote extends EventEmitter {
                 break;
             case 'calendarNext':
                 seqNode.type = 'Alexa.Calendar.PlayNext';
+                break;
+            case 'curatedtts':
+                let supportedValues = ["goodbye", "confirmations", "goodmorning", "compliments", "birthday", "goodnight", "iamhome"];
+                if(!supportedValues.includes(value)) { return null }
+                seqNode.type = 'Alexa.CannedTts.Speak';
+                seqNode.operationPayload.cannedTtsStringId = `alexa.cannedtts.speak.curatedtts-category-${value}/alexa.cannedtts.speak.curatedtts-random`;
                 break;
             case 'volume':
                 seqNode.type = 'Alexa.DeviceControls.Volume';

@@ -66,6 +66,10 @@ class AlexaWsMqtt extends EventEmitter {
         let initTimeout = null;
 
         this.websocket.on('open', () => {
+            if (this.stop) {
+                this.websocket.close();
+                return;
+            }
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Open: ' + url);
             this.connectionActive = false;
 
@@ -455,7 +459,11 @@ class AlexaWsMqtt extends EventEmitter {
     disconnect() {
         if (!this.websocket) return;
         this.stop = true;
-        this.websocket.close();
+        try {
+            this.websocket.close();
+        } catch (e) {
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Disconnect error: ' +e);
+        }
     }
 }
 

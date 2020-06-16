@@ -1,4 +1,3 @@
-
 # alexa-remote2
 
 Library to remote control an Alexa (Amazon Echo) device via LAN/WLAN.
@@ -26,6 +25,11 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Update Cookie Library to allow Proxy Signup again after Amazon changes
+* (hive) add new commands, jokes/facts/goodnight/cleanup
+* (hive) add new command curatedtts with allowed values ["goodbye", "confirmations", "goodmorning", "compliments", "birthday", "goodnight", "iamhome"] to play random curated sentences
 
 ### 3.1.0 (2019-12-30)
 * (Apollon77) remove device._orig because really big objects happened and got exceptions on deep copy using JSION.stringify 
