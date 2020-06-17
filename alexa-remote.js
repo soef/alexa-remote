@@ -758,7 +758,7 @@ class AlexaRemote extends EventEmitter {
             host: this.baseUrl,
             path: '',
             method: 'GET',
-            timeout: 10000,
+            timeout: flags.timeout || 10000,
             headers: {
                 'User-Agent' : this._options.userAgent,
                 'Content-Type': 'application/json; charset=UTF-8',
@@ -813,12 +813,12 @@ class AlexaRemote extends EventEmitter {
                 if (typeof callback === 'function') {
                     if (!body) { // Method 'DELETE' may return HTTP STATUS 200 without body
                         this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
-                        return res.statusCode.toString().substr(0,1) == '2' ? callback(null, { 'success': true }) : callback(new Error('no body'), null);
+                        return typeof res.statusCode === 'number' && res.statusCode%100 === 2 ? callback(null, { 'success': true }) : callback(new Error('no body'), null);
                     }
 					
                     try {
                         ret = JSON.parse(body);
-                    } catch(e) {
+                    } catch (e) {
                         this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
                         callback && callback (new Error('no JSON'), body);
                         callback = null;
@@ -832,13 +832,30 @@ class AlexaRemote extends EventEmitter {
             });
         });
 
-        req.on('error', function(e) {
+        req.on('error', (e) => {
+            this._options.logger && this._options.logger('Alexa-Remote: Response: Error: ' + e);
             if (typeof callback === 'function'/* && callback.length >= 2*/) {
                 callback (e, null);
                 callback = null;
             }
         });
-		
+
+        req.on('timeout', () => {
+            if (typeof callback === 'function'/* && callback.length >= 2*/) {
+                this._options.logger && this._options.logger('Alexa-Remote: Response: Timeout');
+                callback (new Error('Timeout'), null);
+                callback = null;
+            }
+        });
+
+        req.on('close', () => {
+            if (typeof callback === 'function'/* && callback.length >= 2*/) {
+                this._options.logger && this._options.logger('Alexa-Remote: Response: Closed');
+                callback (new Error('COnnection Closed'), null);
+                callback = null;
+            }
+        });
+
         if (flags && flags.data) {
             req.write(flags.data);
         }
@@ -1534,9 +1551,6 @@ class AlexaRemote extends EventEmitter {
             case 'goodmorning':
                 seqNode.type = 'Alexa.GoodMorning.Play';
                 break;
-            case 'goodnight':
-                seqNode.type = 'Alexa.GoodNight.Play';
-                break;
             case 'funfact':
                 seqNode.type = 'Alexa.FunFact.Play';
                 break;
@@ -1907,6 +1921,8 @@ class AlexaRemote extends EventEmitter {
             }
             if (!res.locationDetails) return callback('locationDetails not found');
             callback (err, res.locationDetails);
+        }, {
+            timeout: 30000
         });
     }
 
@@ -1920,7 +1936,8 @@ class AlexaRemote extends EventEmitter {
             {
                 headers: {
                     'Routines-Version': '1.1.210292'
-                }
+                },
+                timeout: 30000
             }
         );
     }
@@ -1931,7 +1948,8 @@ class AlexaRemote extends EventEmitter {
             {
                 headers: {
                     'Routines-Version': '1.1.210292'
-                }
+                },
+                timeout: 30000
             }
         );
     }
