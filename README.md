@@ -26,6 +26,10 @@ Thank you for that work.
 
 ## Changelog:
 
+### 3.2.2 (2020-06-17)
+* (Apollon77) Optimize Request Handling to also Handle timeouts correctly
+* (Apollon77) Increase timeouts for some Smart Home calls to 30s
+
 ### 3.2.1 (2020-06-17)
 * (Apollon77) update amazon-cookie library: another optimization for Node.js 14
 
