@@ -26,6 +26,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 3.2.1 (2020-06-17)
+* (Apollon77) update amazon-cookie library: another optimization for Node.js 14
+
 ### 3.2.0 (2020-06-16)
 * (Apollon77) Update Cookie Library to allow Proxy Signup again after Amazon changes
 * (hive) add new commands, jokes/facts/goodnight/cleanup
