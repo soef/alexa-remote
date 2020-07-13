@@ -799,38 +799,48 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
         this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
-        
-		let req = https.request(options, (res) => {
-            let body  = '';
 
-            res.on('data', (chunk) => {
-                body += chunk;
-            });
+        let req;
+        try {
+            req = https.request(options, (res) => {
+                let body = '';
 
-            res.on('end', () => {
-                let ret;
-				
-                if (typeof callback === 'function') {
-                    if (!body) { // Method 'DELETE' may return HTTP STATUS 200 without body
-                        this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
-                        return typeof res.statusCode === 'number' && res.statusCode%100 === 2 ? callback(null, { 'success': true }) : callback(new Error('no body'), null);
-                    }
-					
-                    try {
-                        ret = JSON.parse(body);
-                    } catch (e) {
-                        this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
-                        callback && callback (new Error('no JSON'), body);
+                res.on('data', (chunk) => {
+                    body += chunk;
+                });
+
+                res.on('end', () => {
+                    let ret;
+
+                    if (typeof callback === 'function') {
+                        if (!body) { // Method 'DELETE' may return HTTP STATUS 200 without body
+                            this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
+                            return typeof res.statusCode === 'number' && res.statusCode % 100 === 2 ? callback(null, {'success': true}) : callback(new Error('no body'), null);
+                        }
+
+                        try {
+                            ret = JSON.parse(body);
+                        } catch (e) {
+                            this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
+                            callback && callback(new Error('no JSON'), body);
+                            callback = null;
+                            return;
+                        }
+
+                        this._options.logger && this._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
+                        callback(null, ret);
                         callback = null;
-                        return;
                     }
-					
-                    this._options.logger && this._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
-                    callback (null, ret);
-                    callback = null;
-                }
+                });
             });
-        });
+        } catch(err) {
+            this._options.logger && this._options.logger('Alexa-Remote: Response: Exception: ' + err);
+            if (typeof callback === 'function'/* && callback.length >= 2*/) {
+                callback (err, null);
+                callback = null;
+            }
+            return;
+        }
 
         req.on('error', (e) => {
             this._options.logger && this._options.logger('Alexa-Remote: Response: Error: ' + e);

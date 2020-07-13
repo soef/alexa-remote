@@ -26,6 +26,11 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) update amazon-cookie library to work around amazon security changes
+* (Apollon77) Prevent crash on invalid data in request data (Sentry IOBROKER-ALEXA2-1A)
+* (Apollon77) Make sure to handle invalid list responses correctly (Sentry IOBROKER-ALEXA2-1T)
+
 ### 3.2.2 (2020-06-17)
 * (Apollon77) Optimize Request Handling to also Handle timeouts correctly
 * (Apollon77) Increase timeouts for some Smart Home calls to 30s

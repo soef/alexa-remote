@@ -25,12 +25,12 @@
     "layla.amazon.de"
   ],
   "dependencies": {
-    "alexa-cookie2": "^3.2.1",
+    "alexa-cookie2": "^3.3.0",
     "https": "^1.0.0",
     "querystring": "^0.2.0",
     "ws": "^7.3.1",
     "extend": "^3.0.2",
-    "uuid": "^8.1.0"
+    "uuid": "^8.2.0"
   },
   "devDependencies": {
     "@alcalzone/release-script": "^1.6.0"
