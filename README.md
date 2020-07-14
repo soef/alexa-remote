@@ -26,6 +26,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) update amazon-cookie library: Another try to work around Amazon changes
+
 ### 3.2.3 (2020-07-13)
 * (Apollon77) update amazon-cookie library to work around amazon security changes
 * (Apollon77) Prevent crash on invalid data in request data (Sentry IOBROKER-ALEXA2-1A)
