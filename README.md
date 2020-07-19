@@ -26,6 +26,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) update amazon-cookie library again to optimize upgrades from earlier versions
+
 ### 3.2.6 (2020-07-16)
 * (Apollon77) update amazon-cookie library: Another try to work around Amazon changes
 
