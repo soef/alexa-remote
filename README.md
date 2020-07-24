@@ -26,6 +26,10 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) Update cookie lib to maybe be more backward compatible if login/baseUrl was changed
+* (Apollon77) Increase timeout when reading routines 
+
 ### 3.3.0 (2020-07-19)
 * (Apollon77) update amazon-cookie library again to optimize upgrades from earlier versions
 

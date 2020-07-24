@@ -1803,7 +1803,9 @@ class AlexaRemote extends EventEmitter {
             limit = 0;
         }
         limit = limit || 2000;
-        this.httpsGet (`/api/behaviors/automations?limit=${limit}`, callback);
+        this.httpsGet (`/api/behaviors/automations?limit=${limit}`, callback, {
+            timeout: 30000
+        });
     }
 
     executeAutomationRoutine(serialOrName, routine, callback) {
