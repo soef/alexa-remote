@@ -26,7 +26,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.3.1 (2020-07-24)
 * (Apollon77) Update cookie lib to maybe be more backward compatible if login/baseUrl was changed
 * (Apollon77) Increase timeout when reading routines 
 
