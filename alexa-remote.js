@@ -637,6 +637,7 @@ class AlexaRemote extends EventEmitter {
 					
                 case 'PUSH_MICROPHONE_STATE':
                 case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
+                case 'PUSH_DEVICE_SETUP_STATE_CHANGE':
                     return;
 
             }

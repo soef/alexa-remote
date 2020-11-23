@@ -26,6 +26,11 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) handle potential crash case (Sentry IOBROKER-ALEXA2-27)
+* (Apollon77) also ignore PUSH_DEVICE_SETUP_STATE_CHANGE push messages
+* (Apollon77) Optimize WSMQTT Reconnection handling for timeout cases 
+
 ### 3.3.1 (2020-07-24)
 * (Apollon77) Update cookie lib to maybe be more backward compatible if login/baseUrl was changed
 * (Apollon77) Increase timeout when reading routines 

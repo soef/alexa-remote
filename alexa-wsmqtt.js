@@ -42,6 +42,8 @@ class AlexaWsMqtt extends EventEmitter {
                     'perMessageDeflate': true,
                     'protocolVersion': 13,
 
+                    'timeout': 5000,
+
                     'headers': {
                         'Connection': 'keep-alive, Upgrade',
                         'Upgrade': 'websocket',
@@ -65,27 +67,7 @@ class AlexaWsMqtt extends EventEmitter {
         let msgCounter = 0;
         let initTimeout = null;
 
-        this.websocket.on('open', () => {
-            if (this.stop) {
-                this.websocket.close();
-                return;
-            }
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Open: ' + url);
-            this.connectionActive = false;
-
-            initTimeout = setTimeout(() => {
-                this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization not done within 30s');
-                this.websocket.close();
-            }, 30000);
-
-            // tell Tuning Service that we support "A:H" protocol = AlphaPrococol
-            const msg = Buffer.from('0x99d4f71a 0x0000001d A:HTUNE');
-            //console.log('SEND: ' + msg.toString('ascii'));
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization Msg 1 sent');
-            this.websocket.send(msg);
-        });
-
-        this.websocket.on('close', (code, reason) => {
+        const onWebsocketClose = (code, reason) => {
             this.websocket = null;
             this.connectionActive = false;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Close: ' + code + ': ' + reason);
@@ -117,11 +99,41 @@ class AlexaWsMqtt extends EventEmitter {
             let retryDelay = Math.min(60, (this.errorRetryCounter * 5) + 5);
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Retry Connection in ' + retryDelay + 's');
             this.emit('disconnect', true, 'Retry Connection in ' + retryDelay + 's');
+            this.reconnectTimeout && clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = setTimeout(() => {
                 this.reconnectTimeout = null;
                 this.connect();
             }, retryDelay * 1000);
+        };
+
+        initTimeout = setTimeout(() => {
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization not done within 30s');
+            try {
+                this.websocket && this.websocket.close();
+            } catch (err) {
+                //just make sure
+            }
+            if (this.websocket || !this.reconnectTimeout) { // seems no close was emmitted so far?!
+                onWebsocketClose();
+            }
+        }, 30000);
+
+        this.websocket.on('open', () => {
+            if (this.stop) {
+                this.websocket.close();
+                return;
+            }
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Open: ' + url);
+            this.connectionActive = false;
+
+            // tell Tuning Service that we support "A:H" protocol = AlphaPrococol
+            const msg = Buffer.from('0x99d4f71a 0x0000001d A:HTUNE');
+            //console.log('SEND: ' + msg.toString('ascii'));
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization Msg 1 sent');
+            this.websocket.send(msg);
         });
+
+        this.websocket.on('close', onWebsocketClose);
 
         this.websocket.on('error', (error) => {
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Error: ' + error);
@@ -200,7 +212,7 @@ class AlexaWsMqtt extends EventEmitter {
                 this.connectionActive = true;
                 return;
             }
-            else if (message.content.payload) {
+            else if (message.content && message.content.payload) {
                 let command = message.content.payload.command;
                 let payload = message.content.payload.payload;
 
@@ -457,8 +469,12 @@ class AlexaWsMqtt extends EventEmitter {
     }
 
     disconnect() {
-        if (!this.websocket) return;
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
         this.stop = true;
+        if (!this.websocket) return;
         try {
             this.websocket.close();
         } catch (e) {
