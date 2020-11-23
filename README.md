@@ -26,7 +26,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.3.2 (2020-11-23)
 * (Apollon77) handle potential crash case (Sentry IOBROKER-ALEXA2-27)
 * (Apollon77) also ignore PUSH_DEVICE_SETUP_STATE_CHANGE push messages
 * (Apollon77) Optimize WSMQTT Reconnection handling for timeout cases 
