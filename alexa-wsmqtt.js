@@ -146,6 +146,7 @@ class AlexaWsMqtt extends EventEmitter {
         });
 
         this.websocket.on('message', (data) => {
+            if (!this.websocket) return;
             let message = this.parseIncomingMessage(data);
             if (msgCounter === 0) { // initialization
                 if (message.content.protocolName) {
