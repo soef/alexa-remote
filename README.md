@@ -26,7 +26,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.4.0 (2020-12-11)
 * (Apollon77) add support for textCommand - tell an Alexa device a text as you would speak it
 
 ### 3.3.3 (2020-12-03)
