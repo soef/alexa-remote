@@ -26,6 +26,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) add support for textCommand - tell an Alexa device a text as you would speak it
+
 ### 3.3.3 (2020-12-03)
 * (Apollon77) fix potential crash case (Sentry IOBROKER-ALEXA2-2K)
 

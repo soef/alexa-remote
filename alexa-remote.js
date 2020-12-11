@@ -1586,6 +1586,11 @@ class AlexaRemote extends EventEmitter {
             case 'calendarNext':
                 seqNode.type = 'Alexa.Calendar.PlayNext';
                 break;
+            case 'textCommand':
+                seqNode.type = 'Alexa.TextCommand';
+                seqNode.skillId = 'amzn1.ask.1p.tellalexa';
+                seqNode.operationPayload.text = value.toString();
+                break;
             case 'curatedtts':
                 let supportedValues = ["goodbye", "confirmations", "goodmorning", "compliments", "birthday", "goodnight", "iamhome"];
                 if(!supportedValues.includes(value)) { return null }
