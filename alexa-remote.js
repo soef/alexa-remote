@@ -65,6 +65,7 @@ class AlexaRemote extends EventEmitter {
         }
         this._options.csrf = this.csrf;
         this._options.cookie = this.cookie;
+        this.emit('cookie', this.cookie, this.csrf);
     }
 
     init(cookie, callback) {
