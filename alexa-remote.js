@@ -816,7 +816,7 @@ class AlexaRemote extends EventEmitter {
                     if (typeof callback === 'function') {
                         if (!body) { // Method 'DELETE' may return HTTP STATUS 200 without body
                             this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
-                            return typeof res.statusCode === 'number' && res.statusCode % 100 === 2 ? callback(null, {'success': true}) : callback(new Error('no body'), null);
+                            return typeof res.statusCode === 'number' && res.statusCode >= 200 && res.statusCode < 300 ? callback(null, {'success': true}) : callback(new Error('no body'), null);
                         }
 
                         try {
