@@ -123,6 +123,7 @@ class AlexaWsMqtt extends EventEmitter {
                 this.websocket.close();
                 return;
             }
+            if (! this.websocket) return;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Open: ' + url);
             this.connectionActive = false;
 
