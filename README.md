@@ -26,6 +26,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) Fix potential crash issue (Sentry IOBROKER-ALEXA2-39)
+
 ### 3.5.0 (2020-12-24)
 * (Apollon77) Fix potential crash issue (Sentry IOBROKER-ALEXA2-2V)
 * (FliegenKLATSCH) add cookie as new event when a new cookie is generated
