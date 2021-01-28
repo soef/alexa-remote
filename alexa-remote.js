@@ -353,9 +353,9 @@ class AlexaRemote extends EventEmitter {
             this.emit('ws-unknown-message', incomingMsg);
         });
         this.alexaWsMqtt.on('command', (command, payload) => {
-			
+
 			this.emit('command', { 'command': command, 'payload': payload });
-			
+
             switch(command) {
                 case 'PUSH_DOPPLER_CONNECTION_CHANGE':
                     /*
@@ -614,7 +614,7 @@ class AlexaRemote extends EventEmitter {
                         this.getPushedActivities();
                     }, 200);
                     return;
-				
+
                 case 'PUSH_TODO_CHANGE': // does not exist?
                 case 'PUSH_LIST_CHANGE': // does not exist?
                 case 'PUSH_LIST_ITEM_CHANGE':
@@ -635,7 +635,7 @@ class AlexaRemote extends EventEmitter {
 						listItemId: payload.listItemId
 					});
                     return;
-					
+
                 case 'PUSH_MICROPHONE_STATE':
                 case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
                 case 'PUSH_DEVICE_SETUP_STATE_CHANGE':
@@ -755,7 +755,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     httpsGetCall(path, callback, flags = {}) {
-		
+
         let options = {
             host: this.baseUrl,
             path: '',
@@ -871,7 +871,7 @@ class AlexaRemote extends EventEmitter {
         if (flags && flags.data) {
             req.write(flags.data);
         }
-		
+
         req.end();
     }
 
@@ -928,7 +928,7 @@ class AlexaRemote extends EventEmitter {
     getList(listId, callback) {
         this.httpsGet ('/api/namedLists/' + listId + '?_=%t', callback);
 	}
-	
+
 	/**
 	 * Get items from a list.
 	 *
@@ -941,30 +941,30 @@ class AlexaRemote extends EventEmitter {
 	 *
 	 */
     getListItems(listId, options, callback) {
-		
+
         // get function params
         if (typeof options === 'function') {
             callback = options;
             options = {};
         }
-		
+
 		// get params by options
 		let params = '';
 		for (let option in options) {
-			params += '&' + option + '=' + options[option];	
+			params += '&' + option + '=' + options[option];
 		}
-		
+
 		// send request
         this.httpsGet ('/api/namedLists/' + listId + '/items?_=%t' + params, (err, res) => callback && callback(err, res && res.list));
 	}
-	
+
 	addListItem(listId, options, callback) {
-		
+
         // get function params
         if (typeof options === 'string') {
             options = { 'value': options };
         }
-		
+
 		// request options
         let request = {
 			'method': 'POST',
@@ -975,29 +975,29 @@ class AlexaRemote extends EventEmitter {
 				...options
 			})
         };
-		
+
 		// send request
         this.httpsGet ('/api/namedLists/' + listId + '/item', callback, request);
 	}
-	
+
 	updateListItem(listId, listItem, options, callback) {
-		
+
 		// providing a version is mandatory
 		if (typeof options !== 'object' || !options.version || !options.value) {
 			let errors = [];
-			
+
 			if (!options.version && callback) {
 				errors.push('Providing the current version via options is mandatory!');
 			}
-			
+
 			if (!options.value && callback) {
 				errors.push('Providing a new value (description) via options is mandatory!');
 			}
-			
+
 			callback && callback(errors);
 			return false;
 		}
-		
+
 		// request options
         let request = {
 			'method': 'PUT',
@@ -1008,20 +1008,20 @@ class AlexaRemote extends EventEmitter {
 				...options
 			})
         };
-		
+
 		// send request
         this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
 	}
-	
+
 	deleteListItem(listId, listItem, callback) {
-		
+
 		// data
 		let data = JSON.stringify({
 			'listId': listId,
 			'id': listItem,
 			'value': '' // must be provided, but value doesn't matter
 		});
-		
+
 		// request options
         let request = {
 			'method': 'DELETE',
@@ -1031,11 +1031,11 @@ class AlexaRemote extends EventEmitter {
 				'Content-Length': data.length
 			}
         };
-		
+
 		// send request
         this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
 	}
-	
+
     getWakeWords(callback) {
         this.httpsGet (`/api/wake-word?_=%t`, callback);
     }
@@ -1810,7 +1810,7 @@ class AlexaRemote extends EventEmitter {
             limit = 0;
         }
         limit = limit || 2000;
-        this.httpsGet (`/api/behaviors/automations?limit=${limit}`, callback, {
+        this.httpsGet (`/api/behaviors/v2/automations?limit=${limit}`, callback, {
             timeout: 30000
         });
     }
@@ -1930,8 +1930,12 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet ('/api/device-preferences?cached=true&_=%t', callback);
     }
 
+    getAllDeviceVolumes(callback) {
+        this.httpsGet ('/api/devices/deviceType/dsn/audio/v1/allDeviceVolumes', callback);
+    }
+
     getSmarthomeDevices(callback) {
-        this.httpsGet ('/api/phoenix?_=%t', function (err, res) {
+        this.httpsGet ('/api/phoenix?includeRelationships=true&_=%t', function (err, res) {
             if (err || !res || !res.networkDetail) return callback(err, res);
             try {
                 res = JSON.parse(res.networkDetail);

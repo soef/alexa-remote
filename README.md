@@ -26,6 +26,11 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) Adjust to new automations (Routines) route
+* (Apollon77) Add getAllDeviceVolumes method
+* (Apollon77) Return relationships in getSmarthomeDevices call
+
 ### 3.5.2 (2021-01-17)
 * (Apollon77) Fix potential crash issue (Sentry IOBROKER-ALEXA2-39)
 
