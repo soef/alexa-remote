@@ -26,7 +26,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.6.0 (2021-01-28)
 * (Apollon77) Adjust to new automations (Routines) route
 * (Apollon77) Add getAllDeviceVolumes method
 * (Apollon77) Return relationships in getSmarthomeDevices call
