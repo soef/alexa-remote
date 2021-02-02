@@ -757,7 +757,7 @@ class AlexaRemote extends EventEmitter {
     httpsGetCall(path, callback, flags = {}) {
 
         let options = {
-            host: this.baseUrl,
+            host: flags.host || this.baseUrl,
             path: '',
             method: 'GET',
             timeout: flags.timeout || 10000,
@@ -1442,7 +1442,7 @@ class AlexaRemote extends EventEmitter {
                     }
                 }
                 if (typeof callback === 'function') return callback (err, ret);
-            }
+            }, {host: `www.${this._options.amazonPage}`}
         );
     }
 
