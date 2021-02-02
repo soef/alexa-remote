@@ -1420,8 +1420,9 @@ class AlexaRemote extends EventEmitter {
                             convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
                             o.alexaResponse = o.alexaResponse.substring(0, -2).trim();
                         }
-                        if (!o.description || !o.description.summary.length) continue;
                         if (options.filter) {
+                            if (!o.description || !o.description.summary.length) continue;
+
                             if (res.utteranceType === 'WAKE_WORD_ONLY') {
                                 continue;
                             }
