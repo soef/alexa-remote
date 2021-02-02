@@ -652,13 +652,13 @@ class AlexaRemote extends EventEmitter {
     getPushedActivities() {
         if (this.activityUpdateRunning || !this.activityUpdateQueue.length) return;
         this.activityUpdateRunning = true;
-        this.getActivities({size: this.activityUpdateQueue.length + 2, filter: false}, (err, res) => {
+        this.getCustomerHistoryRecords({maxRecordSize: this.activityUpdateQueue.length + 2, filter: false}, (err, res) => {
             this.activityUpdateRunning = false;
             if (!err && res) {
 
                 let lastFoundQueueIndex = -1;
                 this.activityUpdateQueue.forEach((entry, queueIndex) => {
-                    const found = res.findIndex(activity => activity.data.id.endsWith('#' + entry.key.entryId) && activity.data.registeredCustomerId === entry.key.registeredUserId);
+                    const found = res.findIndex(activity => activity.data.recordKey.endsWith('#' + entry.key.entryId) && activity.data.customerId === entry.key.registeredUserId);
 
                     if (found === -1) {
                         this._options.logger && this._options.logger('Alexa-Remote: Activity for id ' + entry.key.entryId + ' not found');
@@ -874,7 +874,6 @@ class AlexaRemote extends EventEmitter {
 
         req.end();
     }
-
 
 /// Public
     checkAuthentication(callback) {
@@ -1357,6 +1356,89 @@ class AlexaRemote extends EventEmitter {
                             }
                             if (o.description.summary || !options.filter) ret.push(o);
                         }
+                    }
+                }
+                if (typeof callback === 'function') return callback (err, ret);
+            }
+        );
+    }
+
+    getCustomerHistoryRecords(options, callback) {
+        if (typeof options === 'function') {
+            callback = options;
+            options = {};
+        }
+        this.httpsGet (`/alexa-privacy/apd/rvh/customer-history-records` +
+            `?startTime=${options.startTime || (Date.now() - 24 * 60 * 60 * 1000)}` +
+            `?endTime=${options.endTime || Date.now()}` +
+            `?recordType=${options.recordType || 'VOICE_HISTORY'}` +
+            `&maxRecordSize=${options.maxRecordSize || 1}`,
+            (err, result) => {
+                if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
+
+                let ret = [];
+                if (result.customerHistoryRecords) {
+                    for (let r = 0; r < result.customerHistoryRecords.length; r++) {
+                        let res = result.customerHistoryRecords[r];
+                        let o = {
+                            data: res
+                        };
+                        const convParts = {};
+                        if (res.voiceHistoryRecordItems && Array.isArray(res.voiceHistoryRecordItems)) {
+                            res.voiceHistoryRecordItems.forEach(item => {
+                                convParts[item.recordItemType] = convParts[item.recordItemType] || [];
+                                convParts[item.recordItemType].push(item);
+                            });
+                        }
+
+                        const recordKey = res.recordKey.split('#'); // A3NSX4MMJVG96V#1612297041815#A1RABVCI4QCIKC#G0911W0793360TLG
+
+                        o.deviceType = recordKey[2] || null;
+                        //o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
+                        o.creationTimestamp = res.timestamp || null;
+                        //o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
+
+                        o.deviceSerialNumber = recordKey[3];
+                        if (!this.serialNumbers[o.deviceSerialNumber]) continue;
+                        o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
+                        const dev = this.find(o.deviceSerialNumber);
+                        let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
+
+                        if (convParts.CUSTOMER_TRANSCRIPT) {
+                            o.description = {'summary': ''};
+                            convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
+                                let text = trans.transcriptText;
+                                if (wakeWord && text.startsWith(wakeWord)) {
+                                    text = text.substr(wakeWord.length).trim();
+                                }
+                                o.description.summary += text + ', ';
+                            });
+                            o.description.summary = o.description.summary.substring(0, -2).trim();
+                        }
+                        if (convParts.ALEXA_RESPONSE) {
+                            o.alexaResponse = '';
+                            convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                            o.alexaResponse = o.alexaResponse.substring(0, -2).trim();
+                        }
+                        if (!o.description || !o.description.summary.length) continue;
+                        if (options.filter) {
+                            if (res.utteranceType === 'WAKE_WORD_ONLY') {
+                                continue;
+                            }
+
+                            switch (o.description.summary) {
+                                case 'stopp':
+                                case 'alexa':
+                                case 'echo':
+                                case 'computer':
+                                case 'amazon':
+                                case ',':
+                                case '':
+                                    continue;
+                            }
+                        }
+
+                        if (o.description.summary || !options.filter) ret.push(o);
                     }
                 }
                 if (typeof callback === 'function') return callback (err, ret);

@@ -26,6 +26,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (Apollon77) Try to get activities back working with new CustomerHistory requests
+
 ### 3.6.0 (2021-01-28)
 * (Apollon77) Adjust to new automations (Routines) route
 * (Apollon77) Add getAllDeviceVolumes method
