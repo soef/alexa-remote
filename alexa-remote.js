@@ -1371,7 +1371,7 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet (`https://www.${this._options.amazonPage}/alexa-privacy/apd/rvh/customer-history-records` +
             `?startTime=${options.startTime || (Date.now() - 24 * 60 * 60 * 1000)}` +
             `&endTime=${options.endTime || Date.now()}` +
-            `6recordType=${options.recordType || 'VOICE_HISTORY'}` +
+            `&recordType=${options.recordType || 'VOICE_HISTORY'}` +
             `&maxRecordSize=${options.maxRecordSize || 1}`,
             (err, result) => {
                 if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
