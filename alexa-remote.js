@@ -1368,7 +1368,7 @@ class AlexaRemote extends EventEmitter {
             callback = options;
             options = {};
         }
-        this.httpsGet (`/alexa-privacy/apd/rvh/customer-history-records` +
+        this.httpsGet (`https://www.${this._options.amazonPage}/alexa-privacy/apd/rvh/customer-history-records` +
             `?startTime=${options.startTime || (Date.now() - 24 * 60 * 60 * 1000)}` +
             `?endTime=${options.endTime || Date.now()}` +
             `?recordType=${options.recordType || 'VOICE_HISTORY'}` +
@@ -1442,7 +1442,7 @@ class AlexaRemote extends EventEmitter {
                     }
                 }
                 if (typeof callback === 'function') return callback (err, ret);
-            }, {host: `www.${this._options.amazonPage}`}
+            }
         );
     }
 
