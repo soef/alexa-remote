@@ -797,7 +797,7 @@ class AlexaRemote extends EventEmitter {
                 'Referer': `https://alexa.${this._options.amazonPage}/spa/index.html`,
                 'Origin': `https://alexa.${this._options.amazonPage}`,
                 //'Content-Type': 'application/json',
-                //'Connection': 'keep-alive', // new
+                //'Connection': 'keep-alive',
                 'csrf' : this.csrf,
                 'Cookie' : this.cookie,
                 'Accept-Encoding': 'gzip,deflate'
@@ -835,6 +835,7 @@ class AlexaRemote extends EventEmitter {
         this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
 
         let req;
+        let responseReceived = false;
         try {
             req = https.request(options, (res) => {
                 const chunks = [];
@@ -844,6 +845,7 @@ class AlexaRemote extends EventEmitter {
                 });
 
                 res.on('end', () => {
+                    responseReceived = true;
                     if (typeof callback === 'function') {
                         const resBuffer = Buffer.concat(chunks);
                         const encoding = res.headers['content-encoding'];
@@ -872,14 +874,14 @@ class AlexaRemote extends EventEmitter {
 
         req.on('error', (e) => {
             this._options.logger && this._options.logger('Alexa-Remote: Response: Error: ' + e);
-            if (typeof callback === 'function'/* && callback.length >= 2*/) {
+            if (!responseReceived && typeof callback === 'function'/* && callback.length >= 2*/) {
                 callback (e, null);
                 callback = null;
             }
         });
 
         req.on('timeout', () => {
-            if (typeof callback === 'function'/* && callback.length >= 2*/) {
+            if (!responseReceived && typeof callback === 'function'/* && callback.length >= 2*/) {
                 this._options.logger && this._options.logger('Alexa-Remote: Response: Timeout');
                 callback (new Error('Timeout'), null);
                 callback = null;
@@ -887,7 +889,7 @@ class AlexaRemote extends EventEmitter {
         });
 
         req.on('close', () => {
-            if (typeof callback === 'function'/* && callback.length >= 2*/) {
+            if (!responseReceived && typeof callback === 'function'/* && callback.length >= 2*/) {
                 this._options.logger && this._options.logger('Alexa-Remote: Response: Closed');
                 callback (new Error('Connection Closed'), null);
                 callback = null;
