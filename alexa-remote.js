@@ -824,6 +824,13 @@ class AlexaRemote extends EventEmitter {
                         try {
                             ret = JSON.parse(body);
                         } catch (e) {
+                            if (typeof res.statusCode === 'number' && res.statusCode >= 500 && res.statusCode < 510) {
+                                this._options.logger && this._options.logger('Alexa-Remote: Response: Status: ' + res.statusCode);
+                                callback(new Error('no body'), null);
+                                callback = null;
+                                return;
+                            }
+
                             this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
                             callback && callback(new Error('no JSON'), body);
                             callback = null;
@@ -864,7 +871,7 @@ class AlexaRemote extends EventEmitter {
         req.on('close', () => {
             if (typeof callback === 'function'/* && callback.length >= 2*/) {
                 this._options.logger && this._options.logger('Alexa-Remote: Response: Closed');
-                callback (new Error('COnnection Closed'), null);
+                callback (new Error('Connection Closed'), null);
                 callback = null;
             }
         });
