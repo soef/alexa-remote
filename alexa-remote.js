@@ -775,7 +775,7 @@ class AlexaRemote extends EventEmitter {
                     return;
                 }
 
-                this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
+                this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON : ' + body);
                 callback && callback(new Error('no JSON'), body);
                 callback = null;
                 return;
