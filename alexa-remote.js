@@ -11,6 +11,7 @@ const os = require('os');
 const extend = require('extend');
 const AlexaWsMqtt = require('./alexa-wsmqtt.js');
 const { v1: uuidv1 } = require('uuid');
+const zlib = require('zlib');
 
 const EventEmitter = require('events');
 
@@ -757,6 +758,34 @@ class AlexaRemote extends EventEmitter {
 
     httpsGetCall(path, callback, flags = {}) {
 
+        const handleResponse = (err, res, body) => {
+            if (err || !body) { // Method 'DELETE' may return HTTP STATUS 200 without body
+                this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
+                return typeof res.statusCode === 'number' && res.statusCode >= 200 && res.statusCode < 300 ? callback(null, {'success': true}) : callback(new Error('no body'), null);
+            }
+
+            let ret;
+            try {
+                ret = JSON.parse(body);
+            } catch (e) {
+                if (typeof res.statusCode === 'number' && res.statusCode >= 500 && res.statusCode < 510) {
+                    this._options.logger && this._options.logger('Alexa-Remote: Response: Status: ' + res.statusCode);
+                    callback(new Error('no body'), null);
+                    callback = null;
+                    return;
+                }
+
+                this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
+                callback && callback(new Error('no JSON'), body);
+                callback = null;
+                return;
+            }
+
+            this._options.logger && this._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
+            callback(null, ret);
+            callback = null;
+        };
+
         let options = {
             host: flags.host || this.baseUrl,
             path: '',
@@ -770,7 +799,8 @@ class AlexaRemote extends EventEmitter {
                 //'Content-Type': 'application/json',
                 //'Connection': 'keep-alive', // new
                 'csrf' : this.csrf,
-                'Cookie' : this.cookie
+                'Cookie' : this.cookie,
+                'Accept-Encoding': 'gzip,deflate'
             }
         };
 
@@ -797,6 +827,7 @@ class AlexaRemote extends EventEmitter {
         const logOptions = JSON.parse(JSON.stringify(options));
         delete logOptions.headers.Cookie;
         delete logOptions.headers.csrf;
+        delete logOptions.headers['Accept-Encoding'];
         delete logOptions.headers['User-Agent'];
         delete logOptions.headers['Content-Type'];
         delete logOptions.headers.Referer;
@@ -806,40 +837,27 @@ class AlexaRemote extends EventEmitter {
         let req;
         try {
             req = https.request(options, (res) => {
-                let body = '';
+                const chunks = [];
 
                 res.on('data', (chunk) => {
-                    body += chunk;
+                    chunks.push(chunk);
                 });
 
                 res.on('end', () => {
-                    let ret;
-
                     if (typeof callback === 'function') {
-                        if (!body) { // Method 'DELETE' may return HTTP STATUS 200 without body
-                            this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
-                            return typeof res.statusCode === 'number' && res.statusCode >= 200 && res.statusCode < 300 ? callback(null, {'success': true}) : callback(new Error('no body'), null);
+                        const resBuffer = Buffer.concat(chunks);
+                        const encoding = res.headers['content-encoding'];
+                        if (encoding === 'gzip') {
+                            zlib.gunzip(resBuffer, (err, decoded) => {
+                                handleResponse(err, res, decoded && decoded.toString());
+                            });
+                        } else if (encoding === 'deflate') {
+                            zlib.inflate(resBuffer, (err, decoded) => {
+                                handleResponse(err, res, decoded && decoded.toString());
+                            });
+                        } else {
+                            handleResponse(null, res, resBuffer.toString());
                         }
-
-                        try {
-                            ret = JSON.parse(body);
-                        } catch (e) {
-                            if (typeof res.statusCode === 'number' && res.statusCode >= 500 && res.statusCode < 510) {
-                                this._options.logger && this._options.logger('Alexa-Remote: Response: Status: ' + res.statusCode);
-                                callback(new Error('no body'), null);
-                                callback = null;
-                                return;
-                            }
-
-                            this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON');
-                            callback && callback(new Error('no JSON'), body);
-                            callback = null;
-                            return;
-                        }
-
-                        this._options.logger && this._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
-                        callback(null, ret);
-                        callback = null;
                     }
                 });
             });
