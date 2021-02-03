@@ -689,7 +689,7 @@ class AlexaRemote extends EventEmitter {
                 }
             }
 
-            if (this.activityUpdateQueue.length) {
+            if (!err && this.activityUpdateQueue.length) {
                 this.activityUpdateTimeout = setTimeout(() => {
                     this.activityUpdateTimeout = null;
                     this.getPushedActivities();
