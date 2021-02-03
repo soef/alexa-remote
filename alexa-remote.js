@@ -655,7 +655,7 @@ class AlexaRemote extends EventEmitter {
         this.getCustomerHistoryRecords({maxRecordSize: this.activityUpdateQueue.length + 2, filter: false}, (err, res) => {
             this.activityUpdateRunning = false;
             if (!err && res) {
-                this._options.logger && this._options.logger('Alexa-Remote: Activity data ' + JSON.stringfy(res)); // TODO REMOVE
+                this._options.logger && this._options.logger('Alexa-Remote: Activity data ' + JSON.stringify(res)); // TODO REMOVE
 
                 let lastFoundQueueIndex = -1;
                 this.activityUpdateQueue.forEach((entry, queueIndex) => {
@@ -1390,6 +1390,7 @@ class AlexaRemote extends EventEmitter {
                                 convParts[item.recordItemType] = convParts[item.recordItemType] || [];
                                 convParts[item.recordItemType].push(item);
                             });
+                            o.conversionDetails = convParts;
                         }
 
                         const recordKey = res.recordKey.split('#'); // A3NSX4MMJVG96V#1612297041815#A1RABVCI4QCIKC#G0911W0793360TLG
@@ -1405,8 +1406,8 @@ class AlexaRemote extends EventEmitter {
                         const dev = this.find(o.deviceSerialNumber);
                         let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
 
+                        o.description = {'summary': ''};
                         if (convParts.CUSTOMER_TRANSCRIPT) {
-                            o.description = {'summary': ''};
                             convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
                                 let text = trans.transcriptText;
                                 if (wakeWord && text.startsWith(wakeWord)) {
@@ -1414,12 +1415,12 @@ class AlexaRemote extends EventEmitter {
                                 }
                                 o.description.summary += text + ', ';
                             });
-                            o.description.summary = o.description.summary.substring(0, -2).trim();
+                            o.description.summary = o.description.summary.substring(0, o.description.summary.length - 2).trim();
                         }
                         if (convParts.ALEXA_RESPONSE) {
                             o.alexaResponse = '';
                             convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
-                            o.alexaResponse = o.alexaResponse.substring(0, -2).trim();
+                            o.alexaResponse = o.alexaResponse.substring(0, o.alexaResponse.length - 2).trim();
                         }
                         if (options.filter) {
                             if (!o.description || !o.description.summary.length) continue;
