@@ -1318,9 +1318,15 @@ class AlexaRemote extends EventEmitter {
             { method: 'POST' });
     }
 
+    /**
+     * @deprecated
+     */
     getHistory(options, callback) {
         return this.getActivities(options, callback);
     }
+    /**
+     * @deprecated
+     */
     getActivities(options, callback) {
         if (typeof options === 'function') {
             callback = options;

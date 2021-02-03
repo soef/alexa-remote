@@ -27,7 +27,13 @@ Thank you for that work.
 ## Changelog:
 
 ### __WORK IN PROGRESS__
-* (Apollon77) Try to get activities back working with new CustomerHistory requests
+* (Apollon77) Implement new method to get History/Activities
+  * getActivities Method is still there and still triggers the Amazon route as till now. INo idea ng it still works for some users. I declared it as deprecated now
+  * add new method "getCustomerHistoryRecords" which uses another endpoint on Amazon side and delivers different data. The return is returned relative compatible to getActivities, so should be a drop in replacement - beside the fact that some fileds can not be provided any longer and will be simply empty! (e.g. activityStatus, deviceAccountId ...) Also in the amazon data some fields are no longer existing (e.g. domainAttributes ...)
+  * the event "ws-device-activity" is migrated to use the new getCustomerHistoryRecords endpoint, and so returns compatible, but not 100% the same data
+* (Apollon77) Make sure to not hammer requests to Amazon in case the activity request returns an error and the received PUSH_ACTIVITY entry was not found
+* (Apollon77) Detect and handle 50x error cases and handle them as if no content was returned
+* (Apollon77) Enhance communication to also support gzip and deflate encoded responses because Amazon sometimes ignore requested Accept-Encoding specs. This also could improve speed
 
 ### 3.6.0 (2021-01-28)
 * (Apollon77) Adjust to new automations (Routines) route
