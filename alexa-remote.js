@@ -1440,19 +1440,35 @@ class AlexaRemote extends EventEmitter {
                         let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
 
                         o.description = {'summary': ''};
-                        if (convParts.CUSTOMER_TRANSCRIPT) {
-                            convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
-                                let text = trans.transcriptText;
-                                if (wakeWord && text.startsWith(wakeWord)) {
-                                    text = text.substr(wakeWord.length).trim();
-                                }
-                                o.description.summary += text + ', ';
-                            });
+                        if (convParts.CUSTOMER_TRANSCRIPT || convParts.ASR_REPLACEMENT_TEXT) {
+                            if (convParts.CUSTOMER_TRANSCRIPT) {
+                                convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
+                                    let text = trans.transcriptText;
+                                    if (wakeWord && text.startsWith(wakeWord)) {
+                                        text = text.substr(wakeWord.length).trim();
+                                    }
+                                    o.description.summary += text + ', ';
+                                });
+                            }
+                            if (convParts.ASR_REPLACEMENT_TEXT) {
+                                convParts.ASR_REPLACEMENT_TEXT.forEach(trans => {
+                                    let text = trans.transcriptText;
+                                    if (wakeWord && text.startsWith(wakeWord)) {
+                                        text = text.substr(wakeWord.length).trim();
+                                    }
+                                    o.description.summary += text + ', ';
+                                });
+                            }
                             o.description.summary = o.description.summary.substring(0, o.description.summary.length - 2).trim();
                         }
-                        if (convParts.ALEXA_RESPONSE) {
-                            o.alexaResponse = '';
-                            convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                        o.alexaResponse = '';
+                        if (convParts.ALEXA_RESPONSE || convParts.TTS_REPLACEMENT_TEXT) {
+                            if (convParts.ALEXA_RESPONSE) {
+                                convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                            }
+                            if (convParts.TTS_REPLACEMENT_TEXT) {
+                                convParts.TTS_REPLACEMENT_TEXT.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                            }
                             o.alexaResponse = o.alexaResponse.substring(0, o.alexaResponse.length - 2).trim();
                         }
                         if (options.filter) {
