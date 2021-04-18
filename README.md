@@ -26,7 +26,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.7.2 (2021-04-18)
 * (Apollon77) Adjust automatic Cookie Refresh interval from 7 to 4 days
 * (Apollon77) Add other checks for websocket connection handling (Sentry IOBROKER-ALEXA2-32)
 
