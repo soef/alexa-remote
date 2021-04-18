@@ -119,11 +119,11 @@ class AlexaWsMqtt extends EventEmitter {
         }, 30000);
 
         this.websocket.on('open', () => {
+            if (! this.websocket) return;
             if (this.stop) {
                 this.websocket.close();
                 return;
             }
-            if (! this.websocket) return;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Open: ' + url);
             this.connectionActive = false;
 
@@ -131,6 +131,7 @@ class AlexaWsMqtt extends EventEmitter {
             const msg = Buffer.from('0x99d4f71a 0x0000001d A:HTUNE');
             //console.log('SEND: ' + msg.toString('ascii'));
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization Msg 1 sent');
+            if (this.websocket.readyState !== 1 /* OPEN */) return;
             this.websocket.send(msg);
         });
 
@@ -147,7 +148,7 @@ class AlexaWsMqtt extends EventEmitter {
         });
 
         this.websocket.on('message', (data) => {
-            if (!this.websocket) return;
+            if (!this.websocket || this.websocket.readyState !== 1 /* OPEN */) return;
             let message = this.parseIncomingMessage(data);
             if (msgCounter === 0) { // initialization
                 if (message.content.protocolName) {

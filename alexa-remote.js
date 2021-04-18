@@ -99,7 +99,7 @@ class AlexaRemote extends EventEmitter {
             delete this._options.refreshCookieInterval;
         }
         if (this._options.cookieRefreshInterval !== 0) {
-            this._options.cookieRefreshInterval = this._options.cookieRefreshInterval || 7*24*60*60*1000; // Auto Refresh after 7 days
+            this._options.cookieRefreshInterval = this._options.cookieRefreshInterval || 4 * 24 * 60 * 60 * 1000; // Auto Refresh after 4 days
         }
 
         const self = this;
