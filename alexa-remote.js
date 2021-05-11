@@ -1377,6 +1377,8 @@ class AlexaRemote extends EventEmitter {
                             let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
                             if (wakeWord && o.description.summary.startsWith(wakeWord)) {
                                 o.description.summary = o.description.summary.substr(wakeWord.length).trim();
+                            } else if (o.description.summary.startsWith('alexa')) {
+                                o.description.summary = o.description.summary.substr(5).trim();
                             }
                             o.deviceType = res.sourceDeviceIds[i].deviceType || null;
                             o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
@@ -1446,6 +1448,8 @@ class AlexaRemote extends EventEmitter {
                                     let text = trans.transcriptText;
                                     if (wakeWord && text.startsWith(wakeWord)) {
                                         text = text.substr(wakeWord.length).trim();
+                                    } else if (text.startsWith('alexa')) {
+                                        text = text.substr(5).trim();
                                     }
                                     o.description.summary += text + ', ';
                                 });
@@ -1455,6 +1459,8 @@ class AlexaRemote extends EventEmitter {
                                     let text = trans.transcriptText;
                                     if (wakeWord && text.startsWith(wakeWord)) {
                                         text = text.substr(wakeWord.length).trim();
+                                    } else if (text.startsWith('alexa')) {
+                                        text = text.substr(5).trim();
                                     }
                                     o.description.summary += text + ', ';
                                 });
