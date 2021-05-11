@@ -21,7 +21,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.8.0 (2021-05-11)
 * (Apollon77) Always recognize "alexa" as wakeword to handle commands via the apps correctly
 
 ### 3.7.2 (2021-04-18)
