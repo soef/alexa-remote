@@ -21,6 +21,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 3.8.1 (2021-06-02)
+* (bbindreiter) Set missing Accept Header
+
 ### 3.8.0 (2021-05-11)
 * (Apollon77) Always recognize "alexa" as wakeword to handle commands via the apps correctly
 
