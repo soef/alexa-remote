@@ -1,6 +1,6 @@
 {
   "name": "alexa-remote2",
-  "version": "3.8.1",
+  "version": "3.8.0",
   "description": "Remote Control for amazon echo devices",
   "author": {
     "name": "Apollon77",
@@ -14,10 +14,6 @@
     {
       "name": "Apollon77",
       "email": "iobroker@fischer-ka.de"
-    },
-    {
-      "name": "bbindreiter",
-      "email": "bernd.bindreiter@gmail.com"
     }
   ],
   "homepage": "https://github.com/Apollon77/alexa-remote",
