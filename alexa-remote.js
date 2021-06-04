@@ -794,6 +794,7 @@ class AlexaRemote extends EventEmitter {
             headers: {
                 'User-Agent' : this._options.userAgent,
                 'Content-Type': 'application/json; charset=UTF-8',
+                'Accept': 'application/json',
                 'Referer': `https://alexa.${this._options.amazonPage}/spa/index.html`,
                 'Origin': `https://alexa.${this._options.amazonPage}`,
                 //'Content-Type': 'application/json',
@@ -830,6 +831,7 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers['Accept-Encoding'];
         delete logOptions.headers['User-Agent'];
         delete logOptions.headers['Content-Type'];
+	    delete logOptions.headers['Accept'];
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
         this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
