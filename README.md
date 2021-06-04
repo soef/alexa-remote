@@ -21,7 +21,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.8.1 (2021-06-04)
 * (bbindreiter) Set missing Accept Header
 
 ### 3.8.0 (2021-05-11)
