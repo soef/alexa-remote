@@ -1,18 +1,26 @@
 {
-  "name": "alexa-remote",
-  "version": "0.0.24",
+  "name": "alexa-remote2",
+  "version": "3.8.1",
   "description": "Remote Control for amazon echo devices",
   "author": {
-    "name": "soef",
-    "email": "soef@gmx.net"
+    "name": "Apollon77",
+    "email": "iobroker@fischer-ka.de"
   },
   "contributors": [
     {
       "name": "soef",
       "email": "soef@gmx.net"
+    },
+    {
+      "name": "Apollon77",
+      "email": "iobroker@fischer-ka.de"
+    },
+    {
+      "name": "bbindreiter",
+      "email": "bernd.bindreiter@gmail.com"
     }
   ],
-  "homepage": "https://github.com/soef/alexa-remote",
+  "homepage": "https://github.com/Apollon77/alexa-remote",
   "license": "MIT",
   "keywords": [
     "alexa",
@@ -21,22 +29,29 @@
     "layla.amazon.de"
   ],
   "dependencies": {
-    "alexa-cookie": "^0.0.20",
-    "https": "^1.0.0"
+    "alexa-cookie2": "^3.4.3",
+    "https": "^1.0.0",
+    "querystring": "^0.2.1",
+    "ws": "^7.5.1",
+    "extend": "^3.0.2",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "mocha": "^2.3.4",
-    "chai": "^3.4.1"
+    "@alcalzone/release-script": "^2.2.0"
   },
   "scripts": {
-    "test": "node node_modules/mocha/bin/mocha"
+    "test": "node node_modules/mocha/bin/mocha",
+    "release": "release-script"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/soef/alexa-remote.git"
+    "url": "git+https://github.com/Apollon77/alexa-remote.git"
   },
   "bugs": {
-    "url": "https://github.com/soef/alexa-remote/issues"
+    "url": "https://github.com/Apollon77/alexa-remote/issues"
+  },
+  "engines": {
+    "node": ">=8.0.0"
   },
   "main": "alexa-remote.js",
   "readmeFilename": "readme.md"
