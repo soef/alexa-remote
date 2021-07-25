@@ -1803,6 +1803,25 @@ class AlexaRemote extends EventEmitter {
                 }
                 seqNode.operationPayload.textToSpeak = value;
                 break;
+	    case 'skill':
+                seqNode.type = 'Alexa.Operation.SkillConnections.Launch';
+                if (typeof value !== 'string') value = String(value);
+                if (value.length === 0) {
+                    return callback && callback(new Error('Can not launch empty skill', null));
+                }
+                seqNode.skillId = value;
+                seqNode.operationPayload.targetDevice = {
+                    deviceType: seqNode.operationPayload.deviceType,
+                    deviceSerialNumber: seqNode.operationPayload.deviceSerialNumber
+                }
+                seqNode.operationPayload.connectionRequest = {
+                    uri: `connection://AMAZON.Launch/${value}`,
+                    input: {}
+                }
+                seqNode.name = null;
+                delete seqNode.operationPayload.deviceType;
+                delete seqNode.operationPayload.deviceSerialNumber;
+                break;
             case 'notification':
                 seqNode.type = 'Alexa.Notifications.SendMobilePush';
                 if (typeof value !== 'string') value = String(value);
