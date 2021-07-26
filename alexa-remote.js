@@ -1080,6 +1080,34 @@ class AlexaRemote extends EventEmitter {
         if (cached === undefined) cached = true;
         this.httpsGet (`/api/notifications?cached=${cached}&_=%t`, callback);
     }
+    
+    getSkills(callback) {
+
+        // request options
+        let request = {
+            'method': 'GET',
+            'headers': {
+                'Accept': 'application/vnd+amazon.uitoolkit+json;ns=1;fl=0'
+            }
+        };
+
+        // send request
+        this.httpsGet(`https://skills-store.${this._options.amazonPage}/app/secure/your-skills-page?deviceType=app&ref-suffix=ysa_gw&pfm=A1PA6795UKMFR9&cor=DE&lang=en-us&_=%t`, function (err, res) {
+            const data = res.find(o => o.block === 'data' && Array.isArray(o.contents))
+                .contents
+                .find(o => o.id === 'skillsPageData')
+                .contents
+                .products
+                .map(o => ({
+                    id: o.productMetadata.skillId,
+                    name: o.title,
+                    type: o.productDetails.skillTypes[0]
+                }));
+
+            callback && callback(err, data);
+
+        }, request);
+    }
 
     createNotificationObject(serialOrName, type, label, value, status, sound) { // type = Reminder, Alarm
         if (status && typeof status === 'object') {
