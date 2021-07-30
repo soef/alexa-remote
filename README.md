@@ -21,6 +21,10 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* (guilhermelirio) Add skill launch function
+* (guilhermelirio) Add getSkills() function
+
 ### 3.8.1 (2021-06-04)
 * (bbindreiter) Set missing Accept Header
 

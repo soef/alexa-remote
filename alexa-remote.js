@@ -1530,6 +1530,11 @@ class AlexaRemote extends EventEmitter {
                     }
                 }
                 if (typeof callback === 'function') return callback (err, ret);
+            },
+            {
+                headers: {
+                    'authority': 'www.amazon.de'
+                }
             }
         );
     }
