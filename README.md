@@ -21,7 +21,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORK IN PROGRESS__
+### 3.9.0 (2021-07-30)
 * (guilhermelirio) Add skill launch function
 * (guilhermelirio) Add getSkills() function
 
