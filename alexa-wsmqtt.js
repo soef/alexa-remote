@@ -709,13 +709,13 @@ class AlexaWsMqtt extends EventEmitter {
         }
         else if (message.service === 'FABE') {
             message.messageType = readString(0, 3);
-            message.channel = data.readUInt32(3);
-            message.messageId = data.readUInt32(7);
-            message.moreFlag = data.readUInt32(11);
-            message.seq = data.readUInt32(12);
-            message.checksum = data.readUInt32(16);
+            message.channel = data.readUInt32BE(3);
+            message.messageId = data.readUInt32BE(7);
+            message.moreFlag = data.readUInt32BE(11);
+            message.seq = data.readUInt32BE(12);
+            message.checksum = data.readUInt32BE(16);
 
-            let contentLength = data.readUInt32(20);
+            let contentLength = data.readUInt32BE(20);
 
             message.content = {};
             message.content.messageType = readString(24, 3);
