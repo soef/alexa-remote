@@ -108,7 +108,7 @@ class AlexaWsMqtt extends EventEmitter {
     }
 
     connectType2() {
-        let amazonPage = '.amazon.com'; // + this._options.amazonPage;
+        let amazonPage = '.' + this._options.amazonPage;
         if (amazonPage === '.amazon.com') amazonPage = '-js.amazon.com'; // Special Handling for US!
         const url = `wss://dp-gw-na${amazonPage}/tcomm/`;
 
