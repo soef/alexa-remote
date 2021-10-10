@@ -66,7 +66,8 @@ class AlexaRemote extends EventEmitter {
         }
         this._options.csrf = this.csrf;
         this._options.cookie = this.cookie;
-        this.emit('cookie', this.cookie, this.csrf);
+        this.macDms = this._options.macDms = this._options.macDms || (this.cookieData && this.cookieData.macDms);
+        this.emit('cookie', this.cookie, this.csrf, this.macDms);
     }
 
     init(cookie, callback) {
@@ -154,11 +155,13 @@ class AlexaRemote extends EventEmitter {
                     return callback && callback(new Error('Error while checking Authentication: ' + err));
                 }
                 this._options.logger && this._options.logger('Alexa-Remote: Authentication checked: ' + authenticated);
-                if (! authenticated && !this._options.cookieJustCreated) {
+                if ((!authenticated && !this._options.cookieJustCreated) || !this.macDms) {
+                    this._options.logger && !this.macDms && this._options.logger('Alexa-Remote: JWT missing, forcing a refresh ...');
                     this._options.logger && this._options.logger('Alexa-Remote: Cookie was set, but authentication invalid');
                     delete this._options.cookie;
                     delete this._options.csrf;
                     delete this._options.localCookie;
+                    delete this._options.macDms;
                     return this.init(this._options, callback);
                 }
                 this.lastAuthCheck = new Date().getTime();
@@ -333,7 +336,7 @@ class AlexaRemote extends EventEmitter {
             this.alexaWsMqtt.disconnect();
             this.alexaWsMqtt = null;
         }
-        this.alexaWsMqtt = new AlexaWsMqtt(this._options, this.cookie);
+        this.alexaWsMqtt = new AlexaWsMqtt(this._options, this.cookie, this.macDms);
         if (!this.alexaWsMqtt) return;
 
         this.activityUpdateQueue = [];
@@ -748,8 +751,8 @@ class AlexaRemote extends EventEmitter {
             delete this._options.cookie;
             this.init(this._options, function(err) {
                 if (err) {
-                    this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error and renew unsuccessfull. STOP');
-                    return callback && callback(new Error('Cookie invalid, Renew unsuccessfull'));
+                    this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error and renew unsuccessful. STOP');
+                    return callback && callback(new Error('Cookie invalid, Renew unsuccessful'));
                 }
                 return this.httpsGet(path, callback, flags);
             });
@@ -797,6 +800,7 @@ class AlexaRemote extends EventEmitter {
                 'Accept': 'application/json',
                 'Referer': `https://alexa.${this._options.amazonPage}/spa/index.html`,
                 'Origin': `https://alexa.${this._options.amazonPage}`,
+                'x-amzn-alexa-app': 'eyJ2ZXJzaW9uIjoiMS4wIiwiYXBwSWQiOiJhbXpuMS5hcHBsaWNhdGlvbi40NTc4NmVlMDliMDI0YTA4YTY5OGQzMGIwYWQzMTAzNyJ9',
                 //'Content-Type': 'application/json',
                 //'Connection': 'keep-alive',
                 'csrf' : this.csrf,
@@ -831,7 +835,7 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers['Accept-Encoding'];
         delete logOptions.headers['User-Agent'];
         delete logOptions.headers['Content-Type'];
-	    delete logOptions.headers['Accept'];
+	    delete logOptions.headers.Accept;
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
         this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
@@ -1080,7 +1084,7 @@ class AlexaRemote extends EventEmitter {
         if (cached === undefined) cached = true;
         this.httpsGet (`/api/notifications?cached=${cached}&_=%t`, callback);
     }
-    
+
     getSkills(callback) {
 
         // request options
@@ -1539,8 +1543,12 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
-    getAccount(callback) {
-        this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/accounts`, callback);
+    getAccount(includeActors, callback) {
+        if (typeof includeActors === 'function') {
+            callback = includeActors;
+            includeActors = false;
+        }
+        this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/accounts${includeActors ? '?includeActors=true' : ''}`, callback);
     }
 
     getContacts(options, callback) {

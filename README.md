@@ -21,6 +21,11 @@ Thank you for that work.
 
 ## Changelog:
 
+### __WORK IN PROGRESS__
+* IMPORTANT: Node.js 10 support is dropped, supports LTS versions of Node.js starting with 12.x
+* (Apollon77) Change Push connection to new signed flow
+* (RodolfoSilva) Add TypeScript Type definitions
+
 ### 3.9.0 (2021-07-30)
 * (guilhermelirio) Add skill launch function
 * (guilhermelirio) Add getSkills() function

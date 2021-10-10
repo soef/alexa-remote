@@ -29,10 +29,10 @@
     "layla.amazon.de"
   ],
   "dependencies": {
-    "alexa-cookie2": "^3.4.3",
+    "alexa-cookie2": "Apollon77/alexa-cookie",
     "https": "^1.0.0",
     "querystring": "^0.2.1",
-    "ws": "^8.2.2",
+    "ws": "^8.2.3",
     "extend": "^3.0.2",
     "uuid": "^8.3.2"
   },
@@ -51,7 +51,7 @@
     "url": "https://github.com/Apollon77/alexa-remote/issues"
   },
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=12.0.0"
   },
   "types": "alexa-remote.d.ts",
   "main": "alexa-remote.js",

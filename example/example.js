@@ -7,9 +7,7 @@ let alexa = new Alexa();
 let cookie = { ... };
 
 alexa.init({
-        cookie: cookie,  // cookie if already known, else can be generated using email/password
-        email: '...',    // optional, amazon email for login to get new cookie
-        password: '...', // optional, amazon password for login to get new cookie
+        cookie: cookie,  // cookie if already known, else can be generated using proxy
         proxyOnly: true,
         proxyOwnIp: 'localhost',
         proxyPort: 3001,
@@ -21,7 +19,10 @@ alexa.init({
 //        acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
 //        amazonPage: '...', // optional, override Amazon-Login-Page for cookie determination and referer for requests
         useWsMqtt: true, // optional, true to use the Websocket/MQTT direct push connection
-        cookieRefreshInterval: 7*24*60*1000 // optional, cookie refresh intervall, set to 0 to disable refresh
+        cookieRefreshInterval: 7*24*60*1000, // optional, cookie refresh intervall, set to 0 to disable refresh
+        formerDataStorePath: '...', // optional: overwrite path where some of the formerRegistrationData are persisted to optimize against Amazon security measures
+        formerRegistrationData: { ... }, // optional/preferred: provide the result object from subsequent proxy usages here and some generated data will be reused for next proxy call too
+        macDms: { ... }, // required since version 4.0 to use Push connection! Is returned in cookieData.macDms
     },
     function (err) {
         if (err) {
