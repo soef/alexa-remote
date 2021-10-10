@@ -108,7 +108,7 @@ class AlexaWsMqtt extends EventEmitter {
     }
 
     connectType2() {
-        let amazonPage = '.' + this._options.amazonPage;
+        let amazonPage = '.amazon.com'; // + this._options.amazonPage;
         if (amazonPage === '.amazon.com') amazonPage = '-js.amazon.com'; // Special Handling for US!
         const url = `wss://dp-gw-na${amazonPage}/tcomm/`;
 
@@ -322,7 +322,7 @@ class AlexaWsMqtt extends EventEmitter {
                 }, 180000);
             }
             msgCounter++;
-            if (msgCounter < 3) return;
+            if (msgCounter < 1 || !this.pingPongInterval) return;
 
             const incomingMsg = data.toString('ascii');
             //if (incomingMsg.includes('PON') && incomingMsg.includes('\u0000R\u0000e\u0000g\u0000u\u0000l\u0000a\u0000r')) {
