@@ -251,9 +251,9 @@ class AlexaWsMqtt extends EventEmitter {
 
         this.websocket.on('message', (data) => {
             if (!this.websocket || this.websocket.readyState !== 1 /* OPEN */) return;
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming RAW messagae: ' + data.toString('hex'));
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming RAW message: ' + data.toString('hex'));
             let message = this.parseIncomingMessage(data);
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming messagae: ' + JSON.stringify(message));
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message: ' + JSON.stringify(message));
 
             if (msgCounter === 0) { // initialization
                 if (message.content.protocolName) {
@@ -278,6 +278,7 @@ class AlexaWsMqtt extends EventEmitter {
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 3 (Register Connection) sent');
                     //console.log('SEND: ' + msg.toString('ascii'));
                     this.websocket.send(msg);
+                    msgCounter++;
                 } else { // A:H
                     msg = Buffer.from('0xa6f6a951 0x0000009c {"protocolName":"A:H","parameters":{"AlphaProtocolHandler.receiveWindowSize":"16","AlphaProtocolHandler.maxFragmentSize":"16000"}}TUNE');
                     //console.log('SEND: ' + msg.toString('ascii'));
@@ -290,7 +291,7 @@ class AlexaWsMqtt extends EventEmitter {
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A-H Initialization Msg 2+3 sent');
                 }
             }
-            else if (msgCounter === 1) {
+            if (msgCounter === 1) {
                 if (this.protocolName === 'A:H') {
                     //let msg = new Buffer('MSG 0x00000362 0x0e414e46 f 0x00000001 0xf904b9f5 0x00000109 GWM MSG 0x0000b479 0x0000003b urn:tcomm-endpoint:device:deviceType:0:deviceSerialNumber:0 0x00000041 urn:tcomm-endpoint:service:serviceName:DeeWebsiteMessagingService {"command":"REGISTER_CONNECTION"}FABE');
                     let msg = this.encodeGWRegisterAH();
@@ -690,6 +691,8 @@ class AlexaWsMqtt extends EventEmitter {
         let idx = 0;
         const message = {};
         message.service = readString(data.length - 4, 4);
+
+        this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message Service: ' + message.service);
 
         if (message.service === 'TUNE') {
             message.checksum = readHex(idx, 10);
