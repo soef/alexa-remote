@@ -272,10 +272,10 @@ class AlexaWsMqtt extends EventEmitter {
                 if (this.protocolName === 'A:F') { // A:F
                     msg = Buffer.from('0xfe88bc52 0x0000009c {"protocolName":"A:F","parameters":{"AlphaProtocolHandler.receiveWindowSize":"16","AlphaProtocolHandler.maxFragmentSize":"16000"}}TUNE');
                     this.websocket.send(msg);
-                    this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 2 sent');
+                    this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 2 sent: ' + msg.toString('hex'));
 
                     msg = this.encodeGWRegisterAF();
-                    this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 3 (Register Connection) sent');
+                    this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 3 (Register Connection) sent: ' + msg.toString('hex'));
                     //console.log('SEND: ' + msg.toString('ascii'));
                     this.websocket.send(msg);
                     msgCounter++;
