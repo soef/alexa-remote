@@ -251,7 +251,10 @@ class AlexaWsMqtt extends EventEmitter {
 
         this.websocket.on('message', (data) => {
             if (!this.websocket || this.websocket.readyState !== 1 /* OPEN */) return;
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming RAW messagae: ' + data.toString('hex'));
             let message = this.parseIncomingMessage(data);
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming messagae: ' + JSON.stringify(message));
+
             if (msgCounter === 0) { // initialization
                 if (message.content.protocolName) {
                     this.protocolName = message.content.protocolName;
@@ -263,6 +266,8 @@ class AlexaWsMqtt extends EventEmitter {
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Unexpected Response: ' + JSON.stringify(message));
                     this.protocolName = this.macDms ? 'A:F' : 'A:H';
                 }
+                this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Detected protocol ' + this.protocolName);
+
                 let msg;
                 if (this.protocolName === 'A:F') { // A:F
                     msg = Buffer.from('0xfe88bc52 0x0000009c {"protocolName":"A:F","parameters":{"AlphaProtocolHandler.receiveWindowSize":"16","AlphaProtocolHandler.maxFragmentSize":"16000"}}TUNE');
