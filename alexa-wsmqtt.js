@@ -158,6 +158,8 @@ class AlexaWsMqtt extends EventEmitter {
             }
         }
         catch (err) {
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Error on Init ' + err.message);
+            this._options.logger && this._options.logger(err.stack);
             this.emit('error', err);
             return;
         }

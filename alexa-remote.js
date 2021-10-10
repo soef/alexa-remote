@@ -339,6 +339,8 @@ class AlexaRemote extends EventEmitter {
         this.alexaWsMqtt = new AlexaWsMqtt(this._options, this.cookie, this.macDms);
         if (!this.alexaWsMqtt) return;
 
+        this._options.logger && this._options.logger('Alexa-Remote: Initialize WS-MQTT Push Connection');
+
         this.activityUpdateQueue = [];
         this.activityUpdateNotFoundCounter = 0;
         this.activityUpdateTimeout = null;
@@ -838,6 +840,7 @@ class AlexaRemote extends EventEmitter {
 	    delete logOptions.headers.Accept;
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
+        delete logOptions.headers['x-amzn-alexa-app'];
         this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
 
         let req;
