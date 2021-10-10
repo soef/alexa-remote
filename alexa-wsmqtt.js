@@ -231,7 +231,7 @@ class AlexaWsMqtt extends EventEmitter {
                 // tell Tuning Service that we support "A:H" protocol = AlphaPrococol
                 const msg = Buffer.from('0x99d4f71a 0x0000001d A:HTUNE');
                 //console.log('SEND: ' + msg.toString('ascii'));
-                this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization Msg 1 sent');
+                this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:H Initialization Msg 1 sent');
                 if (this.websocket.readyState !== 1 /* OPEN */) return;
                 this.websocket.send(msg);
             }
@@ -322,7 +322,7 @@ class AlexaWsMqtt extends EventEmitter {
                 }, 180000);
             }
             msgCounter++;
-            if (msgCounter < 1 || !this.pingPongInterval) return;
+            if (msgCounter < 2 || !this.pingPongInterval) return;
 
             const incomingMsg = data.toString('ascii');
             //if (incomingMsg.includes('PON') && incomingMsg.includes('\u0000R\u0000e\u0000g\u0000u\u0000l\u0000a\u0000r')) {
@@ -721,6 +721,8 @@ class AlexaWsMqtt extends EventEmitter {
             message.content.messageType = readString(24, 3);
             idx = 28;
 
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message Service Channel: ' + message.channel);
+
             if (message.channel === 0x361) { // GW_HANDSHAKE_CHANNEL
                 if (message.content.messageType === 'ACK') {
                     let length = readHex(idx, 10);
@@ -776,11 +778,11 @@ class AlexaWsMqtt extends EventEmitter {
                 }
             }
             else if (message.channel === 0x65) { // CHANNEL_FOR_HEARTBEAT
-                idx -= 1; // no delimiter!
                 message.content.payloadData = data.slice(idx, data.length - 4);
             }
         }
         //console.log(JSON.stringify(message, null, 4));
+        this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Parsed Message: ' + JSON.stringify(message));
         return message;
     }
 
