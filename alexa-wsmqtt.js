@@ -322,7 +322,7 @@ class AlexaWsMqtt extends EventEmitter {
                 }, 180000);
             }
             msgCounter++;
-            if (msgCounter < 2 || !this.pingPongInterval) return;
+            if (msgCounter < 3 || !this.pingPongInterval) return;
 
             const incomingMsg = data.toString('ascii');
             //if (incomingMsg.includes('PON') && incomingMsg.includes('\u0000R\u0000e\u0000g\u0000u\u0000l\u0000a\u0000r')) {
@@ -692,7 +692,7 @@ class AlexaWsMqtt extends EventEmitter {
         const message = {};
         message.service = readString(data.length - 4, 4);
 
-        this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message Service: ' + message.service);
+        //this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message Service: ' + message.service);
 
         if (message.service === 'TUNE') {
             message.checksum = readHex(idx, 10);
@@ -721,7 +721,7 @@ class AlexaWsMqtt extends EventEmitter {
             message.content.messageType = readString(24, 3);
             idx = 28;
 
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message Service Channel: ' + message.channel);
+            //this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message Service Channel: ' + message.channel);
 
             if (message.channel === 0x361) { // GW_HANDSHAKE_CHANNEL
                 if (message.content.messageType === 'ACK') {
@@ -782,7 +782,7 @@ class AlexaWsMqtt extends EventEmitter {
             }
         }
         //console.log(JSON.stringify(message, null, 4));
-        this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Parsed Message: ' + JSON.stringify(message));
+        //this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Parsed Message: ' + JSON.stringify(message));
         return message;
     }
 
