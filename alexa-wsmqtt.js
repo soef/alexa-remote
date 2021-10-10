@@ -37,7 +37,7 @@ class AlexaWsMqtt extends EventEmitter {
         const urlTime = Date.now();
         let amazonPage = '.' + this._options.amazonPage;
         if (amazonPage === '.amazon.com') amazonPage = '-js.amazon.com'; // Special Handling for US!
-        const url = `https://dp-gw-na${amazonPage}/?x-amz-device-type=ALEGCNGL9K0HM&x-amz-device-serial=${this.accountSerial}-${urlTime}`;
+        const url = `wss://dp-gw-na${amazonPage}/?x-amz-device-type=ALEGCNGL9K0HM&x-amz-device-serial=${this.accountSerial}-${urlTime}`;
 
         this.websocket = new WebSocket(url, [],
             {
@@ -110,7 +110,7 @@ class AlexaWsMqtt extends EventEmitter {
     connectType2() {
         let amazonPage = '.' + this._options.amazonPage;
         if (amazonPage === '.amazon.com') amazonPage = '-js.amazon.com'; // Special Handling for US!
-        const url = `https://dp-gw-na${amazonPage}/tcomm/`;
+        const url = `wss://dp-gw-na${amazonPage}/tcomm/`;
 
         this.websocket = new WebSocket(url, [],
             {
