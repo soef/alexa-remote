@@ -121,7 +121,7 @@ class AlexaRemote extends EventEmitter {
                 self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
                 if (self._options.formerRegistrationData) {
                     const tokensValidSince = Date.now() - self._options.formerRegistrationData.tokenDate;
-                    if (tokensValidSince < 24 * 60 * 60 * 1000) {
+                    if (tokensValidSince < 24 * 60 * 60 * 1000 && this._options.macDms) {
                         return callback(null);
                     }
                     self._options.logger && self._options.logger('Alexa-Remote: former registration data exist, try refresh');
