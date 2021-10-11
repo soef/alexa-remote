@@ -20,8 +20,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 4.0.0 (2021-10-11)
 * IMPORTANT: Node.js 10 support is dropped, supports LTS versions of Node.js starting with 12.x
 * (Apollon77) Change Push connection to new signed flow
 * (RodolfoSilva) Add TypeScript Type definitions
@@ -74,11 +73,11 @@ Thank you for that work.
 ### 3.3.2 (2020-11-23)
 * (Apollon77) handle potential crash case (Sentry IOBROKER-ALEXA2-27)
 * (Apollon77) also ignore PUSH_DEVICE_SETUP_STATE_CHANGE push messages
-* (Apollon77) Optimize WSMQTT Reconnection handling for timeout cases 
+* (Apollon77) Optimize WSMQTT Reconnection handling for timeout cases
 
 ### 3.3.1 (2020-07-24)
 * (Apollon77) Update cookie lib to maybe be more backward compatible if login/baseUrl was changed
-* (Apollon77) Increase timeout when reading routines 
+* (Apollon77) Increase timeout when reading routines
 
 ### 3.3.0 (2020-07-19)
 * (Apollon77) update amazon-cookie library again to optimize upgrades from earlier versions
@@ -110,7 +109,7 @@ Thank you for that work.
 * (hive) add new command curatedtts with allowed values ["goodbye", "confirmations", "goodmorning", "compliments", "birthday", "goodnight", "iamhome"] to play random curated sentences
 
 ### 3.1.0 (2019-12-30)
-* (Apollon77) remove device._orig because really big objects happened and got exceptions on deep copy using JSION.stringify 
+* (Apollon77) remove device._orig because really big objects happened and got exceptions on deep copy using JSION.stringify
 
 ### 3.0.3 (2019-12-28)
 * (Apollon77) update cookie lib
@@ -139,7 +138,7 @@ Thank you for that work.
 * (Apollon77) enhance announce/ssml to allow send to multiple devices using one command
 
 ### 2.4.0 (2019-07-21)
-* (Apollon77) Finalize methods and logix to send and read and delete messages and what's needed for this 
+* (Apollon77) Finalize methods and logix to send and read and delete messages and what's needed for this
 
 ### 2.3.7 (2019-07-06)
 * (Apollon77) fix (finally) special case on authentication check
@@ -216,26 +215,6 @@ Thank you for that work.
 * (Apollon77) many fixes and optimizations, changed code to be an ES6 class
 * (Apollon77) reworked the "prepare" step and only initialize what's really needed and allow extra "init" methods also to update Devices, Bluetooth and such. Docs will follow
 * (Apollon77) API breaking: executeAutomationRoutine is not expecting a routineId anymore, but the complete routine definition.
-
-### 0.2.x
-* (Apollon77) 0.2.8: fixes, fix shuffle/repeat commands, make sure speak object is a string
-* (Apollon77) 0.2.7: speak maximum are 250 characters, routines will now queried 2000 at once (instead of only 20 before)
-* (Apollon77) 0.2.6: fixes
-* (Apollon77) 0.2.5: new functions to read musicproviders and send searchphrases for them
-* (Apollon77) 0.2.5: by default direct all calls to "alexa."+amazonPage to be more generic, overwritable
-* (Apollon77) 0.2.4: several smaller bugfixes
-* (Apollon77) 0.2.4: an speak call with empty string will return an error
-* (Apollon77) 0.2.4: add infos if multiroom device or member
-* (Apollon77) 0.2.3: in non .com replace numbers with points into numbers with comma
-* (Apollon77) 0.2.0: several optimizations and publish as alexa-remote2 on npm
-* (Apollon77) 0.2.0: use alexa-cookie@0.2.0 library to also offer proxy support
-* (Apollon77) 0.2.0: retrieve automation routines in prepare
-* (Apollon77) 0.2.0: enhanced sendCommand and added support for Routines and sequencial Commands
-
-### 0.1.x
-* (Apollon77) 0.1.3: Use specific User-Agents for Win32, MacOS and linux based platforms
-* (Apollon77) 0.1.2: add logging for used Alexa-URL and user-Agent once at init
-* (Apollon77) 0.1.1: rename "shuffle" to "ShuffleCommand" and repeat to RepeatCommand)
 
 ### 0.1.0
 * (Apollon77) added automatic cookie renewal when email and password are provided
