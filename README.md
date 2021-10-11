@@ -20,8 +20,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 4.0.1 (2021-10-11)
 * (Apollon77) Adjust call headers
 
 ### 4.0.0 (2021-10-11)
