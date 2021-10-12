@@ -318,26 +318,29 @@ class AlexaWsMqtt extends EventEmitter {
                     await this.sendWs(msg);
                 }
 
-                //msg = new Buffer('4D53472030783030303030303635203078306534313465343720662030783030303030303031203078626332666262356620307830303030303036322050494E00000000D1098D8CD1098D8C000000070052006500670075006C0061007246414245', 'hex'); // "MSG 0x00000065 0x0e414e47 f 0x00000001 0xbc2fbb5f 0x00000062 PIN" + 30 + "FABE"
-                let msg = this.encodePing();
-                this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Send First Ping');
-                //console.log('SEND: ' + msg.toString('hex'));
-                await this.sendWs(msg);
+                setTimeout(() => {
 
-                this.pingPongInterval = setInterval(() => {
-                    if (!this.websocket) return;
-                    //let msg = new Buffer('4D53472030783030303030303635203078306534313465343720662030783030303030303031203078626332666262356620307830303030303036322050494E00000000D1098D8CD1098D8C000000070052006500670075006C0061007246414245', 'hex'); // "MSG 0x00000065 0x0e414e47 f 0x00000001 0xbc2fbb5f 0x00000062 PIN" + 30 + "FABE"
+                    //msg = new Buffer('4D53472030783030303030303635203078306534313465343720662030783030303030303031203078626332666262356620307830303030303036322050494E00000000D1098D8CD1098D8C000000070052006500670075006C0061007246414245', 'hex'); // "MSG 0x00000065 0x0e414e47 f 0x00000001 0xbc2fbb5f 0x00000062 PIN" + 30 + "FABE"
                     let msg = this.encodePing();
-                    this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Send Ping');
+                    this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Send First Ping');
                     //console.log('SEND: ' + msg.toString('hex'));
-                    this.websocket.send(msg);
+                    await this.sendWs(msg);
 
-                    this.pongTimeout = setTimeout(() => {
-                        this.pongTimeout = null;
-                        this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: No Pong received after 30s');
-                        this.websocket && this.websocket.close();
-                    }, 30000);
-                }, 180000);
+                    this.pingPongInterval = setInterval(() => {
+                        if (!this.websocket) return;
+                        //let msg = new Buffer('4D53472030783030303030303635203078306534313465343720662030783030303030303031203078626332666262356620307830303030303036322050494E00000000D1098D8CD1098D8C000000070052006500670075006C0061007246414245', 'hex'); // "MSG 0x00000065 0x0e414e47 f 0x00000001 0xbc2fbb5f 0x00000062 PIN" + 30 + "FABE"
+                        let msg = this.encodePing();
+                        this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Send Ping');
+                        //console.log('SEND: ' + msg.toString('hex'));
+                        this.websocket.send(msg);
+
+                        this.pongTimeout = setTimeout(() => {
+                            this.pongTimeout = null;
+                            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: No Pong received after 30s');
+                            this.websocket && this.websocket.close();
+                        }, 30000);
+                    }, 180000);
+                }, 100);
             }
             msgCounter++;
             if (msgCounter < 3 || !this.pingPongInterval) return;
