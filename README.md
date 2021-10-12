@@ -20,8 +20,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 4.0.3 (2021-10-12)
 * (Apollon77) Fix crash case (Sentry IOBROKER-ALEXA2-AT)
 
 ### 4.0.2 (2021-10-12)
