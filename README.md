@@ -20,8 +20,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 4.0.2 (2021-10-12)
 * (Apollon77) Adjust Timing on Push Connection initialization
 * (Apollon77) Adjust timing when matching History entries because sometimes Amazon seems to need a bit longer for new infos become available
 
