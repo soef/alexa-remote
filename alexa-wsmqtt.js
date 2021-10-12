@@ -324,7 +324,7 @@ class AlexaWsMqtt extends EventEmitter {
                     let msg = this.encodePing();
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Send First Ping');
                     //console.log('SEND: ' + msg.toString('hex'));
-                    await this.sendWs(msg);
+                    this.websocket.send(msg);
 
                     this.pingPongInterval = setInterval(() => {
                         if (!this.websocket) return;
