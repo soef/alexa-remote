@@ -148,6 +148,16 @@ class AlexaWsMqtt extends EventEmitter {
         return url;
     }
 
+    sendWs(data) {
+        return new Promise(resolve => {
+            if (!this.websocket) {
+                resolve();
+                return;
+            }
+            this.websocket.send(data, () => resolve());
+        });
+    }
+
     connect() {
         let url;
         try {
@@ -249,7 +259,7 @@ class AlexaWsMqtt extends EventEmitter {
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Unexpected Response: ' + response);
         });
 
-        this.websocket.on('message', (data) => {
+        this.websocket.on('message', async (data) => {
             if (!this.websocket || this.websocket.readyState !== 1 /* OPEN */) return;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming RAW message: ' + data.toString('hex'));
             let message = this.parseIncomingMessage(data);
@@ -271,23 +281,23 @@ class AlexaWsMqtt extends EventEmitter {
                 let msg;
                 if (this.protocolName === 'A:F') { // A:F
                     msg = Buffer.from('0xfe88bc52 0x0000009c {"protocolName":"A:F","parameters":{"AlphaProtocolHandler.receiveWindowSize":"16","AlphaProtocolHandler.maxFragmentSize":"16000"}}TUNE');
-                    this.websocket.send(msg);
+                    await this.sendWs(msg);
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 2 sent: ' + msg.toString('hex'));
 
                     msg = this.encodeGWRegisterAF();
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 3 (Register Connection) sent: ' + msg.toString('hex'));
                     //console.log('SEND: ' + msg.toString('ascii'));
-                    this.websocket.send(msg);
+                    await this.sendWs(msg);
                     msgCounter++;
                 } else { // A:H
                     msg = Buffer.from('0xa6f6a951 0x0000009c {"protocolName":"A:H","parameters":{"AlphaProtocolHandler.receiveWindowSize":"16","AlphaProtocolHandler.maxFragmentSize":"16000"}}TUNE');
                     //console.log('SEND: ' + msg.toString('ascii'));
-                    this.websocket.send(msg);
+                    await this.sendWs(msg);
 
                     //msg = new Buffer('MSG 0x00000361 0x0e414e45 f 0x00000001 0xd7c62f29 0x0000009b INI 0x00000003 1.0 0x00000024 ff1c4525-c036-4942-bf6c-a098755ac82f 0x00000164d106ce6b END FABE');
                     msg = this.encodeGWHandshake();
                     //console.log('SEND: ' + msg.toString('ascii'));
-                    this.websocket.send(msg);
+                    await this.sendWs(msg);
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A-H Initialization Msg 2+3 sent');
                 }
             }
@@ -297,14 +307,14 @@ class AlexaWsMqtt extends EventEmitter {
                     let msg = this.encodeGWRegisterAH();
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization Msg 4 (Register Connection) sent');
                     //console.log('SEND: ' + msg.toString('ascii'));
-                    this.websocket.send(msg);
+                    await this.sendWs(msg);
                 }
 
                 //msg = new Buffer('4D53472030783030303030303635203078306534313465343720662030783030303030303031203078626332666262356620307830303030303036322050494E00000000D1098D8CD1098D8C000000070052006500670075006C0061007246414245', 'hex'); // "MSG 0x00000065 0x0e414e47 f 0x00000001 0xbc2fbb5f 0x00000062 PIN" + 30 + "FABE"
                 let msg = this.encodePing();
                 this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Send First Ping');
                 //console.log('SEND: ' + msg.toString('hex'));
-                this.websocket.send(msg);
+                await this.sendWs(msg);
 
                 this.pingPongInterval = setInterval(() => {
                     if (!this.websocket) return;

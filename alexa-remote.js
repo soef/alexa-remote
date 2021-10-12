@@ -682,7 +682,7 @@ class AlexaRemote extends EventEmitter {
                 if (lastFoundQueueIndex === -1) {
                     this._options.logger && this._options.logger('Alexa-Remote: No activities from stored ' + this.activityUpdateQueue.length + ' entries found in queue (' + this.activityUpdateNotFoundCounter + ')');
                     this.activityUpdateNotFoundCounter++;
-                    if (this.activityUpdateNotFoundCounter > 2) {
+                    if (this.activityUpdateNotFoundCounter > 5) {
                         this._options.logger && this._options.logger('Alexa-Remote: Reset expected activities');
                         this.activityUpdateQueue = [];
                         this.activityUpdateNotFoundCounter = 0;
@@ -699,7 +699,7 @@ class AlexaRemote extends EventEmitter {
                 this.activityUpdateTimeout = setTimeout(() => {
                     this.activityUpdateTimeout = null;
                     this.getPushedActivities();
-                }, 200);
+                }, 300);
 
             }
 

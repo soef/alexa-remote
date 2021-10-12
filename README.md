@@ -20,6 +20,11 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Adjust Timing on Push Connection initialization
+* (Apollon77) Adjust timing when matching History entries because sometimes Amazon seems to need a bit longer for new infos become available
+
 ### 4.0.1 (2021-10-11)
 * (Apollon77) Adjust call headers
 
