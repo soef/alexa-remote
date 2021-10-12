@@ -183,7 +183,9 @@ class AlexaWsMqtt extends EventEmitter {
         let initTimeout = null;
 
         const onWebsocketClose = (code, reason) => {
-            reason = reason.toString();
+            if (reason) {
+                reason = reason.toString();
+            }
             this.websocket = null;
             this.connectionActive = false;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Close: ' + code + ': ' + reason);
