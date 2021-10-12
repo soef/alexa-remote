@@ -158,6 +158,12 @@ class AlexaWsMqtt extends EventEmitter {
         });
     }
 
+    wait(delay) {
+        return new Promise(resolve => {
+            setTimeout(() => resolve(), delay);
+        });
+    }
+
     connect() {
         let url;
         try {
@@ -284,6 +290,7 @@ class AlexaWsMqtt extends EventEmitter {
                     await this.sendWs(msg);
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 2 sent: ' + msg.toString('hex'));
 
+                    await this.wait(100);
                     msg = this.encodeGWRegisterAF();
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: A:F Initialization Msg 3 (Register Connection) sent: ' + msg.toString('hex'));
                     //console.log('SEND: ' + msg.toString('ascii'));
@@ -294,6 +301,7 @@ class AlexaWsMqtt extends EventEmitter {
                     //console.log('SEND: ' + msg.toString('ascii'));
                     await this.sendWs(msg);
 
+                    await this.wait(100);
                     //msg = new Buffer('MSG 0x00000361 0x0e414e45 f 0x00000001 0xd7c62f29 0x0000009b INI 0x00000003 1.0 0x00000024 ff1c4525-c036-4942-bf6c-a098755ac82f 0x00000164d106ce6b END FABE');
                     msg = this.encodeGWHandshake();
                     //console.log('SEND: ' + msg.toString('ascii'));
