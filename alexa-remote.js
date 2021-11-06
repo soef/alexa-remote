@@ -943,14 +943,14 @@ class AlexaRemote extends EventEmitter {
 
     getMedia(serialOrName, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/media/state?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
     }
 
     getPlayerInfo(serialOrName, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/np/player?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
     }
@@ -1311,7 +1311,7 @@ class AlexaRemote extends EventEmitter {
     // alarm volume
     getDeviceNotificationState(serialOrName, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/device-notification-state/${dev.deviceType}/${dev.softwareVersion}/${dev.serialNumber}&_=%t`, callback);
     }
@@ -1340,7 +1340,7 @@ class AlexaRemote extends EventEmitter {
             contentType = 'station';
         }
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/tunein/queue-and-play
            ?deviceSerialNumber=${dev.serialNumber}
@@ -1606,7 +1606,7 @@ class AlexaRemote extends EventEmitter {
 
     connectBluetooth(serialOrName, btAddress, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         let flags = {
             data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
@@ -1617,7 +1617,7 @@ class AlexaRemote extends EventEmitter {
 
     disconnectBluetooth(serialOrName, btAddress, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         let flags = {
             //data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
@@ -1628,7 +1628,7 @@ class AlexaRemote extends EventEmitter {
 
     setDoNotDisturb(serialOrName, enabled, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         let flags = {
             data: JSON.stringify({
@@ -1641,7 +1641,7 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet (`/api/dnd/status`, callback, flags);
     }
 
-    find(serialOrName, callback) {
+    find(serialOrName) {
         if (typeof serialOrName === 'object') return serialOrName;
         if (!serialOrName) return null;
         let dev = this.serialNumbers[serialOrName];
@@ -1654,7 +1654,7 @@ class AlexaRemote extends EventEmitter {
 
     setAlarmVolume(serialOrName, volume, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         let flags = {
             data: JSON.stringify ({
@@ -1673,7 +1673,7 @@ class AlexaRemote extends EventEmitter {
     }
     sendMessage(serialOrName, command, value, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         const commandObj = { contentFocusClientId: null };
         switch (command) {
@@ -1720,10 +1720,14 @@ class AlexaRemote extends EventEmitter {
         }
         let deviceSerialNumber = 'ALEXA_CURRENT_DSN';
         let deviceType= 'ALEXA_CURRENT_DEVICE_TYPE';
+        let deviceOwnerCustomerId = 'ALEXA_CUSTOMER_ID';
         if (serialOrName && !Array.isArray(serialOrName)) {
             const currDevice = this.find(serialOrName);
-            deviceSerialNumber = currDevice.serialNumber;
-            deviceType = currDevice.deviceType;
+            if (currDevice) {
+                deviceSerialNumber = currDevice.serialNumber;
+                deviceType = currDevice.deviceType;
+                deviceOwnerCustomerId = currDevice.deviceOwnerCustomerId;
+            }
         }
         const seqNode = {
             '@type': 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode',
@@ -1731,7 +1735,7 @@ class AlexaRemote extends EventEmitter {
                 'deviceType': deviceType,
                 'deviceSerialNumber': deviceSerialNumber,
                 'locale': 'ALEXA_CURRENT_LOCALE',
-                'customerId':'ALEXA_CUSTOMER_ID'
+                'customerId': deviceOwnerCustomerId
             }
         };
         switch (command) {
@@ -1868,7 +1872,7 @@ class AlexaRemote extends EventEmitter {
                 seqNode.type = 'Alexa.Notifications.SendMobilePush';
                 if (typeof value !== 'string') value = String(value);
                 if (value.length === 0) {
-                    return callback && callback(new Error('Can not notify empty string', null));
+                    return callback && callback(new Error('Can not notify empty string'), null);
                 }
                 seqNode.operationPayload.notificationMessage = value;
                 seqNode.operationPayload.alexaUrl = '#v2/behaviors';
@@ -1910,7 +1914,7 @@ class AlexaRemote extends EventEmitter {
                     }
                 ];
                 seqNode.operationPayload.target = {
-                    "customerId": "ALEXA_CUSTOMER_ID",
+                    "customerId": deviceOwnerCustomerId,
                     "devices": [
                         {
                             "deviceSerialNumber": deviceSerialNumber,
@@ -1969,7 +1973,7 @@ class AlexaRemote extends EventEmitter {
 
     sendSequenceCommand(serialOrName, command, value, callback) {
         let dev = this.find(Array.isArray(serialOrName) ? serialOrName[0] : serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         if (typeof value === 'function') {
             callback = value;
@@ -2035,8 +2039,8 @@ class AlexaRemote extends EventEmitter {
 
     playMusicProvider(serialOrName, providerId, searchPhrase, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
-        if (searchPhrase === '') return callback && callback(new Error ('Searchphrase empty', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+        if (searchPhrase === '') return callback && callback(new Error('Searchphrase empty'), null);
 
         const operationPayload = {
             'deviceType': dev.deviceType,
@@ -2183,7 +2187,7 @@ class AlexaRemote extends EventEmitter {
 
     renameDevice(serialOrName, newName, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         let o = {
             accountName: newName,
@@ -2332,7 +2336,7 @@ class AlexaRemote extends EventEmitter {
 
     unpaireBluetooth(serialOrName, btAddress, callback) {
         let dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         let flags = {
             method: 'POST',
@@ -2346,7 +2350,7 @@ class AlexaRemote extends EventEmitter {
 
     deleteDevice(serialOrName, callback) {
         let dev = this.find(serialOrName, callback);
-        if (!dev) return callback && callback(new Error ('Unknown Device or Serial number', null));
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         let flags = {
             method: 'DELETE',
