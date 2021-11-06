@@ -167,7 +167,8 @@ class AlexaWsMqtt extends EventEmitter {
     connect() {
         let url;
         try {
-            if (!this.macDms) {
+            if (!this.macDms || !this.macDms.adp_token || !this.macDms.device_private_key) {
+                this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Try to initialize old style push connection because macDms data missing');
                 url = this.connectType1();
             } else {
                 url = this.connectType2();
@@ -264,11 +265,13 @@ class AlexaWsMqtt extends EventEmitter {
         });
 
         this.websocket.on('unexpected-response', (request, response) => {
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Unexpected Response: ' + response);
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Unexpected Response: ' + JSON.stringify(response));
         });
 
         this.websocket.on('message', async (data) => {
-            if (!this.websocket || this.websocket.readyState !== 1 /* OPEN */) return;
+            if (!this.websocket || this.websocket.readyState !== 1 /* OPEN */) {
+                return;
+            }
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming RAW message: ' + data.toString('hex'));
             let message = this.parseIncomingMessage(data);
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Incoming message: ' + JSON.stringify(message));
@@ -321,6 +324,9 @@ class AlexaWsMqtt extends EventEmitter {
                 }
 
                 setTimeout(() => {
+                    if (!this.websocket || this.websocket.readyState !== 1 /* OPEN */) {
+                        return;
+                    }
 
                     //msg = new Buffer('4D53472030783030303030303635203078306534313465343720662030783030303030303031203078626332666262356620307830303030303036322050494E00000000D1098D8CD1098D8C000000070052006500670075006C0061007246414245', 'hex'); // "MSG 0x00000065 0x0e414e47 f 0x00000001 0xbc2fbb5f 0x00000062 PIN" + 30 + "FABE"
                     let msg = this.encodePing();
