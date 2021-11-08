@@ -1713,7 +1713,11 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
-    createSequenceNode(command, value, serialOrName, callback) {
+    createSequenceNode(command, value, serialOrName, overrideCustomerId, callback) {
+        if (typeof overrideCustomerId === 'function') {
+            callback = overrideCustomerId;
+            overrideCustomerId = null;
+        }
         if (typeof serialOrName === 'function') {
             callback = serialOrName;
             serialOrName = undefined;
@@ -1728,6 +1732,9 @@ class AlexaRemote extends EventEmitter {
                 deviceType = currDevice.deviceType;
                 deviceOwnerCustomerId = currDevice.deviceOwnerCustomerId;
             }
+        }
+        if (overrideCustomerId) {
+            deviceOwnerCustomerId = overrideCustomerId;
         }
         const seqNode = {
             '@type': 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode',
@@ -1944,7 +1951,11 @@ class AlexaRemote extends EventEmitter {
         return seqNode;
     }
 
-    sendMultiSequenceCommand(serialOrName, commands, sequenceType, callback) {
+    sendMultiSequenceCommand(serialOrName, commands, sequenceType, overrideCustomerId, callback) {
+        if (typeof overrideCustomerId === 'function') {
+            callback = overrideCustomerId;
+            overrideCustomerId = null;
+        }
         if (typeof sequenceType === 'function') {
             callback = sequenceType;
             sequenceType = null;
@@ -1953,7 +1964,7 @@ class AlexaRemote extends EventEmitter {
 
         let nodes = [];
         for (let command of commands) {
-            const commandNode = this.createSequenceNode(command.command, command.value, command.device ? command.device : serialOrName, callback);
+            const commandNode = this.createSequenceNode(command.command, command.value, command.device ? command.device : serialOrName, overrideCustomerId, callback);
             if (commandNode) nodes.push(commandNode);
         }
 
@@ -1971,7 +1982,12 @@ class AlexaRemote extends EventEmitter {
         this.sendSequenceCommand(serialOrName, sequenceObj, callback);
     }
 
-    sendSequenceCommand(serialOrName, command, value, callback) {
+    sendSequenceCommand(serialOrName, command, value, overrideCustomerId, callback) {
+        if (typeof overrideCustomerId === 'function') {
+            callback = overrideCustomerId;
+            overrideCustomerId = null;
+        }
+
         let dev = this.find(Array.isArray(serialOrName) ? serialOrName[0] : serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
@@ -1987,7 +2003,7 @@ class AlexaRemote extends EventEmitter {
         else {
             seqCommandObj = {
                 '@type': 'com.amazon.alexa.behaviors.model.Sequence',
-                'startNode': this.createSequenceNode(command, value)
+                'startNode': this.createSequenceNode(command, value, dev, overrideCustomerId);
             };
         }
 
