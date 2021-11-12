@@ -2003,7 +2003,7 @@ class AlexaRemote extends EventEmitter {
         else {
             seqCommandObj = {
                 '@type': 'com.amazon.alexa.behaviors.model.Sequence',
-                'startNode': this.createSequenceNode(command, value, dev, overrideCustomerId);
+                'startNode': this.createSequenceNode(command, value, dev, overrideCustomerId)
             };
         }
 
