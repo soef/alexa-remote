@@ -20,8 +20,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 4.1.0 (2021-11-13)
 * (Apollon77) SequenceNodes created for a device are now bound to the "deviceOwnCustomer" - should help in mixed owner groups
 
 ### 4.0.4 (2021-11-06)
