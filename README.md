@@ -20,8 +20,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 4.1.1 (2021-11-13)
 * (Apollon77) Prevent crash case in edge cases when unexpected WSMQTT responses are received
 
 ### 4.1.0 (2021-11-13)
