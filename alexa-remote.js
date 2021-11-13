@@ -1,10 +1,3 @@
-/* jshint -W097 */
-/* jshint -W030 */
-/* jshint strict: false */
-/* jslint node: true */
-/* jslint esversion: 6 */
-'use strict';
-
 const https = require('https');
 const querystring = require('querystring');
 const os = require('os');
@@ -74,7 +67,7 @@ class AlexaRemote extends EventEmitter {
         if (typeof cookie === 'object') {
             this._options = cookie;
             if (!this._options.userAgent) {
-                let platform = os.platform();
+                const platform = os.platform();
                 if (platform === 'win32') {
                     this._options.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
                 }
@@ -212,14 +205,14 @@ class AlexaRemote extends EventEmitter {
         this.getNotifications((err, res) => {
             if (err || !res || !res.notifications || !Array.isArray(res.notifications)) return callback && callback();
 
-            for (var serialNumber in this.serialNumbers) {
+            for (const serialNumber in this.serialNumbers) {
                 if (this.serialNumbers.hasOwnProperty(serialNumber)) {
                     this.serialNumbers[serialNumber].notifications = [];
                 }
             }
 
             res.notifications.forEach((noti) => {
-                let device = this.find(noti.deviceSerialNumber);
+                const device = this.find(noti.deviceSerialNumber);
                 if (!device) {
                     //TODO: new stuff
                     return;
@@ -240,7 +233,7 @@ class AlexaRemote extends EventEmitter {
             if (err || !wakeWords || !Array.isArray(wakeWords.wakeWords)) return callback && callback();
 
             wakeWords.wakeWords.forEach((o) => {
-                let device = this.find(o.deviceSerialNumber);
+                const device = this.find(o.deviceSerialNumber);
                 if (!device) {
                     //TODO: new stuff
                     return;
@@ -256,7 +249,7 @@ class AlexaRemote extends EventEmitter {
     initDeviceState(callback) {
         this.getDevices((err, result) => {
             if (!err && result && Array.isArray(result.devices)) {
-                let customerIds = {};
+                const customerIds = {};
                 result.devices.forEach((device) => {
                     const existingDevice = this.find(device.serialNumber);
                     if (!existingDevice) {
@@ -360,7 +353,7 @@ class AlexaRemote extends EventEmitter {
         });
         this.alexaWsMqtt.on('command', (command, payload) => {
 
-			this.emit('command', { 'command': command, 'payload': payload });
+            this.emit('command', { 'command': command, 'payload': payload });
 
             switch(command) {
                 case 'PUSH_DOPPLER_CONNECTION_CHANGE':
@@ -624,7 +617,7 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_TODO_CHANGE': // does not exist?
                 case 'PUSH_LIST_CHANGE': // does not exist?
                 case 'PUSH_LIST_ITEM_CHANGE':
-					/*
+                    /*
 					{
 						destinationUserId:'A12XXXXXWISGT',
 						listId:'YW16bjEuYWNjb3VudC5BRzJGWEpGWE5DRDZNVzNRSUdFM0xLWkZCWFhRLVRBU0s=',
@@ -633,13 +626,13 @@ class AlexaRemote extends EventEmitter {
 						listItemId:'c6852978-bb79-44dc-b7e5-8f5e577432cf'
 					}
 					*/
-					this.emit('ws-todo-change', {
-						destinationUserId: payload.destinationUserId,
-						eventType: payload.eventName, // itemCreated, itemUpdated (including checked ToDo), itemDeleted
-						listId: payload.listId,
-						listItemVersion: payload.version,
-						listItemId: payload.listItemId
-					});
+                    this.emit('ws-todo-change', {
+                        destinationUserId: payload.destinationUserId,
+                        eventType: payload.eventName, // itemCreated, itemUpdated (including checked ToDo), itemDeleted
+                        listId: payload.listId,
+                        listItemVersion: payload.version,
+                        listItemId: payload.listItemId
+                    });
                     return;
 
                 case 'PUSH_MICROPHONE_STATE':
@@ -791,7 +784,7 @@ class AlexaRemote extends EventEmitter {
             callback = null;
         };
 
-        let options = {
+        const options = {
             host: flags.host || this.baseUrl,
             path: '',
             method: 'GET',
@@ -814,13 +807,13 @@ class AlexaRemote extends EventEmitter {
         if (!path.startsWith('/')) {
             path = path.replace(/^https:\/\//, '');
             //let ar = path.match(/^([^\/]+)(\/.*$)/);
-            let ar = path.match(/^([^\/]+)([\/]*.*$)/);
+            const ar = path.match(/^([^\/]+)([\/]*.*$)/);
             options.host = ar[1];
             path = ar[2];
         } else {
             options.host = this.baseUrl;
         }
-        let time = new Date().getTime();
+        const time = new Date().getTime();
         path = path.replace(/%t/g, time);
 
         options.path = path;
@@ -836,7 +829,7 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers['Accept-Encoding'];
         delete logOptions.headers['User-Agent'];
         delete logOptions.headers['Content-Type'];
-	    delete logOptions.headers.Accept;
+        delete logOptions.headers.Accept;
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
         this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
@@ -910,7 +903,7 @@ class AlexaRemote extends EventEmitter {
         req.end();
     }
 
-/// Public
+    /// Public
     checkAuthentication(callback) {
         this.httpsGetCall ('/api/bootstrap?version=0', function (err, res) {
             if (res && res.authentication && res.authentication.authenticated !== undefined) {
@@ -942,14 +935,14 @@ class AlexaRemote extends EventEmitter {
     }
 
     getMedia(serialOrName, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/media/state?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
     }
 
     getPlayerInfo(serialOrName, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/np/player?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&screenWidth=1392&_=%t`, callback);
@@ -957,13 +950,13 @@ class AlexaRemote extends EventEmitter {
 
     getLists(callback) {
         this.httpsGet ('/api/namedLists?_=%t', (err, res) => callback && callback(err, res && res.lists));
-	}
+    }
 
     getList(listId, callback) {
         this.httpsGet ('/api/namedLists/' + listId + '?_=%t', callback);
-	}
+    }
 
-	/**
+    /**
 	 * Get items from a list.
 	 *
 	 * @param {String} listId List ID to retrieve items from
@@ -972,6 +965,7 @@ class AlexaRemote extends EventEmitter {
 	 * @param {String} [options.endTime] filter items regarding end time
 	 * @param {String} [options.completed] filter items regarding completion
 	 * @param {String} [options.listIds] list IDs
+     * @param {function} callback
 	 *
 	 */
     getListItems(listId, options, callback) {
@@ -982,93 +976,93 @@ class AlexaRemote extends EventEmitter {
             options = {};
         }
 
-		// get params by options
-		let params = '';
-		for (let option in options) {
-			params += '&' + option + '=' + options[option];
-		}
+        // get params by options
+        let params = '';
+        for (const option in options) {
+            params += '&' + option + '=' + options[option];
+        }
 
-		// send request
+        // send request
         this.httpsGet ('/api/namedLists/' + listId + '/items?_=%t' + params, (err, res) => callback && callback(err, res && res.list));
-	}
+    }
 
-	addListItem(listId, options, callback) {
+    addListItem(listId, options, callback) {
 
         // get function params
         if (typeof options === 'string') {
             options = { 'value': options };
         }
 
-		// request options
-        let request = {
-			'method': 'POST',
-			'data': JSON.stringify({
-				'listId': listId,
-				'createdDateTime': new Date().getTime(),
-				'completed': false,
-				...options
-			})
+        // request options
+        const request = {
+            'method': 'POST',
+            'data': JSON.stringify({
+                'listId': listId,
+                'createdDateTime': new Date().getTime(),
+                'completed': false,
+                ...options
+            })
         };
 
-		// send request
+        // send request
         this.httpsGet ('/api/namedLists/' + listId + '/item', callback, request);
-	}
+    }
 
-	updateListItem(listId, listItem, options, callback) {
+    updateListItem(listId, listItem, options, callback) {
 
-		// providing a version is mandatory
-		if (typeof options !== 'object' || !options.version || !options.value) {
-			let errors = [];
+        // providing a version is mandatory
+        if (typeof options !== 'object' || !options.version || !options.value) {
+            const errors = [];
 
-			if (!options.version && callback) {
-				errors.push('Providing the current version via options is mandatory!');
-			}
+            if (!options.version && callback) {
+                errors.push('Providing the current version via options is mandatory!');
+            }
 
-			if (!options.value && callback) {
-				errors.push('Providing a new value (description) via options is mandatory!');
-			}
+            if (!options.value && callback) {
+                errors.push('Providing a new value (description) via options is mandatory!');
+            }
 
-			callback && callback(errors);
-			return false;
-		}
+            callback && callback(errors);
+            return false;
+        }
 
-		// request options
-        let request = {
-			'method': 'PUT',
-			'data': JSON.stringify({
-				'listId': listId,
-				'id': listItem,
-				'updatedDateTime': new Date().getTime(),
-				...options
-			})
+        // request options
+        const request = {
+            'method': 'PUT',
+            'data': JSON.stringify({
+                'listId': listId,
+                'id': listItem,
+                'updatedDateTime': new Date().getTime(),
+                ...options
+            })
         };
 
-		// send request
+        // send request
         this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
-	}
+    }
 
-	deleteListItem(listId, listItem, callback) {
+    deleteListItem(listId, listItem, callback) {
 
-		// data
-		let data = JSON.stringify({
-			'listId': listId,
-			'id': listItem,
-			'value': '' // must be provided, but value doesn't matter
-		});
+        // data
+        const data = JSON.stringify({
+            'listId': listId,
+            'id': listItem,
+            'value': '' // must be provided, but value doesn't matter
+        });
 
-		// request options
-        let request = {
-			'method': 'DELETE',
-			'data': data,
-			'headers': {
-				'Content-Type': 'application/json',
-				'Content-Length': data.length
-			}
+        // request options
+        const request = {
+            'method': 'DELETE',
+            'data': data,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Content-Length': data.length
+            }
         };
 
-		// send request
+        // send request
         this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
-	}
+    }
 
     getWakeWords(callback) {
         this.httpsGet (`/api/wake-word?_=%t`, callback);
@@ -1089,7 +1083,7 @@ class AlexaRemote extends EventEmitter {
     getSkills(callback) {
 
         // request options
-        let request = {
+        const request = {
             'method': 'GET',
             'headers': {
                 'Accept': 'application/vnd+amazon.uitoolkit+json;ns=1;fl=0'
@@ -1123,7 +1117,7 @@ class AlexaRemote extends EventEmitter {
             value = new Date().getTime() + 5000;
         }
 
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return null;
 
         const now = new Date();
@@ -1167,40 +1161,52 @@ class AlexaRemote extends EventEmitter {
     parseValue4Notification(notification, value) {
         switch (typeof value) {
             case 'object':
-                notification = extend(notification, value); // we combine the objects
-                /*
-                {
-                    'alarmTime': 0,
-                    'createdDate': 1522585752734,
-                    'deferredAtTime': null,
-                    'deviceSerialNumber': 'G090LF09643202VS',
-                    'deviceType': 'A3S5BH2HU6VAYF',
-                    'geoLocationTriggerData': null,
-                    'id': 'A3S5BH2HU6VAYF-G090LF09643202VS-17ef9b04-cb1d-31ed-ab2c-245705d904be',
-                    'musicAlarmId': null,
-                    'musicEntity': null,
-                    'notificationIndex': '17ef9b04-cb1d-31ed-ab2c-245705d904be',
-                    'originalDate': '2018-04-01',
-                    'originalTime': '20:00:00.000',
-                    'provider': null,
-                    'recurringPattern': null,
-                    'remainingTime': 0,
-                    'reminderLabel': null,
-                    'sound': {
-                        'displayName': 'Countertop',
-                        'folder': null,
-                        'id': 'system_alerts_repetitive_04',
-                        'providerId': 'ECHO',
-                        'sampleUrl': 'https://s3.amazonaws.com/deeappservice.prod.notificationtones/system_alerts_repetitive_04.mp3'
-                    },
-                    'status': 'OFF',
-                    'timeZoneId': null,
-                    'timerLabel': null,
-                    'triggerTime': 0,
-                    'type': 'Alarm',
-                    'version': '4'
+                if (value instanceof Date) {
+                    if (notification.type !== 'Timer') {
+                        notification.alarmTime = value.getTime();
+                        notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
+                    }
+                    /*else {
+                        let duration = value.getTime() - Date.now();
+                        if (duration < 0) duration = value.getTime();
+                        notification.remainingTime = duration;
+                    }*/
+                } else {
+                    notification = extend(notification, value); // we combine the objects
+                    /*
+                    {
+                        'alarmTime': 0,
+                        'createdDate': 1522585752734,
+                        'deferredAtTime': null,
+                        'deviceSerialNumber': 'G090LF09643202VS',
+                        'deviceType': 'A3S5BH2HU6VAYF',
+                        'geoLocationTriggerData': null,
+                        'id': 'A3S5BH2HU6VAYF-G090LF09643202VS-17ef9b04-cb1d-31ed-ab2c-245705d904be',
+                        'musicAlarmId': null,
+                        'musicEntity': null,
+                        'notificationIndex': '17ef9b04-cb1d-31ed-ab2c-245705d904be',
+                        'originalDate': '2018-04-01',
+                        'originalTime': '20:00:00.000',
+                        'provider': null,
+                        'recurringPattern': null,
+                        'remainingTime': 0,
+                        'reminderLabel': null,
+                        'sound': {
+                            'displayName': 'Countertop',
+                            'folder': null,
+                            'id': 'system_alerts_repetitive_04',
+                            'providerId': 'ECHO',
+                            'sampleUrl': 'https://s3.amazonaws.com/deeappservice.prod.notificationtones/system_alerts_repetitive_04.mp3'
+                        },
+                        'status': 'OFF',
+                        'timeZoneId': null,
+                        'timerLabel': null,
+                        'triggerTime': 0,
+                        'type': 'Alarm',
+                        'version': '4'
+                    }
+                    */
                 }
-                */
                 break;
             case 'number':
                 if (notification.type !== 'Timer') {
@@ -1215,25 +1221,14 @@ class AlexaRemote extends EventEmitter {
                     //notification.remainingTime = value;
                 }*/
                 break;
-            case 'date':
-                if (notification.type !== 'Timer') {
-                    notification.alarmTime = value.getTime();
-                    notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
-                }
-                /*else {
-                    let duration = value.getTime() - Date.now();
-                    if (duration < 0) duration = value.getTime();
-                    notification.remainingTime = duration;
-                }*/
-                break;
             case 'boolean':
                 notification.status = value ? 'ON' : 'OFF';
                 break;
-            case 'string':
-                let ar = value.split(':');
+            case 'string': {
+                const ar = value.split(':');
                 if (notification.type !== 'Timer') {
-                    let date = new Date(notification.alarmTime);
-                    date.setHours(parseInt(ar[0], 10), ar.length>1 ? parseInt(ar[1], 10) : 0, ar.length > 2 ? parseInt(ar[2], 10) : 0);
+                    const date = new Date(notification.alarmTime);
+                    date.setHours(parseInt(ar[0], 10), ar.length > 1 ? parseInt(ar[1], 10) : 0, ar.length > 2 ? parseInt(ar[2], 10) : 0);
                     notification.alarmTime = date.getTime();
                     notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
                 }
@@ -1247,6 +1242,7 @@ class AlexaRemote extends EventEmitter {
                     notification.remainingTime = duration;
                 }*/
                 break;
+            }
         }
 
         const originalDateTime = notification.originalDate + ' ' + notification.originalTime;
@@ -1262,42 +1258,42 @@ class AlexaRemote extends EventEmitter {
     }
 
     createNotification(notification, callback) {
-        let flags = {
+        const flags = {
             data: JSON.stringify(notification),
             method: 'PUT'
         };
         this.httpsGet (`/api/notifications/createReminder`, function(err, res) {
-                //  {'Message':null}
-                callback && callback(err, res);
-            },
-            flags
+            //  {'Message':null}
+            callback && callback(err, res);
+        },
+        flags
         );
     }
 
     changeNotification(notification, value, callback) {
         notification = this.parseValue4Notification(notification, value);
-        let flags = {
+        const flags = {
             data: JSON.stringify(notification),
             method: 'PUT'
         };
         this.httpsGet (`/api/notifications/${notification.id}`, function(err, res) {
-                //  {'Message':null}
-                callback && callback(err, res);
-            },
-            flags
+            //  {'Message':null}
+            callback && callback(err, res);
+        },
+        flags
         );
     }
 
     deleteNotification(notification, callback) {
-        let flags = {
+        const flags = {
             data: JSON.stringify (notification),
             method: 'DELETE'
         };
         this.httpsGet (`/api/notifications/${notification.id}`, function(err, res) {
-                //  {'Message':null}
-                callback && callback(err, res);
-            },
-            flags
+            //  {'Message':null}
+            callback && callback(err, res);
+        },
+        flags
         );
     }
 
@@ -1310,7 +1306,7 @@ class AlexaRemote extends EventEmitter {
 
     // alarm volume
     getDeviceNotificationState(serialOrName, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/device-notification-state/${dev.deviceType}/${dev.softwareVersion}/${dev.serialNumber}&_=%t`, callback);
@@ -1339,7 +1335,7 @@ class AlexaRemote extends EventEmitter {
             callback = contentType;
             contentType = 'station';
         }
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         this.httpsGet (`/api/tunein/queue-and-play
@@ -1349,8 +1345,8 @@ class AlexaRemote extends EventEmitter {
            &contentType=${contentType}
            &callSign=
            &mediaOwnerCustomerId=${dev.deviceOwnerCustomerId}`,
-            callback,
-            { method: 'POST' });
+        callback,
+        { method: 'POST' });
     }
 
     /**
@@ -1371,66 +1367,66 @@ class AlexaRemote extends EventEmitter {
             `?startTime=${options.startTime || ''}` +
             `&size=${options.size || 1}` +
             `&offset=${options.offset || 1}`,
-            (err, result) => {
-                if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
+        (err, result) => {
+            if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
 
-                let ret = [];
-                if (result.activities) {
-                    for (let r = 0; r < result.activities.length; r++) {
-                        let res = result.activities[r];
-                        let o = {
-                            data: res
-                        };
-                        try {
-                            o.description = JSON.parse(res.description);
-                        } catch (e) {
-                            if (res.description) {
-                                o.description = {'summary': res.description};
-                            } else {
-                                return;
-                            }
-                        }
-                        if (!o.description) continue;
-                        o.description.summary = (o.description.summary || '').trim();
-                        if (options.filter) {
-                            switch (o.description.summary) {
-                                case 'stopp':
-                                case 'alexa':
-                                case 'echo':
-                                case 'computer':
-                                case 'amazon':
-                                case ',':
-                                case '':
-                                    continue;
-                            }
-                        }
-                        for (let i = 0; i < res.sourceDeviceIds.length; i++) {
-                            o.deviceSerialNumber = res.sourceDeviceIds[i].serialNumber;
-                            if (!this.serialNumbers[o.deviceSerialNumber]) continue;
-                            o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
-                            const dev = this.find(o.deviceSerialNumber);
-                            let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
-                            if (wakeWord && o.description.summary.startsWith(wakeWord)) {
-                                o.description.summary = o.description.summary.substr(wakeWord.length).trim();
-                            } else if (o.description.summary.startsWith('alexa')) {
-                                o.description.summary = o.description.summary.substr(5).trim();
-                            }
-                            o.deviceType = res.sourceDeviceIds[i].deviceType || null;
-                            o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
-
-                            o.creationTimestamp = res.creationTimestamp || null;
-                            o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
-                            try {
-                                o.domainAttributes = res.domainAttributes ? JSON.parse(res.domainAttributes) : null;
-                            } catch (e) {
-                                o.domainAttributes = res.domainAttributes || null;
-                            }
-                            if (o.description.summary || !options.filter) ret.push(o);
+            const ret = [];
+            if (result.activities) {
+                for (let r = 0; r < result.activities.length; r++) {
+                    const res = result.activities[r];
+                    const o = {
+                        data: res
+                    };
+                    try {
+                        o.description = JSON.parse(res.description);
+                    } catch (e) {
+                        if (res.description) {
+                            o.description = {'summary': res.description};
+                        } else {
+                            return;
                         }
                     }
+                    if (!o.description) continue;
+                    o.description.summary = (o.description.summary || '').trim();
+                    if (options.filter) {
+                        switch (o.description.summary) {
+                            case 'stopp':
+                            case 'alexa':
+                            case 'echo':
+                            case 'computer':
+                            case 'amazon':
+                            case ',':
+                            case '':
+                                continue;
+                        }
+                    }
+                    for (let i = 0; i < res.sourceDeviceIds.length; i++) {
+                        o.deviceSerialNumber = res.sourceDeviceIds[i].serialNumber;
+                        if (!this.serialNumbers[o.deviceSerialNumber]) continue;
+                        o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
+                        const dev = this.find(o.deviceSerialNumber);
+                        const wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
+                        if (wakeWord && o.description.summary.startsWith(wakeWord)) {
+                            o.description.summary = o.description.summary.substr(wakeWord.length).trim();
+                        } else if (o.description.summary.startsWith('alexa')) {
+                            o.description.summary = o.description.summary.substr(5).trim();
+                        }
+                        o.deviceType = res.sourceDeviceIds[i].deviceType || null;
+                        o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
+
+                        o.creationTimestamp = res.creationTimestamp || null;
+                        o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
+                        try {
+                            o.domainAttributes = res.domainAttributes ? JSON.parse(res.domainAttributes) : null;
+                        } catch (e) {
+                            o.domainAttributes = res.domainAttributes || null;
+                        }
+                        if (o.description.summary || !options.filter) ret.push(o);
+                    }
                 }
-                if (typeof callback === 'function') return callback (err, ret);
             }
+            if (typeof callback === 'function') return callback (err, ret);
+        }
         );
     }
 
@@ -1444,103 +1440,103 @@ class AlexaRemote extends EventEmitter {
             `&endTime=${options.endTime || Date.now() + 24 * 60 * 60 * 1000}` +
             `&recordType=${options.recordType || 'VOICE_HISTORY'}` +
             `&maxRecordSize=${options.maxRecordSize || 1}`,
-            (err, result) => {
-                if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
+        (err, result) => {
+            if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
 
-                let ret = [];
-                if (result.customerHistoryRecords) {
-                    for (let r = 0; r < result.customerHistoryRecords.length; r++) {
-                        let res = result.customerHistoryRecords[r];
-                        let o = {
-                            data: res
-                        };
-                        const convParts = {};
-                        if (res.voiceHistoryRecordItems && Array.isArray(res.voiceHistoryRecordItems)) {
-                            res.voiceHistoryRecordItems.forEach(item => {
-                                convParts[item.recordItemType] = convParts[item.recordItemType] || [];
-                                convParts[item.recordItemType].push(item);
-                            });
-                            o.conversionDetails = convParts;
-                        }
-
-                        const recordKey = res.recordKey.split('#'); // A3NSX4MMJVG96V#1612297041815#A1RABVCI4QCIKC#G0911W0793360TLG
-
-                        o.deviceType = recordKey[2] || null;
-                        //o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
-                        o.creationTimestamp = res.timestamp || null;
-                        //o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
-
-                        o.deviceSerialNumber = recordKey[3];
-                        if (!this.serialNumbers[o.deviceSerialNumber]) continue;
-                        o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
-                        const dev = this.find(o.deviceSerialNumber);
-                        let wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
-
-                        o.description = {'summary': ''};
-                        if (convParts.CUSTOMER_TRANSCRIPT || convParts.ASR_REPLACEMENT_TEXT) {
-                            if (convParts.CUSTOMER_TRANSCRIPT) {
-                                convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
-                                    let text = trans.transcriptText;
-                                    if (wakeWord && text.startsWith(wakeWord)) {
-                                        text = text.substr(wakeWord.length).trim();
-                                    } else if (text.startsWith('alexa')) {
-                                        text = text.substr(5).trim();
-                                    }
-                                    o.description.summary += text + ', ';
-                                });
-                            }
-                            if (convParts.ASR_REPLACEMENT_TEXT) {
-                                convParts.ASR_REPLACEMENT_TEXT.forEach(trans => {
-                                    let text = trans.transcriptText;
-                                    if (wakeWord && text.startsWith(wakeWord)) {
-                                        text = text.substr(wakeWord.length).trim();
-                                    } else if (text.startsWith('alexa')) {
-                                        text = text.substr(5).trim();
-                                    }
-                                    o.description.summary += text + ', ';
-                                });
-                            }
-                            o.description.summary = o.description.summary.substring(0, o.description.summary.length - 2).trim();
-                        }
-                        o.alexaResponse = '';
-                        if (convParts.ALEXA_RESPONSE || convParts.TTS_REPLACEMENT_TEXT) {
-                            if (convParts.ALEXA_RESPONSE) {
-                                convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
-                            }
-                            if (convParts.TTS_REPLACEMENT_TEXT) {
-                                convParts.TTS_REPLACEMENT_TEXT.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
-                            }
-                            o.alexaResponse = o.alexaResponse.substring(0, o.alexaResponse.length - 2).trim();
-                        }
-                        if (options.filter) {
-                            if (!o.description || !o.description.summary.length) continue;
-
-                            if (res.utteranceType === 'WAKE_WORD_ONLY') {
-                                continue;
-                            }
-
-                            switch (o.description.summary) {
-                                case 'stopp':
-                                case 'alexa':
-                                case 'echo':
-                                case 'computer':
-                                case 'amazon':
-                                case ',':
-                                case '':
-                                    continue;
-                            }
-                        }
-
-                        if (o.description.summary || !options.filter) ret.push(o);
+            const ret = [];
+            if (result.customerHistoryRecords) {
+                for (let r = 0; r < result.customerHistoryRecords.length; r++) {
+                    const res = result.customerHistoryRecords[r];
+                    const o = {
+                        data: res
+                    };
+                    const convParts = {};
+                    if (res.voiceHistoryRecordItems && Array.isArray(res.voiceHistoryRecordItems)) {
+                        res.voiceHistoryRecordItems.forEach(item => {
+                            convParts[item.recordItemType] = convParts[item.recordItemType] || [];
+                            convParts[item.recordItemType].push(item);
+                        });
+                        o.conversionDetails = convParts;
                     }
-                }
-                if (typeof callback === 'function') return callback (err, ret);
-            },
-            {
-                headers: {
-                    'authority': 'www.amazon.de'
+
+                    const recordKey = res.recordKey.split('#'); // A3NSX4MMJVG96V#1612297041815#A1RABVCI4QCIKC#G0911W0793360TLG
+
+                    o.deviceType = recordKey[2] || null;
+                    //o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
+                    o.creationTimestamp = res.timestamp || null;
+                    //o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
+
+                    o.deviceSerialNumber = recordKey[3];
+                    if (!this.serialNumbers[o.deviceSerialNumber]) continue;
+                    o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
+                    const dev = this.find(o.deviceSerialNumber);
+                    const wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
+
+                    o.description = {'summary': ''};
+                    if (convParts.CUSTOMER_TRANSCRIPT || convParts.ASR_REPLACEMENT_TEXT) {
+                        if (convParts.CUSTOMER_TRANSCRIPT) {
+                            convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
+                                let text = trans.transcriptText;
+                                if (wakeWord && text.startsWith(wakeWord)) {
+                                    text = text.substr(wakeWord.length).trim();
+                                } else if (text.startsWith('alexa')) {
+                                    text = text.substr(5).trim();
+                                }
+                                o.description.summary += text + ', ';
+                            });
+                        }
+                        if (convParts.ASR_REPLACEMENT_TEXT) {
+                            convParts.ASR_REPLACEMENT_TEXT.forEach(trans => {
+                                let text = trans.transcriptText;
+                                if (wakeWord && text.startsWith(wakeWord)) {
+                                    text = text.substr(wakeWord.length).trim();
+                                } else if (text.startsWith('alexa')) {
+                                    text = text.substr(5).trim();
+                                }
+                                o.description.summary += text + ', ';
+                            });
+                        }
+                        o.description.summary = o.description.summary.substring(0, o.description.summary.length - 2).trim();
+                    }
+                    o.alexaResponse = '';
+                    if (convParts.ALEXA_RESPONSE || convParts.TTS_REPLACEMENT_TEXT) {
+                        if (convParts.ALEXA_RESPONSE) {
+                            convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                        }
+                        if (convParts.TTS_REPLACEMENT_TEXT) {
+                            convParts.TTS_REPLACEMENT_TEXT.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                        }
+                        o.alexaResponse = o.alexaResponse.substring(0, o.alexaResponse.length - 2).trim();
+                    }
+                    if (options.filter) {
+                        if (!o.description || !o.description.summary.length) continue;
+
+                        if (res.utteranceType === 'WAKE_WORD_ONLY') {
+                            continue;
+                        }
+
+                        switch (o.description.summary) {
+                            case 'stopp':
+                            case 'alexa':
+                            case 'echo':
+                            case 'computer':
+                            case 'amazon':
+                            case ',':
+                            case '':
+                                continue;
+                        }
+                    }
+
+                    if (o.description.summary || !options.filter) ret.push(o);
                 }
             }
+            if (typeof callback === 'function') return callback (err, ret);
+        },
+        {
+            headers: {
+                'authority': 'www.amazon.de'
+            }
+        }
         );
     }
 
@@ -1605,10 +1601,10 @@ class AlexaRemote extends EventEmitter {
     }
 
     connectBluetooth(serialOrName, btAddress, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
-        let flags = {
+        const flags = {
             data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
             method: 'POST'
         };
@@ -1616,10 +1612,10 @@ class AlexaRemote extends EventEmitter {
     }
 
     disconnectBluetooth(serialOrName, btAddress, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
-        let flags = {
+        const flags = {
             //data: JSON.stringify({ bluetoothDeviceAddress: btAddress}),
             method: 'POST'
         };
@@ -1627,10 +1623,10 @@ class AlexaRemote extends EventEmitter {
     }
 
     setDoNotDisturb(serialOrName, enabled, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
-        let flags = {
+        const flags = {
             data: JSON.stringify({
                 deviceSerialNumber: dev.serialNumber,
                 deviceType: dev.deviceType,
@@ -1653,10 +1649,10 @@ class AlexaRemote extends EventEmitter {
     }
 
     setAlarmVolume(serialOrName, volume, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
-        let flags = {
+        const flags = {
             data: JSON.stringify ({
                 deviceSerialNumber: dev.serialNumber,
                 deviceType: dev.deviceType,
@@ -1672,7 +1668,7 @@ class AlexaRemote extends EventEmitter {
         return this.sendMessage(serialOrName, command, value, callback);
     }
     sendMessage(serialOrName, command, value, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         const commandObj = { contentFocusClientId: null };
@@ -1787,12 +1783,15 @@ class AlexaRemote extends EventEmitter {
                 seqNode.skillId = 'amzn1.ask.1p.tellalexa';
                 seqNode.operationPayload.text = value.toString();
                 break;
-            case 'curatedtts':
-                let supportedValues = ["goodbye", "confirmations", "goodmorning", "compliments", "birthday", "goodnight", "iamhome"];
-                if(!supportedValues.includes(value)) { return null }
+            case 'curatedtts': {
+                const supportedValues = ['goodbye', 'confirmations', 'goodmorning', 'compliments', 'birthday', 'goodnight', 'iamhome'];
+                if (!supportedValues.includes(value)) {
+                    return null;
+                }
                 seqNode.type = 'Alexa.CannedTts.Speak';
                 seqNode.operationPayload.cannedTtsStringId = `alexa.cannedtts.speak.curatedtts-category-${value}/alexa.cannedtts.speak.curatedtts-random`;
                 break;
+            }
             case 'volume':
                 seqNode.type = 'Alexa.DeviceControls.Volume';
                 value = ~~value;
@@ -1805,8 +1804,8 @@ class AlexaRemote extends EventEmitter {
                 seqNode.type = 'Alexa.DeviceControls.Stop';
                 seqNode.operationPayload.devices = [
                     {
-                        "deviceSerialNumber": deviceSerialNumber,
-                        "deviceType": deviceType
+                        'deviceSerialNumber': deviceSerialNumber,
+                        'deviceType': deviceType
                     }
                 ];
                 seqNode.operationPayload.isAssociatedDevice = false;
@@ -1856,7 +1855,7 @@ class AlexaRemote extends EventEmitter {
                 }
                 seqNode.operationPayload.textToSpeak = value;
                 break;
-	    case 'skill':
+            case 'skill':
                 seqNode.type = 'Alexa.Operation.SkillConnections.Launch';
                 if (typeof value !== 'string') value = String(value);
                 if (value.length === 0) {
@@ -1866,11 +1865,11 @@ class AlexaRemote extends EventEmitter {
                 seqNode.operationPayload.targetDevice = {
                     deviceType: seqNode.operationPayload.deviceType,
                     deviceSerialNumber: seqNode.operationPayload.deviceSerialNumber
-                }
+                };
                 seqNode.operationPayload.connectionRequest = {
                     uri: `connection://AMAZON.Launch/${value}`,
                     input: {}
-                }
+                };
                 seqNode.name = null;
                 delete seqNode.operationPayload.deviceType;
                 delete seqNode.operationPayload.deviceSerialNumber;
@@ -1909,23 +1908,23 @@ class AlexaRemote extends EventEmitter {
                 seqNode.operationPayload.expireAfter = 'PT5S';
                 seqNode.operationPayload.content = [
                     {
-                        "locale": "de-DE",
-                        "display": {
-                            "title": "ioBroker",
-                            "body": value.replace(/<[^>]+>/g, '')
+                        'locale': 'de-DE',
+                        'display': {
+                            'title': 'ioBroker',
+                            'body': value.replace(/<[^>]+>/g, '')
                         },
-                        "speak": {
-                            "type": (command === 'ssml') ? 'ssml' : 'text',
-                            "value": value
+                        'speak': {
+                            'type': (command === 'ssml') ? 'ssml' : 'text',
+                            'value': value
                         }
                     }
                 ];
                 seqNode.operationPayload.target = {
-                    "customerId": deviceOwnerCustomerId,
-                    "devices": [
+                    'customerId': deviceOwnerCustomerId,
+                    'devices': [
                         {
-                            "deviceSerialNumber": deviceSerialNumber,
-                            "deviceTypeId": deviceType
+                            'deviceSerialNumber': deviceSerialNumber,
+                            'deviceTypeId': deviceType
                         }
                     ]
                 };
@@ -1935,8 +1934,8 @@ class AlexaRemote extends EventEmitter {
                         const currDevice = this.find(deviceId);
                         if (!currDevice) return;
                         seqNode.operationPayload.target.devices.push({
-                            "deviceSerialNumber": currDevice.serialNumber,
-                            "deviceTypeId": currDevice.deviceType
+                            'deviceSerialNumber': currDevice.serialNumber,
+                            'deviceTypeId': currDevice.deviceType
                         });
                     });
                 }
@@ -1962,8 +1961,8 @@ class AlexaRemote extends EventEmitter {
         }
         if (!sequenceType) sequenceType = 'SerialNode'; // or ParallelNode
 
-        let nodes = [];
-        for (let command of commands) {
+        const nodes = [];
+        for (const command of commands) {
             const commandNode = this.createSequenceNode(command.command, command.value, command.device ? command.device : serialOrName, overrideCustomerId, callback);
             if (commandNode) nodes.push(commandNode);
         }
@@ -1988,7 +1987,7 @@ class AlexaRemote extends EventEmitter {
             overrideCustomerId = null;
         }
 
-        let dev = this.find(Array.isArray(serialOrName) ? serialOrName[0] : serialOrName);
+        const dev = this.find(Array.isArray(serialOrName) ? serialOrName[0] : serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         if (typeof value === 'function') {
@@ -2054,7 +2053,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     playMusicProvider(serialOrName, providerId, searchPhrase, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
         if (searchPhrase === '') return callback && callback(new Error('Searchphrase empty'), null);
 
@@ -2111,7 +2110,7 @@ class AlexaRemote extends EventEmitter {
         // 	"status": 1
         // }]
 
-        let message = [{
+        const message = [{
             conversationId: 'amzn1.comms.messaging.id.conversationV2~' + uuidv1(),
             clientMessageId: uuidv1(),
             messageId: 0.001,
@@ -2134,7 +2133,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     deleteConversation(conversationId, callback) {
-        let flags = {
+        const flags = {
             method: 'DELETE'
         };
         this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/conversations/${conversationId}`, callback, flags);
@@ -2202,10 +2201,10 @@ class AlexaRemote extends EventEmitter {
 
 
     renameDevice(serialOrName, newName, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
-        let o = {
+        const o = {
             accountName: newName,
             serialNumber: dev.serialNumber,
             deviceAccountId: dev.deviceAccountId,
@@ -2222,7 +2221,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     deleteSmarthomeDevice(smarthomeDevice, callback) {
-        let flags = {
+        const flags = {
             method: 'DELETE'
             //data: JSON.stringify (o),
         };
@@ -2230,7 +2229,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     deleteSmarthomeGroup(smarthomeGroup, callback) {
-        let flags = {
+        const flags = {
             method: 'DELETE'
             //data: JSON.stringify (o),
         };
@@ -2238,7 +2237,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     deleteAllSmarthomeDevices(callback) {
-        let flags = {
+        const flags = {
             method: 'DELETE'
             //data: JSON.stringify (o),
         };
@@ -2246,7 +2245,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     discoverSmarthomeDevice(callback) {
-        let flags = {
+        const flags = {
             method: 'POST'
             //data: JSON.stringify (o),
         };
@@ -2259,16 +2258,16 @@ class AlexaRemote extends EventEmitter {
             entityType = 'APPLIANCE'; // other value 'GROUP'
         }
 
-        let reqArr = [];
+        const reqArr = [];
         if (!Array.isArray(applicanceIds)) applicanceIds = [applicanceIds];
-        for (let id of applicanceIds) {
+        for (const id of applicanceIds) {
             reqArr.push({
                 'entityId': id,
                 'entityType': entityType
             });
         }
 
-        let flags = {
+        const flags = {
             method: 'POST',
             data: JSON.stringify ({
                 'stateRequests': reqArr
@@ -2305,9 +2304,9 @@ class AlexaRemote extends EventEmitter {
             entityType = 'APPLIANCE'; // other value 'GROUP'
         }
 
-        let reqArr = [];
+        const reqArr = [];
         if (!Array.isArray(entityIds)) entityIds = [entityIds];
-        for (let id of entityIds) {
+        for (const id of entityIds) {
             reqArr.push({
                 'entityId': id,
                 'entityType': entityType,
@@ -2315,7 +2314,7 @@ class AlexaRemote extends EventEmitter {
             });
         }
 
-        let flags = {
+        const flags = {
             method: 'PUT',
             data: JSON.stringify ({
                 'controlRequests': reqArr
@@ -2351,10 +2350,10 @@ class AlexaRemote extends EventEmitter {
 
 
     unpaireBluetooth(serialOrName, btAddress, callback) {
-        let dev = this.find(serialOrName);
+        const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
-        let flags = {
+        const flags = {
             method: 'POST',
             data: JSON.stringify ({
                 bluetoothDeviceAddress: btAddress,
@@ -2365,10 +2364,10 @@ class AlexaRemote extends EventEmitter {
     }
 
     deleteDevice(serialOrName, callback) {
-        let dev = this.find(serialOrName, callback);
+        const dev = this.find(serialOrName, callback);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
-        let flags = {
+        const flags = {
             method: 'DELETE',
             data: JSON.stringify ({
                 deviceType: dev.deviceType

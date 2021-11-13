@@ -22,7 +22,7 @@ Thank you for that work.
 ## Changelog:
 
 ### __WORK IN PROGRESS__
-* (Apollon77) SequenceNodes created for a device are also bound to the "deviceOwnCustomer" - should help in mixed owner groups
+* (Apollon77) SequenceNodes created for a device are now bound to the "deviceOwnCustomer" - should help in mixed owner groups
 
 ### 4.0.4 (2021-11-06)
 * (Apollon77) Fix crash case
