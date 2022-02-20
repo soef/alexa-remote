@@ -20,6 +20,10 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (TactfulElf) Allow csrf to be updated on cookie refresh and add 401 error handling
+
 ### 4.1.1 (2021-11-13)
 * (Apollon77) Prevent crash case in edge cases when unexpected WSMQTT responses are received
 
