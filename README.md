@@ -20,8 +20,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 4.1.2 (2022-02-20)
 * (TactfulElf) Allow csrf to be updated on cookie refresh and add 401 error handling
 
 ### 4.1.1 (2021-11-13)
