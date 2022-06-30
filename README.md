@@ -23,6 +23,12 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Adjust logic to get the "global" ownerCustomerId and use Authentication response from session verification call
+* (Apollon77) Add getAuthenticationDetails() method to get the Authentication response from the last successful session verification call
+* (Apollon77) Prevent some crash cases
+
 ### 4.1.2 (2022-02-20)
 * (TactfulElf) Allow csrf to be updated on cookie refresh and add 401 error handling
 

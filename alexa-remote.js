@@ -27,6 +27,8 @@ class AlexaRemote extends EventEmitter {
         this.cookie = null;
         this.csrf = null;
         this.cookieData = null;
+        this.authenticationDetails = null;
+        this.ownerCustomerId = null;
 
         this.baseUrl = 'alexa.amazon.de';
     }
@@ -199,6 +201,10 @@ class AlexaRemote extends EventEmitter {
         return this;
     }
 
+    getAuthenticationDetails() {
+        return this.authenticationDetails;
+    }
+
     initNotifications(callback) {
         if (!this._options.notifications) return callback && callback();
         this.getNotifications((err, res) => {
@@ -287,7 +293,7 @@ class AlexaRemote extends EventEmitter {
                     device.isMultiroomDevice = (device.clusterMembers.length > 0);
                     device.isMultiroomMember = (device.parentClusters.length > 0);
                 });
-                this.ownerCustomerId = Object.keys(customerIds)[0];
+                //this.ownerCustomerId = Object.keys(customerIds)[0]; // this could end in the wrong one!
             }
             callback && callback();
         });
@@ -911,6 +917,8 @@ class AlexaRemote extends EventEmitter {
     checkAuthentication(callback) {
         this.httpsGetCall ('/api/bootstrap?version=0', function (err, res) {
             if (res && res.authentication && res.authentication.authenticated !== undefined) {
+                this.authenticationDetails = res.authentication;
+                this.ownerCustomerId = res.authentication.customerId;
                 return callback(res.authentication.authenticated, err);
             }
             if (err && !err.message.includes('no body')) {

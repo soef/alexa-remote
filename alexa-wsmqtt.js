@@ -830,7 +830,7 @@ class AlexaWsMqtt extends EventEmitter {
         try {
             this.websocket.close();
         } catch (e) {
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Disconnect error: ' +e);
+            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Disconnect error: ' + e.message);
         }
     }
 }
