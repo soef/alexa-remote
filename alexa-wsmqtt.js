@@ -23,9 +23,14 @@ class AlexaWsMqtt extends EventEmitter {
         this.errorRetryCounter = 0;
         this.reconnectTimeout = null;
         this.pongTimeout = null;
+        this.initTimeout = null;
         this.connectionActive = false;
 
         this.messageId = Math.floor(1E9 * Math.random());
+    }
+
+    isConnected() {
+        return this.connectionActive;
     }
 
     connectType1() {
@@ -176,7 +181,7 @@ class AlexaWsMqtt extends EventEmitter {
             return;
         }
         let msgCounter = 0;
-        let initTimeout = null;
+        this.initTimeout && clearTimeout(this.initTimeout);
 
         const onWebsocketClose = (code, reason) => {
             if (reason) {
@@ -185,9 +190,9 @@ class AlexaWsMqtt extends EventEmitter {
             this.websocket = null;
             this.connectionActive = false;
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Close: ' + code + ': ' + reason);
-            if (initTimeout) {
-                clearTimeout(initTimeout);
-                initTimeout = null;
+            if (this.initTimeout) {
+                clearTimeout(this.initTimeout);
+                this.initTimeout = null;
             }
             if (this.pingPongInterval) {
                 clearInterval(this.pingPongInterval);
@@ -220,7 +225,7 @@ class AlexaWsMqtt extends EventEmitter {
             }, retryDelay * 1000);
         };
 
-        initTimeout = setTimeout(() => {
+        this.initTimeout = setTimeout(() => {
             this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization not done within 30s');
             try {
                 this.websocket && this.websocket.close();
@@ -352,9 +357,9 @@ class AlexaWsMqtt extends EventEmitter {
             //if (incomingMsg.includes('PON') && incomingMsg.includes('\u0000R\u0000e\u0000g\u0000u\u0000l\u0000a\u0000r')) {
             if (message.service === 'FABE' && message.content && message.content.messageType === 'PON' && message.content.payloadData && message.content.payloadData.includes('\u0000R\u0000e\u0000g\u0000u\u0000l\u0000a\u0000r')) {
                 this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Received Pong');
-                if (initTimeout) {
-                    clearTimeout(initTimeout);
-                    initTimeout = null;
+                if (this.initTimeout) {
+                    clearTimeout(this.initTimeout);
+                    this.initTimeout = null;
                     this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Initialization completed');
                     this.emit('connect');
                 }
@@ -825,12 +830,20 @@ class AlexaWsMqtt extends EventEmitter {
             clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = null;
         }
+        if (this.pollingTimeout) {
+            clearTimeout(this.pollingTimeout);
+            this.pollingTimeout = null;
+        }
+        if (this.initTimeout) {
+            clearTimeout(this.initTimeout);
+            this.initTimeout = null;
+        }
         this.stop = true;
         if (!this.websocket) return;
         try {
             this.websocket.close();
         } catch (e) {
-            this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Disconnect error: ' + e.message);
+            this.connectionActive && this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Disconnect error: ' + e.message);
         }
     }
 }

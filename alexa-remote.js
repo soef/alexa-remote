@@ -328,6 +328,17 @@ class AlexaRemote extends EventEmitter {
         }
     }
 
+    stopProxyServer(callback) {
+        if (!this.alexaCookie) {
+            return callback && callback();
+        }
+        this.alexaCookie.stopProxyServer(callback);
+    }
+
+    isWsMqttConnected() {
+        return this.alexaWsMqtt && this.alexaWsMqtt.isConnected();
+    }
+
     initWsMqttConnection() {
         if (this.alexaWsMqtt) {
             this.alexaWsMqtt.removeAllListeners();
@@ -915,17 +926,22 @@ class AlexaRemote extends EventEmitter {
 
     /// Public
     checkAuthentication(callback) {
-        this.httpsGetCall ('/api/bootstrap?version=0', function (err, res) {
-            if (res && res.authentication && res.authentication.authenticated !== undefined) {
-                this.authenticationDetails = res.authentication;
-                this.ownerCustomerId = res.authentication.customerId;
-                return callback(res.authentication.authenticated, err);
-            }
-            if (err && !err.message.includes('no body')) {
-                return callback(null, err);
-            }
-            callback(false, err);
-        });
+        // If we don't have a cookie assigned, we can't be authenticated
+        if (this.cookie && this.csrf) {
+            this.httpsGetCall('/api/bootstrap?version=0', function (err, res) {
+                if (res && res.authentication && res.authentication.authenticated !== undefined) {
+                    this.authenticationDetails = res.authentication;
+                    this.ownerCustomerId = res.authentication.customerId;
+                    return callback(res.authentication.authenticated, err);
+                }
+                if (err && !err.message.includes('no body')) {
+                    return callback(null, err);
+                }
+                callback(false, err);
+            });
+        } else {
+            callback(false, null);
+        }
     }
 
 
