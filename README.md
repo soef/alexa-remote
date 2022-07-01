@@ -30,6 +30,8 @@ Thank you for that work.
 * (Apollon77) Prevent some crash cases
 * (Apollon77/hive) Correctly end all timers on disconnect
 * (Apollon77/hive) Optimize authentication check when no cookie is set
+* (Apollon77) Add method isWsMqttConnected() to query if the WS-MQTT connection is established or not
+* (Apollon77/hive) Add method stopProxyServer() to stop the proxy server pot. opened from getting a new cookie
 
 ### 4.1.2 (2022-02-20)
 * (TactfulElf) Allow csrf to be updated on cookie refresh and add 401 error handling
