@@ -255,7 +255,21 @@ class AlexaRemote extends EventEmitter {
         this.getDevices((err, result) => {
             if (!err && result && Array.isArray(result.devices)) {
                 const customerIds = {};
+                const joinedDevices = [];
+
                 result.devices.forEach((device) => {
+                    joinedDevices.push(device);
+                    if (device.appDeviceList && device.appDeviceList.length) {
+                        device.appDeviceList.forEach(subDevice => {
+                            const appDevice = Object.assign({}, device, subDevice);
+                            appDevice.parentDeviceSerialNumber = device.serialNumber;
+                            appDevice.appDeviceList = [];
+                            joinedDevices.push(appDevice);
+                        });
+                    }
+                });
+
+                joinedDevices.forEach((device) => {
                     const existingDevice = this.find(device.serialNumber);
                     if (!existingDevice) {
                         this.serialNumbers[device.serialNumber] = device;
@@ -1423,6 +1437,7 @@ class AlexaRemote extends EventEmitter {
                             case 'echo':
                             case 'computer':
                             case 'amazon':
+                            case 'ziggy':
                             case ',':
                             case '':
                                 continue;
@@ -1549,6 +1564,7 @@ class AlexaRemote extends EventEmitter {
                             case 'echo':
                             case 'computer':
                             case 'amazon':
+                            case 'ziggy':
                             case ',':
                             case '':
                                 continue;
@@ -1737,15 +1753,7 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
-    createSequenceNode(command, value, serialOrName, overrideCustomerId, callback) {
-        if (typeof overrideCustomerId === 'function') {
-            callback = overrideCustomerId;
-            overrideCustomerId = null;
-        }
-        if (typeof serialOrName === 'function') {
-            callback = serialOrName;
-            serialOrName = undefined;
-        }
+    createSequenceNode(command, value, serialOrName, overrideCustomerId) {
         let deviceSerialNumber = 'ALEXA_CURRENT_DSN';
         let deviceType= 'ALEXA_CURRENT_DEVICE_TYPE';
         let deviceOwnerCustomerId = 'ALEXA_CUSTOMER_ID';
@@ -1824,7 +1832,7 @@ class AlexaRemote extends EventEmitter {
                 seqNode.type = 'Alexa.DeviceControls.Volume';
                 value = ~~value;
                 if (value < 0 || value > 100) {
-                    return callback && callback(new Error('Volume needs to be between 0 and 100'));
+                    throw new Error('Volume needs to be between 0 and 100');
                 }
                 seqNode.operationPayload.value = value;
                 break;
@@ -1876,10 +1884,10 @@ class AlexaRemote extends EventEmitter {
                     .replace(/ /g,'_');*/
                 value = value.replace(/[ ]+/g, ' ');
                 if (value.length === 0) {
-                    return callback && callback(new Error('Can not speak empty string', null));
+                    throw new Error('Can not speak empty string', null);
                 }
                 if (value.length > 250) {
-                    return callback && callback(new Error('text too long, limit are 250 characters', null));
+                    throw new Error('text too long, limit are 250 characters', null);
                 }
                 seqNode.operationPayload.textToSpeak = value;
                 break;
@@ -1887,7 +1895,7 @@ class AlexaRemote extends EventEmitter {
                 seqNode.type = 'Alexa.Operation.SkillConnections.Launch';
                 if (typeof value !== 'string') value = String(value);
                 if (value.length === 0) {
-                    return callback && callback(new Error('Can not launch empty skill', null));
+                    throw new Error('Can not launch empty skill', null);
                 }
                 seqNode.skillId = value;
                 seqNode.operationPayload.targetDevice = {
@@ -1906,7 +1914,7 @@ class AlexaRemote extends EventEmitter {
                 seqNode.type = 'Alexa.Notifications.SendMobilePush';
                 if (typeof value !== 'string') value = String(value);
                 if (value.length === 0) {
-                    return callback && callback(new Error('Can not notify empty string'), null);
+                    throw new Error('Can not notify empty string');
                 }
                 seqNode.operationPayload.notificationMessage = value;
                 seqNode.operationPayload.alexaUrl = '#v2/behaviors';
@@ -1925,12 +1933,12 @@ class AlexaRemote extends EventEmitter {
                     }
                     value = value.replace(/[ ]+/g, ' ');
                     if (value.length === 0) {
-                        return callback && callback(new Error('Can not speak empty string', null));
+                        throw new Error('Can not speak empty string', null);
                     }
                 }
                 else if (command === 'ssml') {
                     if (!value.startsWith('<speak>')) {
-                        return callback && callback(new Error('Value needs to be a valid SSML XML string', null));
+                        throw new Error('Value needs to be a valid SSML XML string', null);
                     }
                 }
                 seqNode.operationPayload.expireAfter = 'PT5S';
@@ -1978,35 +1986,45 @@ class AlexaRemote extends EventEmitter {
         return seqNode;
     }
 
-    sendMultiSequenceCommand(serialOrName, commands, sequenceType, overrideCustomerId, callback) {
-        if (typeof overrideCustomerId === 'function') {
-            callback = overrideCustomerId;
-            overrideCustomerId = null;
-        }
-        if (typeof sequenceType === 'function') {
-            callback = sequenceType;
-            sequenceType = null;
-        }
+    buildSequenceNodeStructure(serialOrName, commands, sequenceType, overrideCustomerId) {
         if (!sequenceType) sequenceType = 'SerialNode'; // or ParallelNode
 
         const nodes = [];
         for (const command of commands) {
-            const commandNode = this.createSequenceNode(command.command, command.value, command.device ? command.device : serialOrName, overrideCustomerId, callback);
-            if (commandNode) nodes.push(commandNode);
+            if (command.nodes) {
+                const subSequence = this.buildSequenceNodeStructure(serialOrName, command.nodes, command.sequenceType || sequenceType, overrideCustomerId);
+                if (subSequence) {
+                    nodes.push(subSequence);
+                }
+            } else {
+                const commandNode = this.createSequenceNode(command.command, command.value, command.device || serialOrName, overrideCustomerId);
+                if (commandNode) {
+                    nodes.push(commandNode);
+                }
+            }
         }
 
         const sequenceObj = {
-            'sequence': {
-                '@type': 'com.amazon.alexa.behaviors.model.Sequence',
-                'startNode': {
-                    '@type': 'com.amazon.alexa.behaviors.model.' + sequenceType,
-                    'name': null,
-                    'nodesToExecute': nodes
-                }
-            }
+            '@type': 'com.amazon.alexa.behaviors.model.' + sequenceType,
+            'name': null,
+            'nodesToExecute': nodes
         };
+        return sequenceObj;
+    }
 
-        this.sendSequenceCommand(serialOrName, sequenceObj, callback);
+    sendMultiSequenceCommand(serialOrName, commands, sequenceType, overrideCustomerId, callback) {
+        try {
+            const sequenceObj = {
+                'sequence': {
+                    '@type': 'com.amazon.alexa.behaviors.model.Sequence',
+                    'startNode': this.buildSequenceNodeStructure(serialOrName, commands, sequenceType, overrideCustomerId)
+                }
+            };
+
+            this.sendSequenceCommand(serialOrName, sequenceObj, callback);
+        } catch (err) {
+            callback && callback(err, null);
+        }
     }
 
     sendSequenceCommand(serialOrName, command, value, overrideCustomerId, callback) {
@@ -2028,10 +2046,14 @@ class AlexaRemote extends EventEmitter {
             seqCommandObj = command.sequence || command;
         }
         else {
-            seqCommandObj = {
-                '@type': 'com.amazon.alexa.behaviors.model.Sequence',
-                'startNode': this.createSequenceNode(command, value, dev, overrideCustomerId)
-            };
+            try {
+                seqCommandObj = {
+                    '@type': 'com.amazon.alexa.behaviors.model.Sequence',
+                    'startNode': this.createSequenceNode(command, value, dev, overrideCustomerId)
+                };
+            } catch (err) {
+                return callback && callback(err, null);
+            }
         }
 
         const reqObj = {
