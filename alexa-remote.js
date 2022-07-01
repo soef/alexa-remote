@@ -928,7 +928,7 @@ class AlexaRemote extends EventEmitter {
     checkAuthentication(callback) {
         // If we don't have a cookie assigned, we can't be authenticated
         if (this.cookie && this.csrf) {
-            this.httpsGetCall('/api/bootstrap?version=0', function (err, res) {
+            this.httpsGetCall('/api/bootstrap?version=0',  (err, res) => {
                 if (res && res.authentication && res.authentication.authenticated !== undefined) {
                     this.authenticationDetails = res.authentication;
                     this.ownerCustomerId = res.authentication.customerId;
