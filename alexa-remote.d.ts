@@ -76,6 +76,8 @@ declare module "alexa-remote2" {
 
     export type SerialOrName = Serial | string;
 
+    export type SerialOrNameOrArray = SerialOrName | SerialOrName[]
+
     export type Value = string | number | boolean;
 
     export type Sound = {
@@ -146,6 +148,14 @@ declare module "alexa-remote2" {
         includeUserName: boolean;
     }>;
 
+    export type GetAuthenticationDetails = {
+        authenticated: boolean;
+        canAccessPrimeMusicContent: boolean;
+        customerEmail: string;
+        customerId: string;
+        customerName: string;
+    };
+
     export type MessageCommands =
         | "play"
         | "pause"
@@ -180,14 +190,19 @@ declare module "alexa-remote2" {
         | "announcement"
         | "ssml";
 
-    export type SequneceType = "SerialNode" | "ParallelNode";
+    export type SequenceType = "SerialNode" | "ParallelNode";
 
     export type EntityType = "APPLIANCE" | "GROUP";
 
-    export type MultiSequenceCommand = {
+    export type SequenceNodeDetails = {
         command: SequenceNodeCommand;
         value: Value;
-        device?: SerialOrName;
+        device?: SerialOrNameOrArray;
+    }
+
+    export type MultiSequenceCommand = SequenceNodeDetails | {
+        sequencetype: SequenceType;
+        nodes: MultiSequenceCommand[];
     };
 
     import {EventEmitter} from 'events';
@@ -413,19 +428,24 @@ declare module "alexa-remote2" {
         createSequenceNode(
             command: SequenceNodeCommand,
             value: Value,
-            serialOrName: SerialOrName,
-            callback: CallbackWithErrorAndBody
+            serialOrName: SerialOrNameOrArray
+        ): void;
+
+        buildSequenceNodeStructure(
+            serialOrName: SerialOrNameOrArray,
+            commands: MultiSequenceCommand[],
+            sequenceType?: SequenceType | CallbackWithErrorAndBody,
         ): void;
 
         sendMultiSequenceCommand(
-            serialOrName: SerialOrName,
+            serialOrName: SerialOrNameOrArray,
             commands: MultiSequenceCommand[],
-            sequenceType?: SequneceType | CallbackWithErrorAndBody,
+            sequenceType?: SequenceType | CallbackWithErrorAndBody,
             callback?: CallbackWithErrorAndBody
         ): void;
 
         sendSequenceCommand(
-            serialOrName: SerialOrName,
+            serialOrName: SerialOrNameOrArray,
             command: SequenceNodeCommand,
             value: Value,
             callback: CallbackWithErrorAndBody
@@ -528,5 +548,11 @@ declare module "alexa-remote2" {
             serialOrName: SerialOrName,
             callback: CallbackWithErrorAndBody
         ): void;
+
+        getAuthenticationDetails(): GetAuthenticationDetails;
+
+        isWsMqttConnected(): boolean;
+
+        stopProxyServer(callback: CallbackWithError): void
     }
 }

@@ -25,13 +25,17 @@ Thank you for that work.
 ## Changelog:
 
 ### __WORK IN PROGRESS__
+* BREAKING: SequenceNode methods throws an error on invalid data instead calling callback with error as before!
+* (Apollon77) Enhance multi sequence Node methods to support building node structures with sub Parallel/SerialNodes
 * (Apollon77) Adjust logic to get the "global" ownerCustomerId and use Authentication response from session verification call
 * (Apollon77) Add getAuthenticationDetails() method to get the Authentication response from the last successful session verification call
-* (Apollon77) Prevent some crash cases
-* (Apollon77/hive) Correctly end all timers on disconnect
-* (Apollon77/hive) Optimize authentication check when no cookie is set
 * (Apollon77) Add method isWsMqttConnected() to query if the WS-MQTT connection is established or not
 * (Apollon77/hive) Add method stopProxyServer() to stop the proxy server pot. opened from getting a new cookie
+* (Apollon77) Adjust setTuneIn method to work again for stationIds (s*) and topicIds (t*)
+* (Apollon77) Do an automatic request retry with a delay of 500-1000ms (random) when error 503 is returned from Amazon services
+* (Apollon77/hive) Correctly end all timers on disconnect
+* (Apollon77/hive) Optimize authentication check when no cookie is set
+* (Apollon77) Prevent some crash cases
 
 ### 4.1.2 (2022-02-20)
 * (TactfulElf) Allow csrf to be updated on cookie refresh and add 401 error handling

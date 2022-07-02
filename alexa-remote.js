@@ -10,7 +10,7 @@ const EventEmitter = require('events');
 
 function _00(val) {
     let s = val.toString();
-    while (s.length < 2) s = '0' + s;
+    while (s.length < 2) s = `0${s}`;
     return s;
 }
 
@@ -50,7 +50,7 @@ class AlexaRemote extends EventEmitter {
         }
 
         if (!this.cookie || typeof this.cookie !== 'string') return;
-        let ar = this.cookie.match(/csrf=([^;]+)/);
+        const ar = this.cookie.match(/csrf=([^;]+)/);
         if (ar && ar.length >= 2) {
             this.csrf = ar[1];
         }
@@ -80,14 +80,14 @@ class AlexaRemote extends EventEmitter {
                 }
             }
             this._options.amazonPage = this._options.amazonPage || 'amazon.de';
-            this.baseUrl = 'alexa.' + this._options.amazonPage;
+            this.baseUrl = `alexa.${this._options.amazonPage}`;
 
             cookie = this._options.cookie;
         }
-        this._options.logger && this._options.logger('Alexa-Remote: Use as User-Agent: ' + this._options.userAgent);
-        this._options.logger && this._options.logger('Alexa-Remote: Use as Login-Amazon-URL: ' + this._options.amazonPage);
+        this._options.logger && this._options.logger(`Alexa-Remote: Use as User-Agent: ${this._options.userAgent}`);
+        this._options.logger && this._options.logger(`Alexa-Remote: Use as Login-Amazon-URL: ${this._options.amazonPage}`);
         if (this._options.alexaServiceHost) this.baseUrl = this._options.alexaServiceHost;
-        this._options.logger && this._options.logger('Alexa-Remote: Use as Base-URL: ' + this.baseUrl);
+        this._options.logger && this._options.logger(`Alexa-Remote: Use as Base-URL: ${this.baseUrl}`);
         this._options.alexaServiceHost = this.baseUrl;
         if (this._options.refreshCookieInterval !== undefined && this._options.cookieRefreshInterval === undefined) {
             this._options.cookieRefreshInterval = this._options.refreshCookieInterval;
@@ -146,9 +146,9 @@ class AlexaRemote extends EventEmitter {
             if (!this.csrf) return callback && callback(new Error('no csrf found'));
             this.checkAuthentication((authenticated, err) => {
                 if (err && authenticated === null) {
-                    return callback && callback(new Error('Error while checking Authentication: ' + err));
+                    return callback && callback(new Error(`Error while checking Authentication: ${err}`));
                 }
-                this._options.logger && this._options.logger('Alexa-Remote: Authentication checked: ' + authenticated);
+                this._options.logger && this._options.logger(`Alexa-Remote: Authentication checked: ${authenticated}`);
                 if ((!authenticated && !this._options.cookieJustCreated) || !this.macDms) {
                     this._options.logger && !this.macDms && this._options.logger('Alexa-Remote: JWT missing, forcing a refresh ...');
                     this._options.logger && this._options.logger('Alexa-Remote: Cookie was set, but authentication invalid');
@@ -210,10 +210,8 @@ class AlexaRemote extends EventEmitter {
         this.getNotifications((err, res) => {
             if (err || !res || !res.notifications || !Array.isArray(res.notifications)) return callback && callback();
 
-            for (const serialNumber in this.serialNumbers) {
-                if (this.serialNumbers.hasOwnProperty(serialNumber)) {
-                    this.serialNumbers[serialNumber].notifications = [];
-                }
+            for (const serialNumber of Object.keys(this.serialNumbers)) {
+                this.serialNumbers[serialNumber].notifications = [];
             }
 
             res.notifications.forEach((noti) => {
@@ -281,7 +279,7 @@ class AlexaRemote extends EventEmitter {
                     this.names [name] = device;
                     this.names [name.toLowerCase()] = device;
                     if (device.deviceTypeFriendlyName) {
-                        name += ' (' + device.deviceTypeFriendlyName + ')';
+                        name += ` (${device.deviceTypeFriendlyName})`;
                         this.names [name] = device;
                         this.names [name.toLowerCase()] = device;
                     }
@@ -684,26 +682,26 @@ class AlexaRemote extends EventEmitter {
         this.getCustomerHistoryRecords({maxRecordSize: this.activityUpdateQueue.length + 2, filter: false}, (err, res) => {
             this.activityUpdateRunning = false;
             if (!err && res) {
-                this._options.logger && this._options.logger('Alexa-Remote: Activity data ' + JSON.stringify(res)); // TODO REMOVE
+                this._options.logger && this._options.logger(`Alexa-Remote: Activity data ${JSON.stringify(res)}`); // TODO REMOVE
 
                 let lastFoundQueueIndex = -1;
                 this.activityUpdateQueue.forEach((entry, queueIndex) => {
-                    const found = res.findIndex(activity => activity.data.recordKey.endsWith('#' + entry.key.entryId) && activity.data.customerId === entry.key.registeredUserId);
+                    const found = res.findIndex(activity => activity.data.recordKey.endsWith(`#${entry.key.entryId}`) && activity.data.customerId === entry.key.registeredUserId);
 
                     if (found === -1) {
-                        this._options.logger && this._options.logger('Alexa-Remote: Activity for id ' + entry.key.entryId + ' not found');
+                        this._options.logger && this._options.logger(`Alexa-Remote: Activity for id ${entry.key.entryId} not found`);
                     }
                     else {
                         lastFoundQueueIndex = queueIndex;
                         const activity = res.splice(found, 1)[0];
-                        this._options.logger && this._options.logger('Alexa-Remote: Activity found ' + found + ' for Activity ID ' + entry.key.entryId);
+                        this._options.logger && this._options.logger(`Alexa-Remote: Activity found ${found} for Activity ID ${entry.key.entryId}`);
                         activity.destinationUserId = entry.destinationUserId;
                         this.emit('ws-device-activity', activity);
                     }
                 });
 
                 if (lastFoundQueueIndex === -1) {
-                    this._options.logger && this._options.logger('Alexa-Remote: No activities from stored ' + this.activityUpdateQueue.length + ' entries found in queue (' + this.activityUpdateNotFoundCounter + ')');
+                    this._options.logger && this._options.logger(`Alexa-Remote: No activities from stored ${this.activityUpdateQueue.length} entries found in queue (${this.activityUpdateNotFoundCounter})`);
                     this.activityUpdateNotFoundCounter++;
                     if (this.activityUpdateNotFoundCounter > 5) {
                         this._options.logger && this._options.logger('Alexa-Remote: Reset expected activities');
@@ -714,7 +712,7 @@ class AlexaRemote extends EventEmitter {
                 else {
                     this.activityUpdateNotFoundCounter = 0;
                     this.activityUpdateQueue.splice(0, lastFoundQueueIndex + 1);
-                    this._options.logger && this._options.logger('Alexa-Remote: ' + this.activityUpdateQueue.length + ' entries left in activity queue');
+                    this._options.logger && this._options.logger(`Alexa-Remote: ${this.activityUpdateQueue.length} entries left in activity queue`);
                 }
             }
 
@@ -758,7 +756,7 @@ class AlexaRemote extends EventEmitter {
         }
         // bypass check because set or last check done before less then 10 mins
         if (noCheck || (new Date().getTime() - this.lastAuthCheck) < 600000) {
-            this._options.logger && this._options.logger('Alexa-Remote: No authentication check needed (time elapsed ' + (new Date().getTime() - this.lastAuthCheck) + ')');
+            this._options.logger && this._options.logger(`Alexa-Remote: No authentication check needed (time elapsed ${new Date().getTime() - this.lastAuthCheck})`);
             return this.httpsGetCall(path, callback, flags);
         }
         this.checkAuthentication((authenticated, err) => {
@@ -768,7 +766,7 @@ class AlexaRemote extends EventEmitter {
                 return this.httpsGetCall(path, callback, flags);
             }
             else if (err && authenticated === null) {
-                this._options.logger && this._options.logger('Alexa-Remote: Authentication check returned error: ' + err + '. Still try request');
+                this._options.logger && this._options.logger(`Alexa-Remote: Authentication check returned error: ${err}. Still try request`);
                 return this.httpsGetCall(path, callback, flags);
             }
             this._options.logger && this._options.logger('Alexa-Remote: Authentication check Error, try re-init');
@@ -787,9 +785,16 @@ class AlexaRemote extends EventEmitter {
     httpsGetCall(path, callback, flags = {}) {
 
         const handleResponse = (err, res, body) => {
-            if (!err && typeof res.statusCode === 'number' && res.statusCode == 401) {
+            if (!err && typeof res.statusCode === 'number' && res.statusCode === 401) {
                 this._options.logger && this._options.logger('Alexa-Remote: Response: 401 Unauthorized');
                 return callback(new Error('401 Unauthorized'), null);
+            }
+
+            if (!err && typeof res.statusCode === 'number' && res.statusCode === 503 && flags && !flags.isRetry) {
+                this._options.logger && this._options.logger('Alexa-Remote: Response: 503 ... Retrying once');
+                flags = flags || {};
+                flags.isRetry = true;
+                return setTimeout(() => this.httpsGetCall(path, callback, flags), Math.floor(Math.random() * 500) + 500);
             }
 
             if (err || !body) { // Method 'DELETE' may return HTTP STATUS 200 without body
@@ -802,19 +807,19 @@ class AlexaRemote extends EventEmitter {
                 ret = JSON.parse(body);
             } catch (e) {
                 if (typeof res.statusCode === 'number' && res.statusCode >= 500 && res.statusCode < 510) {
-                    this._options.logger && this._options.logger('Alexa-Remote: Response: Status: ' + res.statusCode);
+                    this._options.logger && this._options.logger(`Alexa-Remote: Response: Status: ${res.statusCode}`);
                     callback(new Error('no body'), null);
                     callback = null;
                     return;
                 }
 
-                this._options.logger && this._options.logger('Alexa-Remote: Response: No/Invalid JSON : ' + body);
+                this._options.logger && this._options.logger(`Alexa-Remote: Response: No/Invalid JSON : ${body}`);
                 callback && callback(new Error('no JSON'), body);
                 callback = null;
                 return;
             }
 
-            this._options.logger && this._options.logger('Alexa-Remote: Response: ' + JSON.stringify(ret));
+            this._options.logger && this._options.logger(`Alexa-Remote: Response: ${JSON.stringify(ret)}`);
             callback(null, ret);
             callback = null;
         };
@@ -842,7 +847,7 @@ class AlexaRemote extends EventEmitter {
         if (!path.startsWith('/')) {
             path = path.replace(/^https:\/\//, '');
             //let ar = path.match(/^([^\/]+)(\/.*$)/);
-            const ar = path.match(/^([^\/]+)([\/]*.*$)/);
+            const ar = path.match(/^([^/]+)(\/*.*$)/);
             options.host = ar[1];
             path = ar[2];
         } else {
@@ -867,7 +872,7 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers.Accept;
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
-        this._options.logger && this._options.logger('Alexa-Remote: Sending Request with ' + JSON.stringify(logOptions) + ((options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ' and data=' + flags.data : ''));
+        this._options.logger && this._options.logger(`Alexa-Remote: Sending Request with ${JSON.stringify(logOptions)}${(options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ` and data=${flags.data}` : ''}`);
 
         let req;
         let responseReceived = false;
@@ -899,7 +904,7 @@ class AlexaRemote extends EventEmitter {
                 });
             });
         } catch(err) {
-            this._options.logger && this._options.logger('Alexa-Remote: Response: Exception: ' + err);
+            this._options.logger && this._options.logger(`Alexa-Remote: Response: Exception: ${err}`);
             if (typeof callback === 'function'/* && callback.length >= 2*/) {
                 callback (err, null);
                 callback = null;
@@ -908,7 +913,7 @@ class AlexaRemote extends EventEmitter {
         }
 
         req.on('error', (e) => {
-            this._options.logger && this._options.logger('Alexa-Remote: Response: Error: ' + e);
+            this._options.logger && this._options.logger(`Alexa-Remote: Response: Error: ${e}`);
             if (!responseReceived && typeof callback === 'function'/* && callback.length >= 2*/) {
                 callback (e, null);
                 callback = null;
@@ -995,7 +1000,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     getList(listId, callback) {
-        this.httpsGet ('/api/namedLists/' + listId + '?_=%t', callback);
+        this.httpsGet (`/api/namedLists/${listId}?_=%t`, callback);
     }
 
     /**
@@ -1021,11 +1026,11 @@ class AlexaRemote extends EventEmitter {
         // get params by options
         let params = '';
         for (const option in options) {
-            params += '&' + option + '=' + options[option];
+            params += `&${option}=${options[option]}`;
         }
 
         // send request
-        this.httpsGet ('/api/namedLists/' + listId + '/items?_=%t' + params, (err, res) => callback && callback(err, res && res.list));
+        this.httpsGet (`/api/namedLists/${listId}/items?_=%t${params}`, (err, res) => callback && callback(err, res && res.list));
     }
 
     addListItem(listId, options, callback) {
@@ -1047,7 +1052,7 @@ class AlexaRemote extends EventEmitter {
         };
 
         // send request
-        this.httpsGet ('/api/namedLists/' + listId + '/item', callback, request);
+        this.httpsGet (`/api/namedLists/${listId}/item`, callback, request);
     }
 
     updateListItem(listId, listItem, options, callback) {
@@ -1080,7 +1085,7 @@ class AlexaRemote extends EventEmitter {
         };
 
         // send request
-        this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
+        this.httpsGet (`/api/namedLists/${listId}/item/${listItem}`, callback, request);
     }
 
     deleteListItem(listId, listItem, callback) {
@@ -1103,7 +1108,7 @@ class AlexaRemote extends EventEmitter {
         };
 
         // send request
-        this.httpsGet ('/api/namedLists/' + listId + '/item/' + listItem, callback, request);
+        this.httpsGet (`/api/namedLists/${listId}/item/${listItem}`, callback, request);
     }
 
     getWakeWords(callback) {
@@ -1180,7 +1185,7 @@ class AlexaRemote extends EventEmitter {
             }*/
             'originalDate': `${now.getFullYear()}-${_00(now.getMonth() + 1)}-${_00(now.getDate())}`,
             'originalTime': `${_00(now.getHours())}:${_00(now.getMinutes())}:${_00(now.getSeconds())}.000`,
-            'id': 'create' + type,
+            'id': `create${type}`,
 
             'isRecurring' : false,
             'recurringPattern': null,
@@ -1287,7 +1292,7 @@ class AlexaRemote extends EventEmitter {
             }
         }
 
-        const originalDateTime = notification.originalDate + ' ' + notification.originalTime;
+        const originalDateTime = `${notification.originalDate} ${notification.originalTime}`;
         const bits = originalDateTime.split(/\D/);
         let date = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4], bits[5]);
         if (date.getTime() < Date.now()) {
@@ -1380,15 +1385,27 @@ class AlexaRemote extends EventEmitter {
         const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
+        const encodedStationId = `["music/tuneIn/${contentType}Id","${guideId}"]|{"previousPageId":"TuneIn_SEARCH"}`;
+        const encoding1 = Buffer.from(encodedStationId).toString('base64');
+        const encoding2 = Buffer.from(encoding1).toString('base64');
+        const tuneInJson = {
+            contentToken: `music:${encoding2}`
+        };
+        const flags = {
+            data: JSON.stringify(tuneInJson),
+            method: 'PUT'
+        };
+        this.httpsGet (`/api/entertainment/v1/player/queue?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}`, callback, flags);
+
+        /*
         this.httpsGet (`/api/tunein/queue-and-play
            ?deviceSerialNumber=${dev.serialNumber}
            &deviceType=${dev.deviceType}
            &guideId=${guideId}
            &contentType=${contentType}
            &callSign=
-           &mediaOwnerCustomerId=${dev.deviceOwnerCustomerId}`,
-        callback,
-        { method: 'POST' });
+           &mediaOwnerCustomerId=${dev.deviceOwnerCustomerId}`, callback, { method: 'POST' });
+         */
     }
 
     /**
@@ -1525,7 +1542,7 @@ class AlexaRemote extends EventEmitter {
                                 } else if (text.startsWith('alexa')) {
                                     text = text.substr(5).trim();
                                 }
-                                o.description.summary += text + ', ';
+                                o.description.summary += `${text}, `;
                             });
                         }
                         if (convParts.ASR_REPLACEMENT_TEXT) {
@@ -1536,7 +1553,7 @@ class AlexaRemote extends EventEmitter {
                                 } else if (text.startsWith('alexa')) {
                                     text = text.substr(5).trim();
                                 }
-                                o.description.summary += text + ', ';
+                                o.description.summary += `${text}, `;
                             });
                         }
                         o.description.summary = o.description.summary.substring(0, o.description.summary.length - 2).trim();
@@ -1544,10 +1561,10 @@ class AlexaRemote extends EventEmitter {
                     o.alexaResponse = '';
                     if (convParts.ALEXA_RESPONSE || convParts.TTS_REPLACEMENT_TEXT) {
                         if (convParts.ALEXA_RESPONSE) {
-                            convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                            convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += `${trans.transcriptText}, `);
                         }
                         if (convParts.TTS_REPLACEMENT_TEXT) {
-                            convParts.TTS_REPLACEMENT_TEXT.forEach(trans => o.alexaResponse += trans.transcriptText + ', ');
+                            convParts.TTS_REPLACEMENT_TEXT.forEach(trans => o.alexaResponse += `${trans.transcriptText}, `);
                         }
                         o.alexaResponse = o.alexaResponse.substring(0, o.alexaResponse.length - 2).trim();
                     }
@@ -1723,7 +1740,7 @@ class AlexaRemote extends EventEmitter {
             case 'previous':
             case 'forward':
             case 'rewind':
-                commandObj.type = command.substr(0, 1).toUpperCase() + command.substr(1) + 'Command';
+                commandObj.type = `${command.substr(0, 1).toUpperCase() + command.substr(1)}Command`;
                 break;
             case 'volume':
                 commandObj.type = 'VolumeLevelCommand';
@@ -2004,12 +2021,11 @@ class AlexaRemote extends EventEmitter {
             }
         }
 
-        const sequenceObj = {
-            '@type': 'com.amazon.alexa.behaviors.model.' + sequenceType,
+        return {
+            '@type': `com.amazon.alexa.behaviors.model.${sequenceType}`,
             'name': null,
             'nodesToExecute': nodes
         };
-        return sequenceObj;
     }
 
     sendMultiSequenceCommand(serialOrName, commands, sequenceType, overrideCustomerId, callback) {
@@ -2161,7 +2177,7 @@ class AlexaRemote extends EventEmitter {
         // }]
 
         const message = [{
-            conversationId: 'amzn1.comms.messaging.id.conversationV2~' + uuidv1(),
+            conversationId: `amzn1.comms.messaging.id.conversationV2~${uuidv1()}`,
             clientMessageId: uuidv1(),
             messageId: 0.001,
             time: new Date().toISOString(),
