@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.0.0 (2022-07-02)
 * BREAKING: SequenceNode methods throws an error on invalid data instead calling callback with error as before!
 * (Apollon77) Enhance multi sequence Node methods to support building node structures with sub Parallel/SerialNodes
 * (Apollon77) Adjust logic to get the "global" ownerCustomerId and use Authentication response from session verification call
