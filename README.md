@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.0.1 (2022-07-03)
 * (Apollon77) fix type definition for sequenceCommand methods
 
 ### 5.0.0 (2022-07-02)
