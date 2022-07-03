@@ -428,19 +428,22 @@ declare module "alexa-remote2" {
         createSequenceNode(
             command: SequenceNodeCommand,
             value: Value,
-            serialOrName: SerialOrNameOrArray
+            serialOrName: SerialOrNameOrArray,
+            overrideCustomerId?: string
         ): void;
 
         buildSequenceNodeStructure(
             serialOrName: SerialOrNameOrArray,
             commands: MultiSequenceCommand[],
             sequenceType?: SequenceType | CallbackWithErrorAndBody,
+            overrideCustomerId?: string
         ): void;
 
         sendMultiSequenceCommand(
             serialOrName: SerialOrNameOrArray,
             commands: MultiSequenceCommand[],
             sequenceType?: SequenceType | CallbackWithErrorAndBody,
+            overrideCustomerId?: string | CallbackWithErrorAndBody,
             callback?: CallbackWithErrorAndBody
         ): void;
 
@@ -448,7 +451,8 @@ declare module "alexa-remote2" {
             serialOrName: SerialOrNameOrArray,
             command: SequenceNodeCommand,
             value: Value,
-            callback: CallbackWithErrorAndBody
+            overrideCustomerId?: string | CallbackWithErrorAndBody,
+            callback?: CallbackWithErrorAndBody
         ): void;
 
         getAutomationRoutines(
