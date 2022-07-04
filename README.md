@@ -23,6 +23,11 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Detect Rate limit exceeded response and do one automatic request retry 10s later (plus a random part)
+* (Apollon77) Calculate the timeout of querySmarthomeDevices dynamically between 10s and 60s (maximum overrideable by new optional parameter) depending on the number of devices to query
+
 ### 5.0.1 (2022-07-03)
 * (Apollon77) fix type definition for sequenceCommand methods
 

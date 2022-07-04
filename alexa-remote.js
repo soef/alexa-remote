@@ -814,6 +814,13 @@ class AlexaRemote extends EventEmitter {
                 }
 
                 this._options.logger && this._options.logger(`Alexa-Remote: Response: No/Invalid JSON : ${body}`);
+                if (body.includes('ThrottlingException')  || body.includes('Rate exceeded')) {
+                    const delay = Math.floor(Math.random() * 3000) + 10000;
+                    this._options.logger && this._options.logger(`Alexa-Remote: rate exceeded response ... Retrying once in ${delay}ms`);
+                    flags = flags || {};
+                    flags.isRetry = true;
+                    return setTimeout(() => this.httpsGetCall(path, callback, flags), delay);
+                }
                 callback && callback(new Error('no JSON'), body);
                 callback = null;
                 return;
@@ -2318,7 +2325,11 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet ('/api/phoenix/discovery', callback, flags);
     }
 
-    querySmarthomeDevices(applicanceIds, entityType, callback) {
+    querySmarthomeDevices(applicanceIds, entityType, maxTimeout, callback) {
+        if (typeof maxTimeout === 'function') {
+            callback = maxTimeout;
+            maxTimeout = null;
+        }
         if (typeof entityType === 'function') {
             callback = entityType;
             entityType = 'APPLIANCE'; // other value 'GROUP'
@@ -2337,8 +2348,11 @@ class AlexaRemote extends EventEmitter {
             method: 'POST',
             data: JSON.stringify ({
                 'stateRequests': reqArr
-            })
+            }),
+            timeout: Math.min(maxTimeout || 60000, Math.max(10000, applicanceIds.length * 300))
         };
+
+
         this.httpsGet (`/api/phoenix/state`, callback, flags);
         /*
         {

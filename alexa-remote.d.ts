@@ -531,8 +531,9 @@ declare module "alexa-remote2" {
 
         querySmarthomeDevices(
             applicanceIds: string[],
-            entityType: EntityType,
-            callback: CallbackWithErrorAndBody
+            entityType?: EntityType | CallbackWithErrorAndBody,
+            maxTimeout?: number | CallbackWithErrorAndBody,
+            callback?: CallbackWithErrorAndBody
         ): void;
 
         executeSmarthomeDeviceAction(
