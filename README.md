@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.1.0 (2022-07-04)
 * (Apollon77) Detect Rate limit exceeded response and do one automatic request retry 10s later (plus a random part)
 * (Apollon77) Calculate the timeout of querySmarthomeDevices dynamically between 10s and 60s (maximum overrideable by new optional parameter) depending on the number of devices to query
 
