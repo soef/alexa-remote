@@ -23,6 +23,23 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Query API endpoints (including new method getEndpoints()) from Amazon on start and use this API endpoint for the calls
+* (Apollon77) Enhance getDevicePreferences() to request preferences for one device
+* (Apollon77) Add setDevicePreferences() to set the device preferences for a device
+* (Apollon77) Add getDeviceWifiDetails() to get the Wifi definitions (including SSID and MAC) for a device
+* (Apollon77) Load Device Preferences on startup and make accessible via device.preferences on the device objects
+* (Apollon77) Add methods getDevicePreferences() and setDevicePreferences() to the alexa class and to the device objects
+* (Apollon77) Add new Media Message "jump" (in sendMessage() method) with a mediaId as value (can be used to jump to another queue item)
+* (Apollon77) Add getRoutineSoundList() to query available sound IDs for a routine
+* (Apollon77) Add new command "sound" when creating/sending sequence nodes to play sounds
+* (Apollon77) Add method getWholeHomeAudioGroups() to query information about the current Audio groups
+* (Apollon77) Enhance sending "notification" sequence node to allow providing an object as value with keys title and text to specify the title for displaying the message too
+* (Apollon77) Add setEnablementForSmarthomeDevice() to enable/disable a smart home device
+* (Apollon77) Log Response with status code also when no callback is provided (but without body content)
+* (Apollon77) Slightly adjust the calculated timeout when getting many smart home device values
+
 ### 5.1.0 (2022-07-04)
 * (Apollon77) Detect Rate limit exceeded response and do one automatic request retry 10s later (plus a random part)
 * (Apollon77) Calculate the timeout of querySmarthomeDevices dynamically between 10s and 60s (maximum overrideable by new optional parameter) depending on the number of devices to query

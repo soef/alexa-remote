@@ -80,6 +80,11 @@ declare module "alexa-remote2" {
 
     export type Value = string | number | boolean;
 
+    export type SequenceValue = Value | {
+        title: string
+        text: string
+    };
+
     export type Sound = {
         displayName: string;
         folder: string;
@@ -165,7 +170,8 @@ declare module "alexa-remote2" {
         | "rewind"
         | "volume"
         | "shuffle"
-        | "repeat";
+        | "repeat"
+        | "jump";
 
     export type SequenceNodeCommand =
         | "weather"
@@ -196,7 +202,7 @@ declare module "alexa-remote2" {
 
     export type SequenceNodeDetails = {
         command: SequenceNodeCommand;
-        value: Value;
+        value: SequenceValue;
         device?: SerialOrNameOrArray;
     }
 
@@ -315,6 +321,8 @@ declare module "alexa-remote2" {
 
         getSkills(callback: CallbackWithErrorAndBody): void;
 
+        getRoutineSoundList(callback: CallbackWithErrorAndBody): void;
+
         createNotificationObject(
             serialOrName: SerialOrName,
             type: string,
@@ -427,7 +435,7 @@ declare module "alexa-remote2" {
 
         createSequenceNode(
             command: SequenceNodeCommand,
-            value: Value,
+            value: SequenceValue,
             serialOrName: SerialOrNameOrArray,
             overrideCustomerId?: string
         ): void;
@@ -450,7 +458,7 @@ declare module "alexa-remote2" {
         sendSequenceCommand(
             serialOrName: SerialOrNameOrArray,
             command: SequenceNodeCommand,
-            value: Value,
+            value: SequenceValue,
             overrideCustomerId?: string | CallbackWithErrorAndBody,
             callback?: CallbackWithErrorAndBody
         ): void;
@@ -495,7 +503,20 @@ declare module "alexa-remote2" {
 
         getHomeGroup(callback: CallbackWithErrorAndBody): void;
 
-        getDevicePreferences(callback: CallbackWithErrorAndBody): void;
+        getDevicePreferences(
+            serialOrName: SerialOrName | CallbackWithErrorAndBody,
+            callback?: CallbackWithErrorAndBody
+        ): void;
+
+        setDevicePreferences(
+            serialOrName: SerialOrName,
+            preferences: Record<string, unknown>,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        getDeviceWifiDetails(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        getAllDoNotDisturbDeviceStatus(callback: CallbackWithErrorAndBody): void;
 
         getAllDeviceVolumes(callback: CallbackWithErrorAndBody): void;
 
@@ -517,6 +538,12 @@ declare module "alexa-remote2" {
 
         deleteSmarthomeDevice(
             smarthomeDevice: string,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        setEnablementForSmarthomeDevice(
+            smarthomeDevice: string,
+            enabled: boolean,
             callback: CallbackWithErrorAndBody
         ): void;
 
@@ -559,5 +586,9 @@ declare module "alexa-remote2" {
         isWsMqttConnected(): boolean;
 
         stopProxyServer(callback: CallbackWithError): void
+
+        getWholeHomeAudioGroups(callback: CallbackWithErrorAndBody): void
+
+        getEndpoints(callback: CallbackWithErrorAndBody): void
     }
 }
