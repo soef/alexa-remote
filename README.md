@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.2.0 (2022-07-06)
 * (Apollon77) Query API endpoints (including new method getEndpoints()) from Amazon on start and use this API endpoint for the calls
 * (Apollon77) Enhance getDevicePreferences() to request preferences for one device
 * (Apollon77) Add setDevicePreferences() to set the device preferences for a device
