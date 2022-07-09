@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.3.0 (2022-07-09)
 * (Apollon77) Adjust Alarm methods to use the new API from Amazon. Also createNotification() and parseValue4Notification() now returns the new format for Alarms
 * (Apollon77) Enhance createNotification() to also support adding reccurence information 
 * (Apollon77) Notification objects will also have a delete method now
