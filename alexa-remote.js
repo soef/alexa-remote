@@ -32,6 +32,9 @@ class AlexaRemote extends EventEmitter {
         this.endpoints = null;
 
         this.baseUrl = 'alexa.amazon.de';
+
+        this.authApiBearerToken = null;
+        this.authApiBearerExpiry = null;
     }
 
     setCookie(_cookie) {
@@ -230,11 +233,13 @@ class AlexaRemote extends EventEmitter {
                     //TODO: new stuff
                     return;
                 }
-                if (noti.alarmTime && !noti.originalTime && noti.originalDate && noti.type !== 'Timer') {
+                if (noti.alarmTime && !noti.originalTime && noti.originalDate && noti.type !== 'Timer' && !noti.rRuleData) {
                     const now = new Date(noti.alarmTime);
                     noti.originalTime = `${_00(now.getHours())}:${_00(now.getMinutes())}:${_00(now.getSeconds())}.000`;
                 }
                 noti.set = this.changeNotification.bind(this, noti);
+                noti.delete = this.deleteNotification.bind(this, noti);
+                noti.cancel = this.cancelNotification.bind(this, noti);
                 device.notifications.push(noti);
             });
             callback && callback();
@@ -315,6 +320,13 @@ class AlexaRemote extends EventEmitter {
                         device.delete = this.deleteDevice.bind(this, device);
                         device.getDevicePreferences = this.getDevicePreferences.bind(this, device);
                         device.setDevicePreferences = this.setDevicePreferences.bind(this, device);
+                        device.getNotificationSounds = this.getNotificationSounds.bind(this, device);
+                        device.setDevicePreferences = this.setDevicePreferences.bind(this, device);
+                        device.getDeviceNotificationState = this.getDeviceNotificationState.bind(this, device);
+                        device.setDeviceNotificationVolume = this.setDeviceNotificationVolume.bind(this, device);
+                        device.setDeviceAscendingAlarmState = this.setDeviceAscendingAlarmState.bind(this, device);
+                        device.getDeviceNotificationDefaultSound = this.getDeviceNotificationDefaultSound.bind(this, device);
+                        device.setDeviceNotificationDefaultSound = this.setDeviceNotificationDefaultSound.bind(this, device);
                         if (device.deviceTypeFriendlyName) this.friendlyNames[device.deviceTypeFriendlyName] = device;
                         if (customerIds[device.deviceOwnerCustomerId] === undefined) customerIds[device.deviceOwnerCustomerId] = 0;
                         customerIds[device.deviceOwnerCustomerId] += 1;
@@ -776,6 +788,56 @@ class AlexaRemote extends EventEmitter {
         this.alexaCookie.refreshAlexaCookie(this._options, callback);
     }
 
+    getAuthApiBearerToken(callback) {
+        this.httpsGet(true, 'https://api.amazon.de/auth/token', (err, res) => {
+            if (err) {
+                this._options.logger && this._options.logger(`Alexa-Remote: Error getting auth token: ${err.message}`);
+                callback(err);
+            }
+            else {
+                this._options.logger && this._options.logger(`Alexa-Remote: Auth token: ${res.access_token}`);
+                callback(null, res);
+            }
+        }, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            data: `app_name=ioBroker%20Alexa2&app_version=2.2.483723.0&di.sdk.version=6.12.3&source_token=${encodeURIComponent(this.cookieData.refreshToken)}&package_name=com.amazon.echo&di.hw.version=iPhone&platform=iOS&requested_token_type=access_token&source_token_type=refresh_token&di.os.name=iOS&di.os.version=15.5&current_version=6.12.3&previous_version=6.12.3`
+        });
+    }
+
+    httpsGetAuthApi(path, callback, flags = {}) {
+        if (!this.endpoints && !this.endpoints.alexaApiUrl) {
+            this._options.logger && this._options.logger(`Alexa-Remote: No endpoint set for alexaApiUrl: ${JSON.stringify(this.endpoints)}`);
+            return callback && callback(new Error(`No endpoint set for alexaApiUrl: ${JSON.stringify(this.endpoints)}`));
+        }
+        flags = flags || {};
+        flags.host = this.endpoints.alexaApiUrl.replace(/^https?:\/\//, '');
+        flags.headers = flags.headers || {};
+        flags.host = this.endpoints.alexaApiUrl.replace(/^https?:\/\//, '');
+        flags.cleanHeader = true;
+        flags.headers = flags.headers || {};
+        flags.headers.authorization = this.authApiBearerToken;
+        flags.headers.authority = flags.host;
+        flags.headers['user-agent'] = 'AppleWebKit PitanguiBridge/2.2.483723.0-[HARDWARE=iPhone10_4][SOFTWARE=15.5][DEVICE=iPhone]';
+        if (!this.authApiBearerToken || Date.now() >= this.authApiBearerExpiry) {
+            this.getAuthApiBearerToken((err, res) => {
+                if (err || !res || !res.access_token || res.token_type !== 'bearer') {
+                    this._options.logger && this._options.logger(`Alexa-Remote: Error getting auth token: ${err.message}`);
+                    return callback && callback(err);
+                }
+                this.authApiBearerToken = res.access_token;
+                this.authApiBearerExpiry = Date.now() + res.expires_in * 1000;
+                flags.headers.authorization = this.authApiBearerToken;
+                this.httpsGet(true, path, callback, flags);
+            });
+        } else {
+            flags = flags || {};
+            this.httpsGet(true, path, callback, flags);
+        }
+    }
+
     httpsGet(noCheck, path, callback, flags = {}) {
         if (typeof noCheck !== 'boolean') {
             flags = callback;
@@ -882,6 +944,13 @@ class AlexaRemote extends EventEmitter {
             }
         };
 
+        if (flags.cleanHeader) {
+            delete options.headers.Referer;
+            delete options.headers.Origin;
+            delete options.headers.Cookie;
+            delete options.headers.csrf;
+            delete options.headers['User-Agent'];
+        }
         path = path.replace(/[\n ]/g, '');
         if (!path.startsWith('/')) {
             path = path.replace(/^https:\/\//, '');
@@ -889,14 +958,12 @@ class AlexaRemote extends EventEmitter {
             const ar = path.match(/^([^/]+)(\/*.*$)/);
             options.host = ar[1];
             path = ar[2];
-        } else {
-            options.host = this.baseUrl;
         }
         const time = new Date().getTime();
         path = path.replace(/%t/g, time);
 
         options.path = path;
-        options.method = flags.method? flags.method : flags.data ? 'POST' : 'GET';
+        options.method = flags.method ? flags.method : flags.data ? 'POST' : 'GET';
 
         if (flags.headers) Object.keys(flags.headers).forEach(n => {
             options.headers [n] = flags.headers[n];
@@ -911,7 +978,10 @@ class AlexaRemote extends EventEmitter {
         delete logOptions.headers.Accept;
         delete logOptions.headers.Referer;
         delete logOptions.headers.Origin;
-        this._options.logger && this._options.logger(`Alexa-Remote: Sending Request with ${JSON.stringify(logOptions)}${(options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ` and data=${flags.data}` : ''}`);
+        delete logOptions.headers.authorization;
+        delete logOptions.headers.authority;
+        delete logOptions.headers['user-agent'];
+        this._options.logger && this._options.logger(`Alexa-Remote: Sending Request with ${JSON.stringify(logOptions)} ${options.authorization ? '+AccessToken' : ''}${(options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE') ? ` and data=${flags.data}` : ''}`);
 
         let req;
         let responseReceived = false;
@@ -930,17 +1000,27 @@ class AlexaRemote extends EventEmitter {
                         const encoding = res.headers['content-encoding'];
                         if (encoding === 'gzip') {
                             zlib.gunzip(resBuffer, (err, decoded) => {
-                                handleResponse(err, res, decoded && decoded.toString());
+                                if (typeof callback === 'function') {
+                                    handleResponse(err, res, decoded && decoded.toString());
+                                } else {
+                                    this._options.logger && this._options.logger(`Alexa-Remote: Response Status ${res.statusCode}: ${decoded && decoded.toString()}`);
+                                }
                             });
                         } else if (encoding === 'deflate') {
                             zlib.inflate(resBuffer, (err, decoded) => {
-                                handleResponse(err, res, decoded && decoded.toString());
+                                if (typeof callback === 'function') {
+                                    handleResponse(err, res, decoded && decoded.toString());
+                                } else {
+                                    this._options.logger && this._options.logger(`Alexa-Remote: Response Status ${res.statusCode}: ${decoded && decoded.toString()}`);
+                                }
                             });
                         } else {
-                            handleResponse(null, res, resBuffer.toString());
+                            if (typeof callback === 'function') {
+                                handleResponse(null, res, resBuffer.toString());
+                            } else {
+                                this._options.logger && this._options.logger(`Alexa-Remote: Response Status ${res.statusCode}: ${resBuffer.toString()}`);
+                            }
                         }
-                    } else {
-                        this._options.logger && this._options.logger(`Alexa-Remote: Response (without callback): Status: ${res.statusCode}`);
                     }
                 });
             });
@@ -1025,6 +1105,14 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet (`/api/cards?limit=${limit}&beforeCreationTime=${beforeCreationTime}000&_=%t`, callback);
     }
 
+    getUsersMe(callback) {
+        this.httpsGetCall('/api/users/me?platform=ios&version=2.2.483723.0', callback);
+    }
+
+    getHousehold(callback) {
+        this.httpsGetCall('/api/household', callback);
+    }
+
     getMedia(serialOrName, callback) {
         const dev = this.find(serialOrName);
         if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
@@ -1060,7 +1148,6 @@ class AlexaRemote extends EventEmitter {
 	 *
 	 */
     getListItems(listId, options, callback) {
-
         // get function params
         if (typeof options === 'function') {
             callback = options;
@@ -1078,7 +1165,6 @@ class AlexaRemote extends EventEmitter {
     }
 
     addListItem(listId, options, callback) {
-
         // get function params
         if (typeof options === 'string') {
             options = { 'value': options };
@@ -1100,7 +1186,6 @@ class AlexaRemote extends EventEmitter {
     }
 
     updateListItem(listId, listItem, options, callback) {
-
         // providing a version is mandatory
         if (typeof options !== 'object' || !options.version || !options.value) {
             const errors = [];
@@ -1133,7 +1218,6 @@ class AlexaRemote extends EventEmitter {
     }
 
     deleteListItem(listId, listItem, callback) {
-
         // data
         const data = JSON.stringify({
             'listId': listId,
@@ -1171,8 +1255,91 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet (`/api/notifications?cached=${cached}&_=%t`, callback);
     }
 
-    getSkills(callback) {
+    getNotificationSounds(serialOrName, alertType, callback) {
+        if (typeof alertType === 'function') {
+            callback = alertType;
+            alertType = '';
+        }
+        const device = this.find(serialOrName);
+        if (!device) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
+        this.httpsGet (`/api/notification/sounds?deviceType=${device.deviceType}&deviceSerialNumber=${device.serialNumber}&softwareVersion=${device.softwareVersion}${alertType ? `&alertType=${alertType}` : ''}`, callback);
+    }
+
+    // alarm volume
+    getDeviceNotificationState(serialOrName, callback) {
+        const device = this.find(serialOrName);
+        if (!device) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet (`/api/device-notification-state/${device.deviceType}/${device.softwareVersion}/${device.serialNumber}`, callback);
+    }
+
+    setDeviceNotificationVolume(serialOrName, volumeLevel, callback) {
+        const device = this.find(serialOrName);
+        if (!device) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet (`/api/device-notification-state/${device.deviceType}/${device.softwareVersion}/${device.serialNumber}`, callback , {
+            'method': 'PUT',
+            'data': JSON.stringify({
+                volumeLevel
+            })
+        });
+    }
+
+    setDeviceNotificationDefaultSound(serialOrName, notificationType, soundId, callback) {
+        const device = this.find(serialOrName);
+        if (!device) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet (`/api/notification/default-sound`, callback, {
+            'method': 'PUT',
+            'data': JSON.stringify({
+                'deviceType': device.deviceType,
+                'deviceSerialNumber': device.serialNumber,
+                notificationType,
+                soundId
+            })
+        });
+    }
+
+    getDeviceNotificationDefaultSound(serialOrName, notificationType, callback) {
+        const device = this.find(serialOrName);
+        if (!device) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet (`/api/notification/default-sound?deviceType=${device.deviceType}&deviceSerialNumber=${device.serialNumber}&notificationType=${notificationType}`, callback);
+    }
+
+    getAscendingAlarmState(serialOrName, callback) {
+        if (typeof serialOrName === 'function') {
+            callback = serialOrName;
+            serialOrName = undefined;
+        }
+
+        this.httpsGet (`/api/ascending-alarm`, (err, res) => {
+            if (serialOrName) {
+                const device = this.find(serialOrName);
+                if (!device) return callback && callback(new Error('Unknown Device or Serial number'), null);
+                callback && callback(err, res && res.ascendingAlarmModelList && res.ascendingAlarmModelList.find(d => d.deviceSerialNumber === device.serialNumber));
+            } else {
+                callback && callback(err, res ? res.ascendingAlarmModelList : res);
+            }
+        });
+    }
+
+    setDeviceAscendingAlarmState(serialOrName, ascendingAlarmEnabled, callback) {
+        const device = this.find(serialOrName);
+        if (!device) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet (`/api/ascending-alarm/${device.serialNumber}`, callback, {
+            'method': 'PUT',
+            'data': JSON.stringify({
+                deviceSerialNumber: device.serialNumber,
+                deviceType: device.deviceType,
+                ascendingAlarmEnabled
+            })
+        });
+    }
+
+    getSkills(callback) {
         // request options
         const request = {
             'method': 'GET',
@@ -1203,7 +1370,7 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet ('/api/wholeHomeAudio/v1/groups', (err, res) => callback && callback(err, res && res.groups));
     }
 
-    createNotificationObject(serialOrName, type, label, value, status, sound) { // type = Reminder, Alarm
+    createNotificationObject(serialOrName, type, label, value, status, sound, recurring) { // type = Reminder, Alarm
         if (status && typeof status === 'object') {
             sound = status;
             status = 'ON';
@@ -1216,14 +1383,15 @@ class AlexaRemote extends EventEmitter {
         if (!dev) return null;
 
         const now = new Date();
-        const notification = {
+        let notification = {
             'alarmTime': now.getTime(), // will be overwritten
             'createdDate': now.getTime(),
             'type': type, // Alarm ...
             'deviceSerialNumber': dev.serialNumber,
             'deviceType': dev.deviceType,
-            'reminderLabel': label || null,
-            'sound': sound || null,
+            'reminderLabel': type !== 'Timer' ? (label || null) : null,
+            'timerLabel': type === 'Timer' ? (label || null) : null,
+            'sound': (sound && typeof sound === 'object') ? sound: null,
             /*{
                 'displayName': 'Countertop',
                 'folder': null,
@@ -1233,9 +1401,9 @@ class AlexaRemote extends EventEmitter {
             }*/
             'originalDate': `${now.getFullYear()}-${_00(now.getMonth() + 1)}-${_00(now.getDate())}`,
             'originalTime': `${_00(now.getHours())}:${_00(now.getMinutes())}:${_00(now.getSeconds())}.000`,
-            'id': `create${type}`,
+            'id': null,
 
-            'isRecurring' : false,
+            'isRecurring' : !!recurring,
             'recurringPattern': null,
 
             'timeZoneId': null,
@@ -1243,29 +1411,44 @@ class AlexaRemote extends EventEmitter {
 
             'isSaveInFlight': true,
 
-            'status': 'ON' // OFF
+            'status': status ? 'ON' : 'OFF',
         };
-        /*if (type === 'Timer') {
-            notification.originalDate = null;
-            notification.originalTime = null;
-            notification.alarmTime = 0;
-        }*/
-        return this.parseValue4Notification(notification, value);
+        if (recurring) {
+            notification.rRuleData = {
+                byWeekDays: recurring.byDay,
+                intervals: [recurring.interval],
+                frequency: recurring.freq,
+                flexibleRecurringPatternType: 'EVERY_X_WEEKS',
+                notificationTimes: [notification.originalTime],
+                recurStartDate: notification.originalDate,
+                recurStartTime: '00:00:00.000'
+            };
+        }
+
+        notification = this.parseValue4Notification(notification, value);
+
+        // New style we need to add device!
+        if (notification.trigger && notification.assets && notification.extensions) {
+            notification.endpointId = `${dev.serialNumber}@${dev.deviceType}`;
+            if (recurring) {
+                notification.trigger.recurrence = recurring;
+            }
+        }
+
+        return notification;
     }
 
     parseValue4Notification(notification, value) {
+        let dateOrTimeAdjusted = false;
         switch (typeof value) {
             case 'object':
                 if (value instanceof Date) {
                     if (notification.type !== 'Timer') {
                         notification.alarmTime = value.getTime();
-                        notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
+                        notification.originalDate = `${value.getFullYear()}-${_00(value.getMonth() + 1)}-${_00(value.getDate())}`;
+                        notification.originalTime = `${_00(value.getHours ())}:${_00(value.getMinutes ())}:${_00(value.getSeconds ())}.000`;
+                        dateOrTimeAdjusted = true;
                     }
-                    /*else {
-                        let duration = value.getTime() - Date.now();
-                        if (duration < 0) duration = value.getTime();
-                        notification.remainingTime = duration;
-                    }*/
                 } else {
                     notification = extend(notification, value); // we combine the objects
                     /*
@@ -1307,37 +1490,50 @@ class AlexaRemote extends EventEmitter {
                 if (notification.type !== 'Timer') {
                     value = new Date(value);
                     notification.alarmTime = value.getTime();
-                    if (value.getTime() > new Date().getTime()) {
-                        notification.originalDate = `${value.getFullYear()}-${_00(value.getMonth() + 1)}-${_00(value.getDate())}`;
-                    }
+                    notification.originalDate = `${value.getFullYear()}-${_00(value.getMonth() + 1)}-${_00(value.getDate())}`;
                     notification.originalTime = `${_00 (value.getHours ())}:${_00 (value.getMinutes ())}:${_00 (value.getSeconds ())}.000`;
+                    dateOrTimeAdjusted = true;
                 }
-                /*else {
-                    //notification.remainingTime = value;
-                }*/
                 break;
             case 'boolean':
                 notification.status = value ? 'ON' : 'OFF';
                 break;
             case 'string': {
-                const ar = value.split(':');
                 if (notification.type !== 'Timer') {
                     const date = new Date(notification.alarmTime);
-                    date.setHours(parseInt(ar[0], 10), ar.length > 1 ? parseInt(ar[1], 10) : 0, ar.length > 2 ? parseInt(ar[2], 10) : 0);
-                    notification.alarmTime = date.getTime();
-                    notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
-                }
-                /*else {
-                    let duration = 0;
-                    let multi = 1;
-                    for (let i = ar.length -1; i > 0; i--) {
-                        duration += ar[i] * multi;
-                        multi *= 60;
+                    if (value.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
+                        // Does not work that way!!
+                        const ar = value.split('-');
+                        date.setFullYear(ar[0]);
+                        date.setMonth(ar[1] - 1);
+                        date.setDate(ar[2]);
+                        notification.originalDate = `${date.getFullYear()}-${_00(date.getMonth() + 1)}-${_00(date.getDate())}`;
+                        dateOrTimeAdjusted = true;
+                    } else if (value.match(/^\d{1,2}:\d{1,2}:?\d{0,2}$/)) {
+                        const ar = value.split(':');
+                        date.setHours(parseInt(ar[0], 10), ar.length > 1 ? parseInt(ar[1], 10) : 0, ar.length > 2 ? parseInt(ar[2], 10) : 0);
+                        notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
+                        dateOrTimeAdjusted = true;
                     }
-                    notification.remainingTime = duration;
-                }*/
+                }
                 break;
             }
+        }
+
+        if (dateOrTimeAdjusted && notification.type === 'Alarm') {
+            const newPutNotification = {
+                trigger: {
+                    scheduledTime: `${notification.originalDate}T${notification.originalTime.substring(0, notification.originalTime.length - 4)}`
+                },
+                extensions: []
+            };
+            if (notification.sound && notification.sound.id) {
+                newPutNotification.assets = [{
+                    type: 'TONE',
+                    assetId: notification.sound.id
+                }];
+            }
+            return newPutNotification;
         }
 
         const originalDateTime = `${notification.originalDate} ${notification.originalTime}`;
@@ -1353,23 +1549,50 @@ class AlexaRemote extends EventEmitter {
     }
 
     createNotification(notification, callback) {
+        // Alarm new style
+        if (notification.trigger && notification.assets && notification.extensions) {
+            const flags = {
+                method: 'POST',
+                data: JSON.stringify(notification)
+            };
+            return this.httpsGetAuthApi (`/v1/alerts/alarms`, callback, flags);
+        }
+
         const flags = {
             data: JSON.stringify(notification),
             method: 'PUT'
         };
-        this.httpsGet (`/api/notifications/createReminder`, function(err, res) {
-            //  {'Message':null}
-            callback && callback(err, res);
-        },
-        flags
-        );
+        this.httpsGet (`/api/notifications/null`, callback, flags);
     }
 
     changeNotification(notification, value, callback) {
-        notification = this.parseValue4Notification(notification, value);
+        const finalNotification = this.parseValue4Notification(notification, value);
+
+        if (finalNotification.trigger && finalNotification.assets && finalNotification.extensions) {
+            return this.setNotificationV2(notification.notificationIndex, finalNotification, callback);
+        }
+
+        return this.setNotification(finalNotification, callback);
+    }
+
+    setNotification(notification, callback) {
+        if (notification.type === 'Reminder') {
+            delete notification.alarmTime;
+            delete notification.originalTime;
+            delete notification.originalDate;
+        }
+        if (notification.rRuleData) {
+            delete notification.rRuleData.recurrenceRules;
+            if ((notification.rRuleData.notificationTimes && notification.rRuleData.notificationTimes.length) || notification.recurringPattern === 'P1D') {
+                notification.rRuleData.frequency = 'DAILY';
+            } else {
+                notification.rRuleData.frequency = 'WEEKLY';
+            }
+        }
+
         const flags = {
-            data: JSON.stringify(notification),
-            method: 'PUT'
+            method: 'PUT',
+            data: JSON.stringify(notification)
         };
         this.httpsGet (`/api/notifications/${notification.id}`, function(err, res) {
             //  {'Message':null}
@@ -1377,6 +1600,14 @@ class AlexaRemote extends EventEmitter {
         },
         flags
         );
+    }
+
+    setNotificationV2(notificationIndex, notification, callback) {
+        const flags = {
+            method: 'PUT',
+            data: JSON.stringify(notification)
+        };
+        this.httpsGetAuthApi (`/v1/alerts/alarms/${notificationIndex}`, callback, flags);
     }
 
     deleteNotification(notification, callback) {
@@ -1392,19 +1623,29 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
+    cancelNotification(notification, callback) {
+        if (notification.type === 'Alarm') {
+            const flags = {
+                method: 'PUT'
+            };
+
+            this.httpsGetAuthApi(`/v1/alerts/alarms/${notification.notificationIndex}/nextOccurrence/cancel`, callback, flags);
+        } else if (notification.type === 'Reminder') {
+            notification.status = 'INSTANCE_CANCELED';
+
+            const flags = {
+                data: JSON.stringify (notification),
+                method: 'PUT'
+            };
+            this.httpsGet (`/api/notifications/${notification.id}`, callback, flags);
+        }
+    }
+
     getDoNotDisturb(callback) {
         return this.getDeviceStatusList(callback);
     }
     getDeviceStatusList(callback) {
         this.httpsGet (`/api/dnd/device-status-list?_=%t`, callback);
-    }
-
-    // alarm volume
-    getDeviceNotificationState(serialOrName, callback) {
-        const dev = this.find(serialOrName);
-        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
-
-        this.httpsGet (`/api/device-notification-state/${dev.deviceType}/${dev.softwareVersion}/${dev.serialNumber}&_=%t`, callback);
     }
 
     getBluetooth(cached, callback) {
@@ -2168,6 +2409,40 @@ class AlexaRemote extends EventEmitter {
 
     executeAutomationRoutine(serialOrName, routine, callback) {
         return this.sendSequenceCommand(serialOrName, routine, callback);
+    }
+
+    /**
+     * Get  the Skill catalog that can be used for routines
+     *
+     * @param catalogId string defaults to "Root"
+     * @param limit number defaults to 100
+     * @param callback response callback
+     */
+    getRoutineSkillCatalog(catalogId, limit, callback) {
+        if (typeof limit === 'function') {
+            callback = limit;
+            limit = 100;
+        }
+        if (typeof catalogId === 'function') {
+            callback = catalogId;
+            catalogId = 'Root';
+        }
+
+        // request options
+        const request = {
+            'method': 'POST',
+            'data': JSON.stringify({
+                actions: [],
+                triggers: [{
+                    skill: 'amzn1.ask.1p.customutterance',
+                    type: 'CustomUtterance'
+                }],
+                limit
+            })
+        };
+
+        // send request
+        this.httpsGet (`/api/routines/catalog/action/${catalogId}`, callback, request);
     }
 
     getMusicProviders(callback) {

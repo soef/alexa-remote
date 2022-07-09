@@ -95,7 +95,7 @@ declare module "alexa-remote2" {
 
     export type Status = "ON" | "OFF";
 
-    export type Notification = {
+    export type Notification = Partial<{
         alarmTime: number;
         createdDate: number;
         deferredAtTime: number | null;
@@ -119,7 +119,41 @@ declare module "alexa-remote2" {
         triggerTime: number;
         type: string;
         version: string;
-    };
+        rRuleData: {
+            byMonthDays: string[],
+            byMonths: string[],
+            byWeekDays: string[],
+            flexibleRecurringPatternType: 'EVERY_X_WEEKS' | 'EVERY_X_MONTHS' | 'EVERY_X_DAYS' | 'EVERY_X_YEARS' | 'X_TIMES_A_WEEK' | 'X_TIMES_A_MONTH' | 'X_TIMES_A_DAY' | 'X_TIMES_A_YEAR',
+            frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | null,
+            intervals: number[],
+            nextTriggerTimes: string[],
+            notificationTimes: string[],
+            offset: number[],
+            recurEndDate: string | null,
+            recurEndTime: string | null,
+            recurStartDate: string | null,
+            recurStartTime: string | null,
+            recurrenceRules: string[]
+        },
+    }>;
+
+    type NotificationV2 = Partial<{
+        trigger: {
+            scheduledTime: string,
+            recurrence: {
+                freq: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
+                byDay: string[],
+                byMonth: string[],
+                interval: number
+            }
+        },
+        endpointId: string,
+        assets: [{
+            type: string,
+            assetId: string
+        }],
+        extensions: []
+    }>;
 
     type GetContactsOptions = Partial<{
         includePreferencesByLevel: string;
@@ -230,6 +264,12 @@ declare module "alexa-remote2" {
 
         initNotifications(callback: CallbackWithError): void;
 
+        setNotification(notification: Notification, callback: CallbackWithErrorAndBody): void
+
+        setNotificationV2(notificationIndex: String, notification: NotificationV2, callback: CallbackWithErrorAndBody): void
+
+        cancelNotification(notification: Notification | NotificationV2, callback: CallbackWithErrorAndBody): void
+
         initWakewords(callback: CallbackWithError): void;
 
         initDeviceState(callback: CallbackWithError): void;
@@ -265,6 +305,10 @@ declare module "alexa-remote2" {
 
         /// Public
         checkAuthentication(callback: CallbackWithErrorAndBody): void;
+
+        getUsersMe(callback: CallbackWithErrorAndBody): void;
+
+        getHousehold(callback: CallbackWithErrorAndBody): void;
 
         getDevices(callback: CallbackWithErrorAndBody): void;
 
@@ -319,6 +363,36 @@ declare module "alexa-remote2" {
 
         getNotifications(cached: boolean, callback: CallbackWithErrorAndBody): void;
 
+        getNotificationSounds(
+            serialOrName: SerialOrName,
+            alertType: 'Timer' | 'Alarm' | CallbackWithErrorAndBody,
+            callback?: CallbackWithErrorAndBody
+        ): void
+
+        setDeviceNotificationDefaultSound(
+            serialOrName: SerialOrName,
+            notificationType: 'Alarm',
+            soundId: string,
+            callback: CallbackWithErrorAndBody
+        ): void
+
+        getDeviceNotificationDefaultSound(
+            serialOrName: SerialOrName,
+            notificationType: 'Alarm' | 'Timer',
+            callback: CallbackWithErrorAndBody
+        ): void
+
+        getAscendingAlarmState(
+            serialOrName: SerialOrName | CallbackWithErrorAndBody,
+            callback?: CallbackWithErrorAndBody
+        ): void
+
+        setDeviceAscendingAlarmState(
+            serialOrName: SerialOrName,
+            ascendingAlarmEnabled: boolean,
+            callback: CallbackWithErrorAndBody
+        ): void
+
         getSkills(callback: CallbackWithErrorAndBody): void;
 
         getRoutineSoundList(callback: CallbackWithErrorAndBody): void;
@@ -360,6 +434,12 @@ declare module "alexa-remote2" {
         // alarm volume
         getDeviceNotificationState(
             serialOrName: SerialOrName,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        setDeviceNotificationVolume(
+            serialOrName: SerialOrName,
+            volumeLevel: number,
             callback: CallbackWithErrorAndBody
         ): void;
 
@@ -473,6 +553,12 @@ declare module "alexa-remote2" {
             routine: string,
             callback: CallbackWithErrorAndBody
         ): void;
+
+        getRoutineSkillCatalog(
+            catalogId: string | CallbackWithErrorAndBody,
+            limit?: number | CallbackWithErrorAndBody,
+            callback?: CallbackWithErrorAndBody
+        ): void
 
         getMusicProviders(callback: CallbackWithErrorAndBody): void;
 

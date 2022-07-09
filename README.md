@@ -23,6 +23,27 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Adjust Alarm methods to use the new API from Amazon. Also createNotification() and parseValue4Notification() now returns the new format for Alarms
+* (Apollon77) Enhance createNotification() to also support adding reccurence information 
+* (Apollon77) Notification objects will also have a delete method now
+* (Apollon77) Notifications can be cancelled now
+* (Apollon77) Adjust logging when no callback is provided again, now logs also the body
+* (Apollon77) Add methods:
+  * getUsersMe()
+  * getHousehold()
+  * getNotificationSounds()
+  * getDeviceNotificationState()
+  * setDeviceNotificationVolume()
+  * setDeviceNotificationDefaultSound()
+  * getDeviceNotificationDefaultSound()
+  * getAscendingAlarmState()
+  * setDeviceAscendingAlarmState()
+  * getRoutineSkillCatalog() to request the Skill catalog that can be used in Sequence Commands
+  * cancelNotification()
+  * setNotification() and setNotificationV2()
+
 ### 5.2.0 (2022-07-06)
 * (Apollon77) Query API endpoints (including new method getEndpoints()) from Amazon on start and use this API endpoint for the calls
 * (Apollon77) Enhance getDevicePreferences() to request preferences for one device
