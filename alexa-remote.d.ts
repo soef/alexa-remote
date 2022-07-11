@@ -406,6 +406,8 @@ declare module "alexa-remote2" {
             sound: string
         ): Notification;
 
+        convertNotificationToV2(notification: Notification): NotificationV2;
+
         parseValue4Notification(
             notification: Notification,
             value: Value

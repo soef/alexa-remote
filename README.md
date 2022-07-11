@@ -23,6 +23,12 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Increase timeouts for getting smart home device data
+* (Apollon77) support/handle "MusicAlarm" like "Alarm" on notifications
+* (Apollon77) Add convertNotificationToV2() to convert a notification object from old/queried format into one that can be used to set with new/V2 API (very pragmatic for now)
+
 ### 5.3.0 (2022-07-09)
 * (Apollon77) Adjust Alarm methods to use the new API from Amazon. Also createNotification() and parseValue4Notification() now returns the new format for Alarms
 * (Apollon77) Enhance createNotification() to also support adding reccurence information 

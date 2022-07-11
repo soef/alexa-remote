@@ -1438,6 +1438,11 @@ class AlexaRemote extends EventEmitter {
         return notification;
     }
 
+    //TODO: Hack for now, make better and clean
+    convertNotificationToV2(notification) {
+        return this.parseValue4Notification(notification, null);
+    }
+
     parseValue4Notification(notification, value) {
         let dateOrTimeAdjusted = false;
         switch (typeof value) {
@@ -1520,17 +1525,22 @@ class AlexaRemote extends EventEmitter {
             }
         }
 
-        if (dateOrTimeAdjusted && notification.type === 'Alarm') {
+        if ((value === null || dateOrTimeAdjusted) && (notification.type === 'Alarm' || notification.type === 'MusicAlarm')) {
             const newPutNotification = {
                 trigger: {
                     scheduledTime: `${notification.originalDate}T${notification.originalTime.substring(0, notification.originalTime.length - 4)}`
                 },
                 extensions: []
             };
-            if (notification.sound && notification.sound.id) {
+            if (notification.sound && notification.sound.id && !notification.musicAlarmId) {
                 newPutNotification.assets = [{
                     type: 'TONE',
                     assetId: notification.sound.id
+                }];
+            } else if (notification.musicAlarmId) {
+                newPutNotification.assets = [{
+                    type: 'TONE',
+                    assetId: 'MUSIC-' + notification.musicAlarmId
                 }];
             }
             return newPutNotification;
@@ -1624,7 +1634,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     cancelNotification(notification, callback) {
-        if (notification.type === 'Alarm') {
+        if (notification.type === 'Alarm' || notification.type === 'MusicAlarm') {
             const flags = {
                 method: 'PUT'
             };
@@ -2743,7 +2753,7 @@ class AlexaRemote extends EventEmitter {
             data: JSON.stringify ({
                 'stateRequests': reqArr
             }),
-            timeout: Math.min(maxTimeout || 60000, Math.max(10000, applicanceIds.length * 150))
+            timeout: Math.min(maxTimeout || 60000, Math.max(15000, applicanceIds.length * 200))
         };
 
 
