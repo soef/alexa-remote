@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.5.0 (2022-07-11)
 * (Apollon77) Add playAudible() to play Audible books
 
 ### 5.4.0 (2022-07-11)
