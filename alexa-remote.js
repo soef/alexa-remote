@@ -315,6 +315,7 @@ class AlexaRemote extends EventEmitter {
                         device._name = name;
                         device.sendCommand = this.sendCommand.bind(this, device);
                         device.setTunein = this.setTunein.bind(this, device);
+                        device.playAudible = this.playAudible.bind(this, device);
                         device.rename = this.renameDevice.bind(this, device);
                         device.setDoNotDisturb = this.setDoNotDisturb.bind(this, device);
                         device.delete = this.deleteDevice.bind(this, device);
@@ -333,7 +334,8 @@ class AlexaRemote extends EventEmitter {
                         device.isControllable = (
                             device.capabilities.includes('AUDIO_PLAYER') ||
                             device.capabilities.includes('AMAZON_MUSIC') ||
-                            device.capabilities.includes('TUNE_IN')
+                            device.capabilities.includes('TUNE_IN')||
+                            device.capabilities.includes('AUDIBLE')
                         );
                         device.hasMusicPlayer = (
                             device.capabilities.includes('AUDIO_PLAYER') ||
@@ -2500,6 +2502,50 @@ class AlexaRemote extends EventEmitter {
                     'startNode': validateObj
                 };
                 seqCommandObj.startNode['@type'] = 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode';
+
+                return this.sendSequenceCommand(serialOrName, seqCommandObj, callback);
+            },
+            {
+                method: 'POST',
+                data: JSON.stringify(validateObj)
+            }
+        );
+    }
+
+    playAudible(serialOrName, searchPhrase, callback) {
+        const dev = this.find(serialOrName);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+        if (searchPhrase === '') return callback && callback(new Error('Searchphrase empty'), null);
+
+        const operationPayload = {
+            'deviceType': dev.deviceType,
+            'deviceSerialNumber': dev.serialNumber,
+            'locale': 'de', // TODO!!
+            'customerId': dev.deviceOwnerCustomerId,
+            'searchPhrase': searchPhrase
+        };
+
+        const validateObj = {
+            'type': 'Alexa.Audible.Read',
+            'operationPayload': JSON.stringify(operationPayload)
+        };
+
+        this.httpsGet (`/api/behaviors/operation/validate`,
+            (err, res) => {
+                if (err) {
+                    return callback && callback(err, res);
+                }
+                if (res.result !== 'VALID') {
+                    return callback && callback(new Error('Request invalid'), res);
+                }
+                validateObj.operationPayload = res.operationPayload;
+
+                const seqCommandObj = {
+                    '@type': 'com.amazon.alexa.behaviors.model.Sequence',
+                    'startNode': validateObj
+                };
+                seqCommandObj.startNode['@type'] = 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode';
+                seqCommandObj.startNode.skillId = 'amzn1.ask.skill.3b150b52-cedb-4792-a4b2-f656523a06f5';
 
                 return this.sendSequenceCommand(serialOrName, seqCommandObj, callback);
             },

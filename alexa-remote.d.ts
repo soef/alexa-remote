@@ -571,6 +571,12 @@ declare module "alexa-remote2" {
             callback: CallbackWithErrorAndBody
         ): void;
 
+        playAudible(
+            serialOrName: SerialOrName,
+            searchPhrase: string,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
         sendTextMessage(
             conversationId: string,
             text: string,
