@@ -24,7 +24,7 @@ Thank you for that work.
 
 ## Changelog:
 
-### __WORk IN PROGRESS__
+### __WORK IN PROGRESS__
 * (Apollon77) Add sequence command "wait"
 
 ### 5.5.0 (2022-07-11)
