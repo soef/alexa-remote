@@ -2136,6 +2136,10 @@ class AlexaRemote extends EventEmitter {
             case 'calendarNext':
                 seqNode.type = 'Alexa.Calendar.PlayNext';
                 break;
+            case 'wait':
+                seqNode.type = 'Alexa.System.Wait';
+                seqNode.operationPayload.waitTimeInSeconds = parseInt(value, 10);
+                break;
             case 'textCommand':
                 seqNode.type = 'Alexa.TextCommand';
                 seqNode.skillId = 'amzn1.ask.1p.tellalexa';

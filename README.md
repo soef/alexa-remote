@@ -23,6 +23,10 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORk IN PROGRESS__
+* (Apollon77) Add sequence command "wait"
+
 ### 5.5.0 (2022-07-11)
 * (Apollon77) Add playAudible() to play Audible books
 
