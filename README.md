@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.6.0 (2022-07-12)
 * (Apollon77) Add sequence command "wait"
 
 ### 5.5.0 (2022-07-11)
