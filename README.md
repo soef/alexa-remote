@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.7.0 (2022-07-18)
 * (Apollon77) Enhance querySmarthomeDevices to directly hand over an array of request definitions to e.g. also specify properties or such
 * (Apollon77) Enhance SequenceCommands:
   * "deviceStop" can also be called with an array of devices
