@@ -5,8 +5,11 @@ const extend = require('extend');
 const AlexaWsMqtt = require('./alexa-wsmqtt.js');
 const { v1: uuidv1 } = require('uuid');
 const zlib = require('zlib');
+const fsPath = require('path');
 
 const EventEmitter = require('events');
+
+const officialUserAgent = 'AppleWebKit PitanguiBridge/2.2.483723.0-[HARDWARE=iPhone10_4][SOFTWARE=15.5][DEVICE=iPhone]';
 
 function _00(val) {
     let s = val.toString();
@@ -74,14 +77,17 @@ class AlexaRemote extends EventEmitter {
             if (!this._options.userAgent) {
                 const platform = os.platform();
                 if (platform === 'win32') {
-                    this._options.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0';
+                    this._options.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36';
                 }
                 /*else if (platform === 'darwin') {
                     this._options.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36';
                 }*/
                 else {
-                    this._options.userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36';
+                    this._options.userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36';
                 }
+            }
+            if (this._options.apiUserAgentPostfix === undefined) {
+                this._options.apiUserAgentPostfix = `AlexaRemote/${require(fsPath.join(__dirname, 'package.json')).version}`;
             }
             this._options.amazonPage = this._options.amazonPage || 'amazon.de';
             this.baseUrl = `alexa.${this._options.amazonPage}`;
@@ -89,6 +95,7 @@ class AlexaRemote extends EventEmitter {
             cookie = this._options.cookie;
         }
         this._options.logger && this._options.logger(`Alexa-Remote: Use as User-Agent: ${this._options.userAgent}`);
+        this._options.logger && this._options.logger(`Alexa-Remote: Use as API User-Agent Postfix: ${this._options.apiUserAgentPostfix}`);
         this._options.logger && this._options.logger(`Alexa-Remote: Use as Login-Amazon-URL: ${this._options.amazonPage}`);
         if (this._options.alexaServiceHost) this.baseUrl = this._options.alexaServiceHost;
         this._options.logger && this._options.logger(`Alexa-Remote: Use as Base-URL: ${this.baseUrl}`);
@@ -179,9 +186,9 @@ class AlexaRemote extends EventEmitter {
                     if (!err && endpoints && endpoints.websiteApiUrl) {
                         this.endpoints = endpoints;
                         this.baseUrl = this.endpoints.websiteApiUrl.replace(/^https?:\/\//, '');
-                        this._options.logger && this._options.logger('Alexa-Remote: Change Base URL for API calls to ' + this.baseUrl);
+                        this._options.logger && this._options.logger(`Alexa-Remote: Change Base URL for API calls to ${this.baseUrl}`);
                     } else {
-                        this._options.logger && this._options.logger('Alexa-Remote: Could not query endpoints: ' + err);
+                        this._options.logger && this._options.logger(`Alexa-Remote: Could not query endpoints: ${err}`);
                     }
                     this.prepare(() => {
                         if (this._options.useWsMqtt) {
@@ -335,11 +342,13 @@ class AlexaRemote extends EventEmitter {
                             device.capabilities.includes('AUDIO_PLAYER') ||
                             device.capabilities.includes('AMAZON_MUSIC') ||
                             device.capabilities.includes('TUNE_IN')||
-                            device.capabilities.includes('AUDIBLE')
+                            device.capabilities.includes('AUDIBLE') ||
+                            device.deviceFamily === 'FIRE_TV'
                         );
                         device.hasMusicPlayer = (
                             device.capabilities.includes('AUDIO_PLAYER') ||
-                            device.capabilities.includes('AMAZON_MUSIC')
+                            device.capabilities.includes('AMAZON_MUSIC') ||
+                            device.deviceFamily === 'FIRE_TV'
                         );
                         device.isMultiroomDevice = (device.clusterMembers.length > 0);
                         device.isMultiroomMember = (device.parentClusters.length > 0);
@@ -791,6 +800,8 @@ class AlexaRemote extends EventEmitter {
     }
 
     getAuthApiBearerToken(callback) {
+        if (!this.alexaCookie) this.alexaCookie = require('alexa-cookie2');
+        const deviceAppName = (this._options.formerRegistrationData && this._options.formerRegistrationData.deviceAppName) || this.alexaCookie.getDeviceAppName(); // Use the App Name from last cookie response or use default one
         this.httpsGet(true, 'https://api.amazon.de/auth/token', (err, res) => {
             if (err) {
                 this._options.logger && this._options.logger(`Alexa-Remote: Error getting auth token: ${err.message}`);
@@ -805,7 +816,7 @@ class AlexaRemote extends EventEmitter {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            data: `app_name=ioBroker%20Alexa2&app_version=2.2.483723.0&di.sdk.version=6.12.3&source_token=${encodeURIComponent(this.cookieData.refreshToken)}&package_name=com.amazon.echo&di.hw.version=iPhone&platform=iOS&requested_token_type=access_token&source_token_type=refresh_token&di.os.name=iOS&di.os.version=15.5&current_version=6.12.3&previous_version=6.12.3`
+            data: `app_name=${encodeURIComponent(deviceAppName)}&app_version=2.2.483723.0&di.sdk.version=6.12.3&source_token=${encodeURIComponent(this.cookieData.refreshToken)}&package_name=com.amazon.echo&di.hw.version=iPhone&platform=iOS&requested_token_type=access_token&source_token_type=refresh_token&di.os.name=iOS&di.os.version=15.5&current_version=6.12.3&previous_version=6.12.3`
         });
     }
 
@@ -822,7 +833,7 @@ class AlexaRemote extends EventEmitter {
         flags.headers = flags.headers || {};
         flags.headers.authorization = this.authApiBearerToken;
         flags.headers.authority = flags.host;
-        flags.headers['user-agent'] = 'AppleWebKit PitanguiBridge/2.2.483723.0-[HARDWARE=iPhone10_4][SOFTWARE=15.5][DEVICE=iPhone]';
+        flags.headers['user-agent'] = `${officialUserAgent} ${this._options.apiUserAgentPostfix}`.trim();
         if (!this.authApiBearerToken || Date.now() >= this.authApiBearerExpiry) {
             this.getAuthApiBearerToken((err, res) => {
                 if (err || !res || !res.access_token || res.token_type !== 'bearer') {
@@ -907,8 +918,11 @@ class AlexaRemote extends EventEmitter {
                 }
 
                 this._options.logger && this._options.logger(`Alexa-Remote: Response: No/Invalid JSON : ${body}`);
-                if (body.includes('ThrottlingException')  || body.includes('Rate exceeded')) {
-                    const delay = Math.floor(Math.random() * 3000) + 10000;
+                if (body.includes('ThrottlingException')  || body.includes('Rate exceeded') || body.includes('Too many requests')) {
+                    let delay = Math.floor(Math.random() * 3000) + 10000;
+                    if (body.includes('Too many requests')) {
+                        delay += 20000 + Math.floor(Math.random() * 30000);
+                    }
                     this._options.logger && this._options.logger(`Alexa-Remote: rate exceeded response ... Retrying once in ${delay}ms`);
                     flags = flags || {};
                     flags.isRetry = true;
@@ -923,6 +937,16 @@ class AlexaRemote extends EventEmitter {
             // maybe set err AND body?
             // add x-amzn-ErrorType header to err? (e.g. 400 on /player: ExpiredPlayQueueException:http://internal.amazon.com/coral/com.amazon.dee.web.coral.model/)
             this._options.logger && this._options.logger(`Alexa-Remote: Response: ${JSON.stringify(ret)}`);
+            if (body.includes('ThrottlingException')  || body.includes('Rate exceeded') || body.includes('Too many requests')) {
+                let delay = Math.floor(Math.random() * 3000) + 10000;
+                if (body.includes('Too many requests')) {
+                    delay += 20000 + Math.floor(Math.random() * 30000);
+                }
+                this._options.logger && this._options.logger(`Alexa-Remote: rate exceeded response ... Retrying once in ${delay}ms`);
+                flags = flags || {};
+                flags.isRetry = true;
+                return setTimeout(() => this.httpsGetCall(path, callback, flags), delay);
+            }
             callback(null, ret);
             callback = null;
         };
@@ -933,16 +957,16 @@ class AlexaRemote extends EventEmitter {
             method: 'GET',
             timeout: flags.timeout || 10000,
             headers: {
-                'User-Agent' : this._options.userAgent,
-                'Content-Type': 'application/json; charset=UTF-8',
-                'Accept': 'application/json',
+                'User-Agent' : `${officialUserAgent} ${this._options.apiUserAgentPostfix}`.trim(),
+                'Content-Type': 'application/json; charset=utf-8',
+                'Accept': 'application/json; charset=utf-8',
                 'Referer': `https://alexa.${this._options.amazonPage}/spa/index.html`,
                 'Origin': `https://alexa.${this._options.amazonPage}`,
                 //'Content-Type': 'application/json',
                 //'Connection': 'keep-alive',
                 'csrf' : this.csrf,
                 'Cookie' : this.cookie,
-                'Accept-Encoding': 'gzip,deflate'
+                'Accept-Encoding': 'gzip, deflate'
             }
         };
 
@@ -1430,7 +1454,7 @@ class AlexaRemote extends EventEmitter {
         notification = this.parseValue4Notification(notification, value);
 
         // New style we need to add device!
-        if (notification.trigger && notification.assets && notification.extensions) {
+        if (notification.trigger && notification.extensions) {
             notification.endpointId = `${dev.serialNumber}@${dev.deviceType}`;
             if (recurring) {
                 notification.trigger.recurrence = recurring;
@@ -1542,7 +1566,7 @@ class AlexaRemote extends EventEmitter {
             } else if (notification.musicAlarmId) {
                 newPutNotification.assets = [{
                     type: 'TONE',
-                    assetId: 'MUSIC-' + notification.musicAlarmId
+                    assetId: `MUSIC-${notification.musicAlarmId}`
                 }];
             }
             return newPutNotification;
@@ -1562,7 +1586,7 @@ class AlexaRemote extends EventEmitter {
 
     createNotification(notification, callback) {
         // Alarm new style
-        if (notification.trigger && notification.assets && notification.extensions) {
+        if (notification.trigger && notification.extensions) {
             const flags = {
                 method: 'POST',
                 data: JSON.stringify(notification)
@@ -1666,7 +1690,7 @@ class AlexaRemote extends EventEmitter {
             cached = true;
         }
         if (cached === undefined) cached = true;
-        this.httpsGet (`/api/bluetooth?cached=${cached}&_=%t`, callback);
+        this.httpsGet (`/api/bluetooth?cached=${cached}`, callback);
     }
 
     tuneinSearchRaw(query, callback) {
@@ -2079,12 +2103,16 @@ class AlexaRemote extends EventEmitter {
         let deviceSerialNumber = 'ALEXA_CURRENT_DSN';
         let deviceType= 'ALEXA_CURRENT_DEVICE_TYPE';
         let deviceOwnerCustomerId = 'ALEXA_CUSTOMER_ID';
+        let deviceAccountId;
+        let deviceFamily;
         if (serialOrName && !Array.isArray(serialOrName)) {
             const currDevice = this.find(serialOrName);
             if (currDevice) {
                 deviceSerialNumber = currDevice.serialNumber;
                 deviceType = currDevice.deviceType;
                 deviceOwnerCustomerId = currDevice.deviceOwnerCustomerId;
+                deviceAccountId = currDevice.deviceAccountId;
+                deviceFamily = currDevice.deviceFamily;
             }
         }
         if (overrideCustomerId) {
@@ -2159,6 +2187,38 @@ class AlexaRemote extends EventEmitter {
                 seqNode.operationPayload.cannedTtsStringId = `alexa.cannedtts.speak.curatedtts-category-${value}/alexa.cannedtts.speak.curatedtts-random`;
                 break;
             }
+            case 'fireTVTurnOn':
+            case 'fireTVTurnOff':
+            case 'fireTVTurnOnOff':
+            case 'fireTVPauseVideo':
+            case 'fireTVResumeVideo':
+            case 'fireTVNavigateHome':
+                if (!deviceAccountId) {
+                    throw new Error('No deviceAccountId found');
+                }
+                if (!deviceFamily || deviceFamily !== 'FIRE_TV') {
+                    throw new Error('Device is not a Fire TV');
+                }
+                if (command === 'fireTVTurnOnOff') {
+                    command = value ? 'fireTVTurnOn' : 'fireTVTurnOff';
+                }
+                if (command === 'fireTVTurnOn') {
+                    seqNode.type = 'Alexa.Operation.FireTV.TurnOn';
+                } else if (command === 'fireTVTurnOff') {
+                    seqNode.type = 'Alexa.Operation.FireTV.TurnOff';
+                } else if (command === 'fireTVPauseVideo') {
+                    seqNode.type = 'Alexa.Operation.FireTV.PauseVideo';
+                } else if (command === 'fireTVResumeVideo') {
+                    seqNode.type = 'Alexa.Operation.FireTV.ResumeVideo';
+                } else if (command === 'fireTVNavigateHome') {
+                    seqNode.type = 'Alexa.Operation.FireTV.NavigateHome';
+                }
+                seqNode.skillId = 'amzn1.ask.1p.routines.firetv';
+                seqNode.operationPayload.deviceAccountId = deviceAccountId;
+                delete seqNode.operationPayload.deviceType;
+                delete seqNode.operationPayload.deviceSerialNumber;
+                delete seqNode.operationPayload.locale;
+                break;
             case 'volume':
                 seqNode.type = 'Alexa.DeviceControls.Volume';
                 value = ~~value;
@@ -2168,18 +2228,99 @@ class AlexaRemote extends EventEmitter {
                 seqNode.operationPayload.value = value;
                 break;
             case 'deviceStop':
+            case 'deviceStopAll':
                 seqNode.type = 'Alexa.DeviceControls.Stop';
-                seqNode.operationPayload.devices = [
-                    {
-                        'deviceSerialNumber': deviceSerialNumber,
-                        'deviceType': deviceType
+                if (command === 'deviceStopAll') {
+                    seqNode.operationPayload.devices = [
+                        {
+                            'deviceSerialNumber': 'ALEXA_ALL_DSN',
+                            'deviceType': 'ALEXA_ALL_DEVICE_TYPE'
+                        }
+                    ];
+                } else {
+                    seqNode.operationPayload.devices = [
+                        {
+                            'deviceSerialNumber': deviceSerialNumber,
+                            'deviceType': deviceType
+                        }
+                    ];
+
+                    if (serialOrName && Array.isArray(serialOrName)) {
+                        seqNode.operationPayload.devices = [];
+                        serialOrName.forEach((deviceId) => {
+                            const currDevice = this.find(deviceId);
+                            if (!currDevice) return;
+                            seqNode.operationPayload.devices.push({
+                                'deviceSerialNumber': currDevice.serialNumber,
+                                'deviceType': currDevice.deviceType
+                            });
+                        });
                     }
-                ];
+                }
                 seqNode.operationPayload.isAssociatedDevice = false;
                 delete seqNode.operationPayload.deviceType;
                 delete seqNode.operationPayload.deviceSerialNumber;
                 delete seqNode.operationPayload.locale;
                 break;
+            case 'deviceDoNotDisturb':
+            case 'deviceDoNotDisturbAll': {
+                seqNode.type = 'Alexa.DeviceControls.DoNotDisturb';
+                if (command === 'deviceDoNotDisturbAll') {
+                    seqNode.operationPayload.devices = [
+                        {
+                            'deviceSerialNumber': 'ALEXA_ALL_DSN',
+                            'deviceType': 'ALEXA_ALL_DEVICE_TYPE'
+                        }
+                    ];
+                } else {
+                    seqNode.operationPayload.devices = [
+                        {
+                            'deviceSerialNumber': deviceSerialNumber,
+                            'deviceType': deviceType
+                        }
+                    ];
+
+                    if (serialOrName && Array.isArray(serialOrName)) {
+                        seqNode.operationPayload.devices = [];
+                        serialOrName.forEach((deviceId) => {
+                            const currDevice = this.find(deviceId);
+                            if (!currDevice) return;
+                            seqNode.operationPayload.devices.push({
+                                'deviceSerialNumber': currDevice.serialNumber,
+                                'deviceType': currDevice.deviceType
+                            });
+                        });
+                    }
+                }
+                seqNode.operationPayload.action = value ? 'Enable' : 'Disable';
+                const valueType = typeof value;
+                if (valueType === 'number' && value <= 12 * 60 * 60) {
+                    const hours = Math.floor(value / 3600);
+                    const minutes = Math.floor((value - hours * 3600) / 60);
+                    const seconds = value - hours * 3600 - minutes * 60;
+                    let durationString = 'DURATION#PT';
+                    if (hours > 0) {
+                        durationString += `${hours}H`;
+                    }
+                    durationString += `${minutes}M`;
+                    durationString += `${seconds}S`;
+                    seqNode.operationPayload.duration = durationString;
+                    //seqNode.operationPayload.timeZoneId = 'Europe/Berlin';
+                } else if (valueType === 'string') {
+                    if (!value.text(/^\d{2}:\d{2}$/)) {
+                        throw new Error('Invalid timepoint value provided');
+                    }
+                    seqNode.operationPayload.until = `TIME#T${value}`;
+                    //seqNode.operationPayload.timeZoneId = 'Europe/Berlin';
+                } else {
+                    throw new Error('Invalid timepoint provided');
+                }
+                seqNode.operationPayload.isAssociatedDevice = false;
+                delete seqNode.operationPayload.deviceType;
+                delete seqNode.operationPayload.deviceSerialNumber;
+                delete seqNode.operationPayload.locale;
+                break;
+            }
             case 'speak':
                 seqNode.type = 'Alexa.Speak';
                 if (typeof value !== 'string') value = String(value);
@@ -2370,7 +2511,7 @@ class AlexaRemote extends EventEmitter {
         }
 
         const dev = this.find(Array.isArray(serialOrName) ? serialOrName[0] : serialOrName);
-        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+        if (!dev && !command.endsWith('All')) return callback && callback(new Error('Unknown Device or Serial number'), null);
 
         if (typeof value === 'function') {
             callback = value;
@@ -2560,6 +2701,56 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
+    /*playFireTV(serialOrName, searchPhrase, callback) {
+        const dev = this.find(serialOrName);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+        if (searchPhrase === '') return callback && callback(new Error('Searchphrase empty'), null);
+
+        if (dev.deviceFamily !== 'FIRE_TV') {
+            return callback && callback(new Error('Device is not a FireTV'), null);
+        }
+
+        const operationPayload = {
+            //'deviceType': dev.deviceType,
+            //'deviceSerialNumber': dev.serialNumber,
+            'locale': 'de', // TODO!!
+            'customerId': dev.deviceOwnerCustomerId,
+            'deviceAccountId': dev.deviceAccountId,
+            'searchPhrase': searchPhrase,
+            'speakerId': 'ALEXA_CURRENT_SPEAKER_ID'
+        };
+
+        const validateObj = {
+            'type': 'Alexa.Operation.Video.PlaySearchPhrase',
+            'operationPayload': JSON.stringify(operationPayload)
+        };
+
+        this.httpsGet (`/api/behaviors/operation/validate`,
+            (err, res) => {
+                if (err) {
+                    return callback && callback(err, res);
+                }
+                if (res.result !== 'VALID') {
+                    return callback && callback(new Error('Request invalid'), res);
+                }
+                validateObj.operationPayload = res.operationPayload;
+
+                const seqCommandObj = {
+                    '@type': 'com.amazon.alexa.behaviors.model.Sequence',
+                    'startNode': validateObj
+                };
+                seqCommandObj.startNode['@type'] = 'com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode';
+                seqCommandObj.startNode.skillId = 'amzn1.ask.skill.3b150b52-cedb-4792-a4b2-f656523a06f5';
+
+                return this.sendSequenceCommand(serialOrName, seqCommandObj, callback);
+            },
+            {
+                method: 'POST',
+                data: JSON.stringify(validateObj)
+            }
+        );
+    }*/
+
     sendTextMessage(conversationId, text, callback) {
         // [{
         // 	"conversationId": "amzn1.comms.messaging.id.conversationV2~e48ea7a9-b358-44fa-9be4-e45ae6a37c6a",
@@ -2617,7 +2808,7 @@ class AlexaRemote extends EventEmitter {
             callback = serialOrName;
             serialOrName = null;
         }
-        this.httpsGet ('/api/device-preferences', (err, res) => {
+        this.httpsGet ('/api/device-preferences?cached=true', (err, res) => {
             if (serialOrName) {
                 const device = this.find(serialOrName);
                 if (!device) {
@@ -2662,7 +2853,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     getSmarthomeDevices(callback) {
-        this.httpsGet ('/api/phoenix?includeRelationships=true&_=%t', function (err, res) {
+        this.httpsGet ('/api/phoenix?includeRelationships=true', function (err, res) {
             if (err || !res || !res.networkDetail) return callback(err, res);
             try {
                 res = JSON.parse(res.networkDetail);
@@ -2682,6 +2873,18 @@ class AlexaRemote extends EventEmitter {
 
     getSmarthomeEntities(callback) {
         this.httpsGet ('/api/behaviors/entities?skillId=amzn1.ask.1p.smarthome',
+            callback,
+            {
+                headers: {
+                    'Routines-Version': '3.0.128540'
+                },
+                timeout: 30000
+            }
+        );
+    }
+
+    getFireTVEntities(callback) {
+        this.httpsGet ('/api/behaviors/entities?skillId=amzn1.ask.1p.routines.firetv',
             callback,
             {
                 headers: {
@@ -2779,23 +2982,28 @@ class AlexaRemote extends EventEmitter {
         this.httpsGet ('/api/phoenix/discovery', callback, flags);
     }
 
-    querySmarthomeDevices(applicanceIds, entityType, maxTimeout, callback) {
+    querySmarthomeDevices(toQuery, entityType, maxTimeout, callback) {
         if (typeof maxTimeout === 'function') {
             callback = maxTimeout;
             maxTimeout = null;
         }
         if (typeof entityType === 'function') {
             callback = entityType;
-            entityType = 'APPLIANCE'; // other value 'GROUP'
+            entityType = 'APPLIANCE'; // other value 'GROUP', 'ENTITY'
         }
 
         const reqArr = [];
-        if (!Array.isArray(applicanceIds)) applicanceIds = [applicanceIds];
-        for (const id of applicanceIds) {
-            reqArr.push({
-                'entityId': id,
-                'entityType': entityType
-            });
+        if (!Array.isArray(toQuery)) toQuery = [toQuery];
+        for (const id of toQuery) {
+            if (!id) continue;
+            if (typeof id === 'object') {
+                reqArr.push(id);
+            } else {
+                reqArr.push({
+                    'entityId': id,
+                    'entityType': entityType
+                });
+            }
         }
 
         const flags = {
@@ -2803,7 +3011,7 @@ class AlexaRemote extends EventEmitter {
             data: JSON.stringify ({
                 'stateRequests': reqArr
             }),
-            timeout: Math.min(maxTimeout || 60000, Math.max(15000, applicanceIds.length * 200))
+            timeout: Math.min(maxTimeout || 60000, Math.max(15000, toQuery.length * 200))
         };
 
 
@@ -2908,6 +3116,226 @@ class AlexaRemote extends EventEmitter {
             })
         };
         this.httpsGet (`/api/devices/device/${dev.serialNumber}?deviceType=${dev.deviceType}`, callback, flags);
+    }
+
+    getDeviceSettings(serialOrName, settingName, callback) {
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet(`/api/v1/devices/${dev.deviceAccountId}/settings/${settingName}`, (err, res) => {
+            if (!err && res && typeof res.value === 'string') {
+                try {
+                    res.value = JSON.parse(res.value);
+                } catch (err) {
+                    // ignore
+                }
+            }
+            callback && callback(err, res.value);
+        });
+    }
+
+    setDeviceSettings(serialOrName, settingName, value, callback) {
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        const flags = {
+            method: 'PUT',
+            data: JSON.stringify ({
+                value: JSON.stringify(value)
+            })
+        };
+        this.httpsGet(`/api/v1/devices/${dev.deviceAccountId}/settings/${settingName}`, callback, flags);
+    }
+
+    getConnectedSpeakerOptionSetting(serialOrName, callback) {
+        this.getDeviceSettings(serialOrName, 'connectedSpeakerOption', callback);
+    }
+
+    setConnectedSpeakerOptionSetting(serialOrName, speakerType, callback) {
+        this.setDeviceSettings(serialOrName, 'connectedSpeakerOption', speakerType, callback);
+    }
+
+    getAttentionSpanSetting(serialOrName, callback) {
+        this.getDeviceSettings(serialOrName, 'attentionSpan', callback);
+    }
+
+    setAttentionSpanSetting(serialOrName, enabled, callback) {
+        this.setDeviceSettings(serialOrName, 'attentionSpan', !!enabled, callback);
+    }
+
+    getAlexaGesturesSetting(serialOrName, callback) {
+        this.getDeviceSettings(serialOrName, 'alexaGestures', callback);
+    }
+
+    setAlexaGesturesSetting(serialOrName, enabled, callback) {
+        this.setDeviceSettings(serialOrName, 'alexaGestures', !!enabled, callback);
+    }
+
+    getDisplayPowerSetting(serialOrName, callback) {
+        this.getDeviceSettings(serialOrName, 'displayPower', (err, res) => {
+            if (!err && res !== undefined) {
+                res = res === 'ON';
+            }
+            callback && callback(err, res);
+        });
+    }
+
+    setDisplayPowerSetting(serialOrName, enabled, callback) {
+        this.setDeviceSettings(serialOrName, 'displayPower', enabled ? 'ON' : 'OFF', callback);
+    }
+
+    getAdaptiveBrightnessSetting(serialOrName, callback) {
+        this.getDeviceSettings(serialOrName, 'adaptiveBrightness', (err, res) => {
+            if (!err && res !== undefined) {
+                res = res === 'ON';
+            }
+            callback && callback(err, res);
+        });
+    }
+
+    setAdaptiveBrightnessSetting(serialOrName, enabled, callback) {
+        this.setDeviceSettings(serialOrName, 'adaptiveBrightness', enabled ? 'ON' : 'OFF', callback);
+    }
+
+    getClockTimeFormatSetting(serialOrName, callback) {
+        this.getDeviceSettings(serialOrName, 'timeFormat', callback);
+    }
+
+    setClockTimeFormatSetting(serialOrName, format, callback) {
+        this.setDeviceSettings(serialOrName, 'timeFormat', format, callback);
+    }
+
+    getBrightnessSetting(serialOrName, callback) {
+        this.getDeviceSettings(serialOrName, 'brightness', callback);
+    }
+
+    setBrightnessSetting(serialOrName, brightness, callback) {
+        if (typeof brightness !== 'number') {
+            return callback && callback(new Error('Brightness must be a number'), null);
+        }
+        if (brightness < 0 || brightness > 100) {
+            return callback && callback(new Error('Brightness must be between 0 and 100'), null);
+        }
+        this.setDeviceSettings(serialOrName, 'brightness', brightness, callback);
+    }
+
+    /**
+     * Response:
+     * {
+     * 	"enabled": true
+     * }
+     */
+    getEqualizerEnabled(serialOrName, callback) {
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet(`/api/equalizer/enabled/${dev.serialNumber}/${dev.deviceType}`, callback);
+    }
+
+    /**
+     * Response:
+     * {
+     * 	"max": 6,
+     * 	"min": -6
+     * }
+     */
+    getEqualizerRange(serialOrName, callback) {
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet(`/api/devices/${dev.serialNumber}/${dev.deviceType}/audio/v1/getEQRange`, callback);
+    }
+
+    /**
+     * Response:
+     * {
+     * 	"bass": 0,
+     * 	"mid": 0,
+     * 	"treble": 0
+     * }
+     */
+    getEqualizerSettings(serialOrName, callback) {
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet(`/api/equalizer/${dev.serialNumber}/${dev.deviceType}`, callback);
+    }
+
+    setEqualizerSettings(serialOrName, bass, midrange, treble, callback) {
+        const dev = this.find(serialOrName);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        if (bass !== undefined && typeof bass !== 'number') {
+            return callback && callback(new Error('Bass value must be a number'), null);
+        }
+        if (midrange !== undefined && typeof midrange !== 'number') {
+            return callback && callback(new Error('Midrange value must be a number'), null);
+        }
+        if (treble !== undefined && typeof treble !== 'number') {
+            return callback && callback(new Error('Treble value must be a number'), null);
+        }
+        if (bass === undefined && midrange === undefined && treble === undefined) {
+            return callback && callback(new Error('At least one value must be provided'), null);
+        }
+
+        const flags = {
+            method: 'POST',
+            data: JSON.stringify ({
+                bass,
+                mid: midrange,
+                treble
+            })
+        };
+        this.httpsGet (`/api/equalizer/${dev.serialNumber}/${dev.deviceType}`, callback, flags);
+    }
+
+    /**
+     * Response:
+     * {
+     * 	"ports": [{
+     * 		"direction": "OUTPUT",
+     * 		"id": "aux0",
+     * 		"inputActivity": null,
+     * 		"isEnabled": false,
+     * 		"isPlugged": false
+     * 	}]
+     * }
+     */
+    getAuxControllerState(serialOrName, callback) {
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        this.httpsGet(`/api/auxcontroller/${dev.deviceType}/${dev.serialNumber}/state`, callback);
+    }
+
+    setAuxControllerPortDirection(serialOrName, direction, port, callback) {
+        if (typeof port === 'function') {
+            callback = port;
+            port = 'aux0';
+        }
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+        const flags = {
+            method: 'POST',
+            data: JSON.stringify ({
+                direction,
+                deviceId: dev.serialNumber
+            })
+        };
+        this.httpsGet (`/api/auxcontroller/${dev.deviceType}/${dev.serialNumber}/ports/${port}/setDirection`, callback, flags);
+    }
+
+    getPlayerQueue(serialOrName, size, callback) {
+        if (typeof size === 'function') {
+            callback = size;
+            size = 50;
+        }
+        const dev = this.find(serialOrName, callback);
+        if (!dev) return callback && callback(new Error('Unknown Device or Serial number'), null);
+
+
+        this.httpsGet (`/api/np/queue?deviceSerialNumber=${dev.serialNumber}&deviceType=${dev.deviceType}&size=${size}&_=%t`, callback);
     }
 }
 

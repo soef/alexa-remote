@@ -13,6 +13,8 @@ declare module "alexa-remote2" {
         logger: (...args: any[]) => void;
         alexaServiceHost: string;
         userAgent: string;
+        apiUserAgentPostfix: string
+        deviceAppName: string;
         acceptLanguage: string;
         amazonPage: string;
         useWsMqtt: boolean;
@@ -35,6 +37,7 @@ declare module "alexa-remote2" {
             "tokenDate": number;
             "amazonPage": string;
             "csrf": string;
+            "deviceAppName": string;
         }
     }>;
 
@@ -195,6 +198,16 @@ declare module "alexa-remote2" {
         customerName: string;
     };
 
+    export type SmartHomeDeviceQueryEntry = {
+        entityId: string;
+        entityType: 'APPLIANCE' | 'ENTITY' | 'GROUP'
+        properties?: {
+            namespace: string; // aka interfaceName aka "Alexa.PowerController"
+            name: string; // e.g. "powerState"
+            instance?: string;
+        }[]
+    }
+
     export type MessageCommands =
         | "play"
         | "pause"
@@ -224,11 +237,20 @@ declare module "alexa-remote2" {
         | "curatedtts"
         | "volume"
         | "deviceStop"
+        | "deviceStopAll"
+        | "deviceDoNotDisturb"
+        | "deviceDoNotDisturbAll"
         | "speak"
         | "skill"
         | "notification"
         | "announcement"
-        | "ssml";
+        | "ssml"
+        | "fireTVTurnOn"
+        | "fireTVTurnOff"
+        | "fireTVTurnOnOff"
+        | "fireTVPauseVideo"
+        | "fireTVResumeVideo"
+        | "fireTVNavigateHome";
 
     export type SequenceType = "SerialNode" | "ParallelNode";
 
@@ -651,7 +673,7 @@ declare module "alexa-remote2" {
         discoverSmarthomeDevice(callback: CallbackWithErrorAndBody): void;
 
         querySmarthomeDevices(
-            applicanceIds: string[],
+            applicanceIds: string[] | SmartHomeDeviceQueryEntry[],
             entityType?: EntityType | CallbackWithErrorAndBody,
             maxTimeout?: number | CallbackWithErrorAndBody,
             callback?: CallbackWithErrorAndBody
@@ -684,5 +706,99 @@ declare module "alexa-remote2" {
         getWholeHomeAudioGroups(callback: CallbackWithErrorAndBody): void
 
         getEndpoints(callback: CallbackWithErrorAndBody): void
+
+        getEqualizerEnabled(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void
+
+        getEqualizerRange(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void
+
+        getEqualizerSettings(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void
+
+        setEqualizerSettings(
+            serialOrName: SerialOrName,
+            bass: number,
+            midrange: number,
+            treble: number,
+            callback: CallbackWithErrorAndBody
+        ): void
+
+        getDeviceSettings(
+            serialOrName: SerialOrName,
+            settingName: string,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        setDeviceSettings(
+            serialOrName: SerialOrName,
+            settingName: string,
+            value: any,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        getConnectedSpeakerOptionSetting(serialOrName: SerialOrName, callback:CallbackWithErrorAndBody): void
+
+        setConnectedSpeakerOptionSetting(
+            serialOrName: SerialOrName,
+            speakerType: "Bluetooth" | "InternalSpeaker" | "Aux", // Aux not supported by all devices!
+            callback: CallbackWithErrorAndBody
+        ): void
+
+        getAttentionSpanSetting(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        setAttentionSpanSetting(
+            serialOrName: SerialOrName,
+            enabled: boolean,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        getAlexaGesturesSetting(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        setAlexaGesturesSetting(
+            serialOrName: SerialOrName,
+            enabled: boolean,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        getDisplayPowerSetting(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        setDisplayPowerSetting(
+            serialOrName: SerialOrName,
+            enabled: boolean,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        getAdaptiveBrightnessSetting(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        setAdaptiveBrightnessSetting(
+            serialOrName: SerialOrName,
+            enabled: boolean,
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        getClockTimeFormatSetting(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        setClockTimeFormatSetting(
+            serialOrName: SerialOrName,
+            format: "12_HOURS" | "24_HOURS",
+            callback: CallbackWithErrorAndBody
+        ): void;
+
+        getBrightnessSetting(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        setBrightnessSetting(serialOrName: SerialOrName, brightness: number, callback: CallbackWithErrorAndBody): void;
+
+        getAuxControllerState(serialOrName: SerialOrName, callback: CallbackWithErrorAndBody): void;
+
+        setAuxControllerPortDirection(
+            serialOrName: SerialOrName,
+            direction: 'INPUT' | 'OUTPUT',
+            port: string | CallbackWithErrorAndBody, // Default is 'aux0' if not provided
+            callback?: CallbackWithErrorAndBody
+        ): void;
+
+        getPlayerQueue(
+            serialOrName: SerialOrName,
+            size: number | CallbackWithErrorAndBody,
+            callback?: CallbackWithErrorAndBody
+        ): void;
     }
 }

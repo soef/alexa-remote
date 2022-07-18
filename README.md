@@ -23,6 +23,52 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Enhance querySmarthomeDevices to directly hand over an array of request definitions to e.g. also specify properties or such
+* (Apollon77) Enhance SequenceCommands:
+  * "deviceStop" can also be called with an array of devices
+  * add "deviceStopAll" to stop all devices
+  * add "deviceDoNotDisturb" with allowed values as follows: boolean true/false to enable/disable or a number to set a enable-duration in seconds (up to 43.200 seconds = 12h) or use "HH:MM" as string to define an hour and minute till when it is set to not disturb
+  * add "deviceDoNotDisturbAll" to set Do not disturb for all devices, allowed value is the same as deviceDoNotDisturb
+  * add "fireTVTurnOn" to turn FireTV on (value ignored)
+  * add "fireTVTurnOff" to turn FireTV off (value ignored)
+  * add "fireTVTurnOnOff" to turn a FireTV device on (value===true) or off (value===false)
+  * add "fireTVPauseVideo" to pause a video on a FireTV device
+  * add "fireTVResumeVideo" to resume a video on a FireTV device
+  * add "fireTVNavigateHome" to navigate home on a FireTV device
+* (Apollon77) Add getFireTVEntities() method to get available FireTV devices and their supported actions
+* (Apollon77) Flag Fire-TV devices as controllable and having music player support
+* (Apollon77) Add several new methods to query and change settings:
+  * getEqualizerEnabled()
+  * getEqualizerRange()
+  * getEqualizerSettings()
+  * setEqualizerSettings()
+  * getAuxControllerState()
+  * setAuxControllerPortDirection()
+  * getPlayerQueue()
+  * getDeviceSettings() - generic method, ideally use the methods listed next to get specific settings
+  * setDeviceSettings() - generic method, ideally use the methods listed next to get specific settings
+  * getConnectedSpeakerOptionSetting()
+  * setConnectedSpeakerOptionSetting()
+  * getAttentionSpanSetting()
+  * setAttentionSpanSetting()
+  * getAlexaGesturesSetting()
+  * setAlexaGesturesSetting()
+  * getDisplayPowerSetting()
+  * setDisplayPowerSetting()
+  * getAdaptiveBrightnessSetting()
+  * setAdaptiveBrightnessSetting()
+  * getClockTimeFormatSetting()
+  * setClockTimeFormatSetting()
+  * getBrightnessSetting()
+  * setBrightnessSetting()
+* (Apollon77) Allow to overwrite the used default App-Name for the Amazon App Registration
+* (Apollon77) An App name included in formerRegistrationData will be used for some API requests, else the default is used
+* (Apollon77) Allow to modify the API-User-Agent Postfix to specify application name and version
+* (Apollon77) Enhance the handling for exceeded rate limit responses
+* (Apollon77/bbindreiter) Update used User-Agent for some requests
+
 ### 5.6.0 (2022-07-12)
 * (Apollon77) Add sequence command "wait"
 
