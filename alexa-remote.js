@@ -2226,6 +2226,7 @@ class AlexaRemote extends EventEmitter {
                     throw new Error('Volume needs to be between 0 and 100');
                 }
                 seqNode.operationPayload.value = value;
+                seqNode.skillId = 'amzn1.ask.1p.alexadevicecontrols';
                 break;
             case 'deviceStop':
             case 'deviceStopAll':
@@ -2234,14 +2235,14 @@ class AlexaRemote extends EventEmitter {
                     seqNode.operationPayload.devices = [
                         {
                             'deviceSerialNumber': 'ALEXA_ALL_DSN',
-                            'deviceType': 'ALEXA_ALL_DEVICE_TYPE'
+                            'deviceTypeId': 'ALEXA_ALL_DEVICE_TYPE'
                         }
                     ];
                 } else {
                     seqNode.operationPayload.devices = [
                         {
                             'deviceSerialNumber': deviceSerialNumber,
-                            'deviceType': deviceType
+                            'deviceTypeId': deviceType
                         }
                     ];
 
@@ -2252,11 +2253,12 @@ class AlexaRemote extends EventEmitter {
                             if (!currDevice) return;
                             seqNode.operationPayload.devices.push({
                                 'deviceSerialNumber': currDevice.serialNumber,
-                                'deviceType': currDevice.deviceType
+                                'deviceTypeId': currDevice.deviceType
                             });
                         });
                     }
                 }
+                seqNode.skillId = 'amzn1.ask.1p.alexadevicecontrols';
                 seqNode.operationPayload.isAssociatedDevice = false;
                 delete seqNode.operationPayload.deviceType;
                 delete seqNode.operationPayload.deviceSerialNumber;
@@ -2269,14 +2271,15 @@ class AlexaRemote extends EventEmitter {
                     seqNode.operationPayload.devices = [
                         {
                             'deviceSerialNumber': 'ALEXA_ALL_DSN',
-                            'deviceType': 'ALEXA_ALL_DEVICE_TYPE'
+                            'deviceTypeId': 'ALEXA_ALL_DEVICE_TYPE'
                         }
                     ];
                 } else {
                     seqNode.operationPayload.devices = [
                         {
                             'deviceSerialNumber': deviceSerialNumber,
-                            'deviceType': deviceType
+                            'deviceTypeId': deviceType,
+                            'deviceAccountId': deviceAccountId
                         }
                     ];
 
@@ -2287,11 +2290,14 @@ class AlexaRemote extends EventEmitter {
                             if (!currDevice) return;
                             seqNode.operationPayload.devices.push({
                                 'deviceSerialNumber': currDevice.serialNumber,
-                                'deviceType': currDevice.deviceType
+                                'deviceTypeId': currDevice.deviceType,
+                                'deviceAccountId': deviceAccountId
                             });
                         });
                     }
                 }
+                seqNode.operationPayload.isAssociatedDevice = false;
+                seqNode.skillId = 'amzn1.ask.1p.alexadevicecontrols';
                 seqNode.operationPayload.action = value ? 'Enable' : 'Disable';
                 const valueType = typeof value;
                 if (valueType === 'number' && value <= 12 * 60 * 60) {
@@ -2307,12 +2313,12 @@ class AlexaRemote extends EventEmitter {
                     seqNode.operationPayload.duration = durationString;
                     //seqNode.operationPayload.timeZoneId = 'Europe/Berlin';
                 } else if (valueType === 'string') {
-                    if (!value.text(/^\d{2}:\d{2}$/)) {
+                    if (!value.test(/^\d{2}:\d{2}$/)) {
                         throw new Error('Invalid timepoint value provided');
                     }
                     seqNode.operationPayload.until = `TIME#T${value}`;
                     //seqNode.operationPayload.timeZoneId = 'Europe/Berlin';
-                } else {
+                } else if (valueType !== 'boolean') {
                     throw new Error('Invalid timepoint provided');
                 }
                 seqNode.operationPayload.isAssociatedDevice = false;
@@ -2361,6 +2367,7 @@ class AlexaRemote extends EventEmitter {
                 if (value.length > 250) {
                     throw new Error('text too long, limit are 250 characters', null);
                 }
+                seqNode.skillId = 'amzn1.ask.1p.saysomething';
                 seqNode.operationPayload.textToSpeak = value;
                 break;
             case 'skill':
@@ -2399,6 +2406,7 @@ class AlexaRemote extends EventEmitter {
                 delete seqNode.operationPayload.deviceType;
                 delete seqNode.operationPayload.deviceSerialNumber;
                 delete seqNode.operationPayload.locale;
+                seqNode.skillId = 'amzn1.ask.1p.routines.messaging';
                 break;
             }
             case 'announcement':
@@ -2419,6 +2427,7 @@ class AlexaRemote extends EventEmitter {
                         throw new Error('Value needs to be a valid SSML XML string', null);
                     }
                 }
+                seqNode.skillId = 'amzn1.ask.1p.routines.messaging';
                 seqNode.operationPayload.expireAfter = 'PT5S';
                 seqNode.operationPayload.content = [
                     {
@@ -2538,10 +2547,12 @@ class AlexaRemote extends EventEmitter {
             'sequenceJson': JSON.stringify(seqCommandObj),
             'status': 'ENABLED'
         };
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceType":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceType":"${dev.deviceType}"`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceTypeId":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceTypeId":"${dev.deviceType}"`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceSerialNumber":"ALEXA_CURRENT_DSN"/g, `"deviceSerialNumber":"${dev.serialNumber}"`);
-        reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${dev.deviceOwnerCustomerId}"`);
+        if (dev) {
+            reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceType":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceType":"${dev.deviceType}"`);
+            reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceTypeId":"ALEXA_CURRENT_DEVICE_TYPE"/g, `"deviceTypeId":"${dev.deviceType}"`);
+            reqObj.sequenceJson = reqObj.sequenceJson.replace(/"deviceSerialNumber":"ALEXA_CURRENT_DSN"/g, `"deviceSerialNumber":"${dev.serialNumber}"`);
+            reqObj.sequenceJson = reqObj.sequenceJson.replace(/"customerId":"ALEXA_CUSTOMER_ID"/g, `"customerId":"${dev.deviceOwnerCustomerId}"`);
+        }
         reqObj.sequenceJson = reqObj.sequenceJson.replace(/"locale":"ALEXA_CURRENT_LOCALE"/g, `"locale":"de-DE"`);
 
         this.httpsGet (`/api/behaviors/preview`,

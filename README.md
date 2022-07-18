@@ -23,6 +23,11 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Fix doNotDisturb/doNotDisturbAll in sequenceCommands
+* (Apollon77) Other sequence command optimizations
+
 ### 5.7.0 (2022-07-18)
 * (Apollon77) Enhance querySmarthomeDevices to directly hand over an array of request definitions to e.g. also specify properties or such
 * (Apollon77) Enhance SequenceCommands:
