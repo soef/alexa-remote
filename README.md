@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.7.1 (2022-07-18)
 * (Apollon77) Fix doNotDisturb/doNotDisturbAll in sequenceCommands
 * (Apollon77) Other sequence command optimizations
 
