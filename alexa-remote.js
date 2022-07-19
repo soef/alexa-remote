@@ -2235,14 +2235,14 @@ class AlexaRemote extends EventEmitter {
                     seqNode.operationPayload.devices = [
                         {
                             'deviceSerialNumber': 'ALEXA_ALL_DSN',
-                            'deviceTypeId': 'ALEXA_ALL_DEVICE_TYPE'
+                            'deviceType': 'ALEXA_ALL_DEVICE_TYPE'
                         }
                     ];
                 } else {
                     seqNode.operationPayload.devices = [
                         {
                             'deviceSerialNumber': deviceSerialNumber,
-                            'deviceTypeId': deviceType
+                            'deviceType': deviceType
                         }
                     ];
 
@@ -2253,7 +2253,7 @@ class AlexaRemote extends EventEmitter {
                             if (!currDevice) return;
                             seqNode.operationPayload.devices.push({
                                 'deviceSerialNumber': currDevice.serialNumber,
-                                'deviceTypeId': currDevice.deviceType
+                                'deviceType': currDevice.deviceType
                             });
                         });
                     }
@@ -2291,7 +2291,7 @@ class AlexaRemote extends EventEmitter {
                             seqNode.operationPayload.devices.push({
                                 'deviceSerialNumber': currDevice.serialNumber,
                                 'deviceTypeId': currDevice.deviceType,
-                                'deviceAccountId': deviceAccountId
+                                'deviceAccountId': currDevice.deviceAccountId
                             });
                         });
                     }
