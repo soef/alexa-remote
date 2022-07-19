@@ -3139,9 +3139,10 @@ class AlexaRemote extends EventEmitter {
                     res.value = JSON.parse(res.value);
                 } catch (err) {
                     // ignore
+                    return callback && callback(new Error(`Invalid value for setting ${settingName}: ${res}`));
                 }
             }
-            callback && callback(err, res.value);
+            callback && callback(err, res && res.value);
         });
     }
 
