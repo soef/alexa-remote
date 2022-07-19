@@ -23,8 +23,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.7.2 (2022-07-19)
 * (Apollon77) Fix crash case reported by Sentry
 
 ### 5.7.1 (2022-07-18)
