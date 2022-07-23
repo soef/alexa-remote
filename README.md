@@ -18,6 +18,19 @@ see example folder
 Partly based on [Amazon Alexa Remote Control](http://blog.loetzimmer.de/2017/10/amazon-alexa-hort-auf-die-shell-echo.html) (PLAIN shell) and [alexa-remote-control](https://github.com/thorsten-gehrig/alexa-remote-control) and [OpenHab-Addon](https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol)
 Thank you for that work.
 
+## Troubleshooting
+
+### Push Connections do not connect
+Sometimes it could happen that because of too many connection tries aAmazon blocks the push connection endpoint for a specific IP and "device".
+
+If the Push connection is never established then you can try to use the following:
+* delete all cookie, formerRegistrationData and macDms from the settings
+* lokale the location of the alexa-cookie2 library in your npm tree
+* check if there is a file like .../alexa-cookie2/lib/formerDataStore.json - if existing please delete them
+* get new cookie via proxy
+
+Then it should work again
+
 ## Known issues/Todos
 * getNotification works, changeNotification not ... maybe change is DELETE +Create :-) (+ source for createNotification: https://github.com/noelportugal/alexa-reminders/blob/master/alexa-reminders.js#L75, and Delete/create: https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol/src/main/java/org/openhab/binding/amazonechocontrol/internal/Connection.java#L829)
 * docu docu docu (sorry ... will come)
