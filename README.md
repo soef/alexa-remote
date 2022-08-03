@@ -36,8 +36,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.7.4 (2022-08-03)
 * (Apollon77) Update cookie library to optimize cookie handling in other regions like australia
 
 ### 5.7.3 (2022-07-19)
