@@ -36,8 +36,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.7.5 (2022-08-04)
 * (Apollon77) Fix rate limit retries
 
 ### 5.7.4 (2022-08-03)
