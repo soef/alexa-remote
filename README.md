@@ -36,6 +36,10 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Fix rate limit retries
+
 ### 5.7.4 (2022-08-03)
 * (Apollon77) Update cookie library to optimize cookie handling in other regions like australia
 

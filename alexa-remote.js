@@ -918,7 +918,7 @@ class AlexaRemote extends EventEmitter {
                 }
 
                 this._options.logger && this._options.logger(`Alexa-Remote: Response: No/Invalid JSON : ${body}`);
-                if (body.includes('ThrottlingException')  || body.includes('Rate exceeded') || body.includes('Too many requests')) {
+                if ((body.includes('ThrottlingException')  || body.includes('Rate exceeded') || body.includes('Too many requests')) && flags && !flags.isRetry) {
                     let delay = Math.floor(Math.random() * 3000) + 10000;
                     if (body.includes('Too many requests')) {
                         delay += 20000 + Math.floor(Math.random() * 30000);
