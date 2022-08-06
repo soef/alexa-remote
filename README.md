@@ -36,8 +36,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.7.6 (2022-08-06)
 * (Apollon77) Fix Timer/Alarm creation with just providing the time and make sure next day is used when time on current day is already over
 
 ### 5.7.5 (2022-08-04)
