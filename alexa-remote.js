@@ -1551,6 +1551,15 @@ class AlexaRemote extends EventEmitter {
             }
         }
 
+        const originalDateTime = `${notification.originalDate} ${notification.originalTime}`;
+        const bits = originalDateTime.split(/\D/);
+        const date = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4], bits[5]);
+        if (date.getTime() < Date.now()) {
+            date.setDate(date.getDate() + 1);
+            notification.originalDate =  `${date.getFullYear()}-${_00(date.getMonth() + 1)}-${_00(date.getDate())}`;
+            notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
+        }
+
         if ((value === null || dateOrTimeAdjusted) && (notification.type === 'Alarm' || notification.type === 'MusicAlarm')) {
             const newPutNotification = {
                 trigger: {
@@ -1570,15 +1579,6 @@ class AlexaRemote extends EventEmitter {
                 }];
             }
             return newPutNotification;
-        }
-
-        const originalDateTime = `${notification.originalDate} ${notification.originalTime}`;
-        const bits = originalDateTime.split(/\D/);
-        let date = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4], bits[5]);
-        if (date.getTime() < Date.now()) {
-            date = new Date(date.getTime() + 24 * 60 * 60 * 1000);
-            notification.originalDate =  `${date.getFullYear()}-${_00(date.getMonth() + 1)}-${_00(date.getDate())}`;
-            notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
         }
 
         return notification;

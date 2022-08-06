@@ -36,6 +36,10 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Fix Timer/Alarm creation with just providing the time and make sure next day is used when time on current day is already over
+
 ### 5.7.5 (2022-08-04)
 * (Apollon77) Fix rate limit retries
 
