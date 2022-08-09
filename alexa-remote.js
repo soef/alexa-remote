@@ -2535,7 +2535,7 @@ class AlexaRemote extends EventEmitter {
             try {
                 seqCommandObj = {
                     '@type': 'com.amazon.alexa.behaviors.model.Sequence',
-                    'startNode': this.createSequenceNode(command, value, dev, overrideCustomerId)
+                    'startNode': this.createSequenceNode(command, value, serialOrName, overrideCustomerId)
                 };
             } catch (err) {
                 return callback && callback(err, null);
