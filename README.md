@@ -36,8 +36,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.8.1 (2022-08-18)
 * (Apollon77) Fix doNotDisturb sequence command
 
 ### 5.8.0 (2022-08-09)
