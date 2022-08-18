@@ -36,6 +36,10 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Fix doNotDisturb sequence command
+
 ### 5.8.0 (2022-08-09)
 * (Apollon77) Allow sendSequenceCommand method to also send commands to multiple devices (when supported by the relevant command like doNotDisturb)
 

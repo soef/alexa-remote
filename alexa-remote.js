@@ -2313,7 +2313,7 @@ class AlexaRemote extends EventEmitter {
                     seqNode.operationPayload.duration = durationString;
                     //seqNode.operationPayload.timeZoneId = 'Europe/Berlin';
                 } else if (valueType === 'string') {
-                    if (!value.test(/^\d{2}:\d{2}$/)) {
+                    if (!/^\d{2}:\d{2}$/.test(value)) {
                         throw new Error('Invalid timepoint value provided');
                     }
                     seqNode.operationPayload.until = `TIME#T${value}`;
