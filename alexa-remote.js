@@ -2105,6 +2105,7 @@ class AlexaRemote extends EventEmitter {
         let deviceOwnerCustomerId = 'ALEXA_CUSTOMER_ID';
         let deviceAccountId;
         let deviceFamily;
+        let deviceTimezoneId;
         if (serialOrName && !Array.isArray(serialOrName)) {
             const currDevice = this.find(serialOrName);
             if (currDevice) {
@@ -2113,6 +2114,16 @@ class AlexaRemote extends EventEmitter {
                 deviceOwnerCustomerId = currDevice.deviceOwnerCustomerId;
                 deviceAccountId = currDevice.deviceAccountId;
                 deviceFamily = currDevice.deviceFamily;
+                if (currDevice.preferences && currDevice.preferences.timeZoneId !== undefined) {
+                    deviceTimezoneId = currDevice.preferences.timeZoneId;
+                }
+            }
+        } else {
+            const currDevice = this.find(serialOrName[0]);
+            if (currDevice) {
+                if (currDevice.preferences && currDevice.preferences.timeZoneId !== undefined) {
+                    deviceTimezoneId = currDevice.preferences.timeZoneId;
+                }
             }
         }
         if (overrideCustomerId) {
@@ -2317,7 +2328,7 @@ class AlexaRemote extends EventEmitter {
                         throw new Error('Invalid timepoint value provided');
                     }
                     seqNode.operationPayload.until = `TIME#T${value}`;
-                    //seqNode.operationPayload.timeZoneId = 'Europe/Berlin';
+                    seqNode.operationPayload.timeZoneId = deviceTimezoneId || 'Europe/Berlin';
                 } else if (valueType !== 'boolean') {
                     throw new Error('Invalid timepoint provided');
                 }
