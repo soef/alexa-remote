@@ -894,9 +894,8 @@ class AlexaRemote extends EventEmitter {
                 return callback(new Error('401 Unauthorized'), null);
             }
 
-            if (!err && typeof res.statusCode === 'number' && res.statusCode === 503 && flags && !flags.isRetry) {
+            if (!err && typeof res.statusCode === 'number' && res.statusCode === 503 && !flags.isRetry) {
                 this._options.logger && this._options.logger('Alexa-Remote: Response: 503 ... Retrying once');
-                flags = flags || {};
                 flags.isRetry = true;
                 return setTimeout(() => this.httpsGetCall(path, callback, flags), Math.floor(Math.random() * 500) + 500);
             }
@@ -918,13 +917,12 @@ class AlexaRemote extends EventEmitter {
                 }
 
                 this._options.logger && this._options.logger(`Alexa-Remote: Response: No/Invalid JSON : ${body}`);
-                if ((body.includes('ThrottlingException')  || body.includes('Rate exceeded') || body.includes('Too many requests')) && flags && !flags.isRetry) {
+                if ((body.includes('ThrottlingException')  || body.includes('Rate exceeded') || body.includes('Too many requests')) && !flags.isRetry) {
                     let delay = Math.floor(Math.random() * 3000) + 10000;
                     if (body.includes('Too many requests')) {
                         delay += 20000 + Math.floor(Math.random() * 30000);
                     }
                     this._options.logger && this._options.logger(`Alexa-Remote: rate exceeded response ... Retrying once in ${delay}ms`);
-                    flags = flags || {};
                     flags.isRetry = true;
                     return setTimeout(() => this.httpsGetCall(path, callback, flags), delay);
                 }
@@ -937,19 +935,20 @@ class AlexaRemote extends EventEmitter {
             // maybe set err AND body?
             // add x-amzn-ErrorType header to err? (e.g. 400 on /player: ExpiredPlayQueueException:http://internal.amazon.com/coral/com.amazon.dee.web.coral.model/)
             this._options.logger && this._options.logger(`Alexa-Remote: Response: ${JSON.stringify(ret)}`);
-            if (body.includes('ThrottlingException')  || body.includes('Rate exceeded') || body.includes('Too many requests')) {
+            if ((body.includes('ThrottlingException') || body.includes('Rate exceeded') || body.includes('Too many requests')) && !flags.isRetry) {
                 let delay = Math.floor(Math.random() * 3000) + 10000;
                 if (body.includes('Too many requests')) {
                     delay += 20000 + Math.floor(Math.random() * 30000);
                 }
                 this._options.logger && this._options.logger(`Alexa-Remote: rate exceeded response ... Retrying once in ${delay}ms`);
-                flags = flags || {};
                 flags.isRetry = true;
                 return setTimeout(() => this.httpsGetCall(path, callback, flags), delay);
             }
             callback(null, ret);
             callback = null;
         };
+
+        flags = flags || {};
 
         const options = {
             host: flags.host || this.baseUrl,
@@ -2182,7 +2181,7 @@ class AlexaRemote extends EventEmitter {
             case 'textCommand':
                 seqNode.type = 'Alexa.TextCommand';
                 seqNode.skillId = 'amzn1.ask.1p.tellalexa';
-                seqNode.operationPayload.text = value.toString();
+                seqNode.operationPayload.text = value.toString().toLowerCase();
                 break;
             case 'sound':
                 seqNode.type = 'Alexa.Sound';

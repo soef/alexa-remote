@@ -36,6 +36,11 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Fix retry issues for rate limited responses from amazon
+* (Apollon77) Lowercase text that sent to textcommand because other cases had issues in the past
+
 ### 5.8.2 (2022-08-19)
 * (Apollon77) Fix doNotDisturb sequence command when time string was used
 
