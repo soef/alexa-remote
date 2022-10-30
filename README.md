@@ -36,8 +36,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.10.0 (2022-10-30)
 * (Apollon77) Adjust deleteConversation to the new API (additional parameter is required!)
 
 ### 5.9.0 (2022-10-30)
