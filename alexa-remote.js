@@ -2832,11 +2832,14 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
-    deleteConversation(conversationId, callback) {
+    deleteConversation(conversationId, lastMessageId, callback) {
+        if (lastMessageId === undefined) {
+            lastMessageId = 1;
+        }
         const flags = {
             method: 'DELETE'
         };
-        this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/conversations/${conversationId}`, callback, flags);
+        this.httpsGet (`https://alexa-comms-mobile-service.${this._options.amazonPage}/users/${this.commsId}/conversations/${conversationId}?lastMessageId=${lastMessageId}`, callback, flags);
     }
 
     setReminder(serialOrName, timestamp, label, callback) {
