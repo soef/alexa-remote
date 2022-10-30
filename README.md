@@ -36,6 +36,10 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Add new methods for enable/disable of alarms and use in changeNotification if Alarm or MusicAlarm
+
 ### 5.8.3 (2022-10-27)
 * (Apollon77) Fix retry issues for rate limited responses from amazon
 * (Apollon77) Lowercase text that sent to textcommand because other cases had issues in the past

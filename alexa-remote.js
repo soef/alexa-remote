@@ -1559,7 +1559,7 @@ class AlexaRemote extends EventEmitter {
             notification.originalTime = `${_00(date.getHours())}:${_00(date.getMinutes())}:${_00(date.getSeconds())}.000`;
         }
 
-        if ((value === null || dateOrTimeAdjusted) && (notification.type === 'Alarm' || notification.type === 'MusicAlarm')) {
+        if ((typeof value === 'boolean' || value === null || dateOrTimeAdjusted) && (notification.type === 'Alarm' || notification.type === 'MusicAlarm')) {
             const newPutNotification = {
                 trigger: {
                     scheduledTime: `${notification.originalDate}T${notification.originalTime.substring(0, notification.originalTime.length - 4)}`
@@ -1604,6 +1604,14 @@ class AlexaRemote extends EventEmitter {
         const finalNotification = this.parseValue4Notification(notification, value);
 
         if (finalNotification.trigger && finalNotification.assets && finalNotification.extensions) {
+            if (typeof value === 'boolean') { // Switch on/off
+                if (value) {
+                    return this.activateNotificationV2(notification.notificationIndex, finalNotification, callback);
+                } else {
+                    return this.deactivateNotificationV2(notification.notificationIndex, callback);
+                }
+            }
+
             return this.setNotificationV2(notification.notificationIndex, finalNotification, callback);
         }
 
@@ -1643,6 +1651,22 @@ class AlexaRemote extends EventEmitter {
             data: JSON.stringify(notification)
         };
         this.httpsGetAuthApi (`/v1/alerts/alarms/${notificationIndex}`, callback, flags);
+    }
+
+    activateNotificationV2(notificationIndex, notification, callback) {
+        const flags = {
+            method: 'PUT',
+            data: JSON.stringify(notification)
+        };
+        this.httpsGetAuthApi (`/v1/alerts/alarms/${notificationIndex}/activate`, callback, flags);
+    }
+
+    deactivateNotificationV2(notificationIndex, callback) {
+        const flags = {
+            method: 'PUT',
+            data: ''
+        };
+        this.httpsGetAuthApi (`/v1/alerts/alarms/${notificationIndex}/cancel`, callback, flags);
     }
 
     deleteNotification(notification, callback) {
