@@ -36,8 +36,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 5.9.0 (2022-10-30)
 * (Apollon77) Add new methods for enable/disable of alarms and use in changeNotification if Alarm or MusicAlarm
 
 ### 5.8.3 (2022-10-27)
