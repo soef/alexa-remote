@@ -297,26 +297,29 @@ class AlexaRemote extends EventEmitter {
                         }
                     });
 
+                    const processedSerialNumbers = [];
                     joinedDevices.forEach((device) => {
                         const existingDevice = this.find(device.serialNumber);
                         if (!existingDevice) {
                             this.serialNumbers[device.serialNumber] = device;
                         }
                         else {
+                            if (device.parentDeviceSerialNumber && processedSerialNumbers.includes(device.serialNumber)) return;
                             device = extend(true, existingDevice, device);
                         }
+                        processedSerialNumbers.push(device.serialNumber);
 
                         if (devicePreferences[device.serialNumber]) {
                             device.preferences = devicePreferences[device.serialNumber];
                         }
 
                         let name = device.accountName;
-                        this.names [name] = device;
-                        this.names [name.toLowerCase()] = device;
+                        this.names[name] = device;
+                        this.names[name.toLowerCase()] = device;
                         if (device.deviceTypeFriendlyName) {
                             name += ` (${device.deviceTypeFriendlyName})`;
-                            this.names [name] = device;
-                            this.names [name.toLowerCase()] = device;
+                            this.names[name] = device;
+                            this.names[name.toLowerCase()] = device;
                         }
                         //device._orig = JSON.parse(JSON.stringify(device));
                         device._name = name;
