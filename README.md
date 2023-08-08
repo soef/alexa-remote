@@ -37,7 +37,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-### __WORK IN PROGRESS__
+### 5.10.3 (2023-08-08)
 * (Apollon77) Add new parameter usePushConnectType to specify which connectType for the push connection should be used (valid values 1, 2)
 
 ### 5.10.1 (2022-11-30)
