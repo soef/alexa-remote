@@ -32,6 +32,7 @@ If the Push connection is never established then you can try to use the followin
 Then it should work again
 
 ## Known issues/Todos
+* If you still use the SMS based 2FA flow then this might now work. Please update the 2fa method in the amazon settings to the current process.
 * getNotification works, changeNotification not ... maybe change is DELETE +Create :-) (+ source for createNotification: https://github.com/noelportugal/alexa-reminders/blob/master/alexa-reminders.js#L75, and Delete/create: https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol/src/main/java/org/openhab/binding/amazonechocontrol/internal/Connection.java#L829)
 * docu docu docu (sorry ... will come)
 
