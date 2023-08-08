@@ -177,7 +177,7 @@ class AlexaWsMqtt extends EventEmitter {
                     throw new Error(`Invalid push connect type ${this._options.usePushConnectType} specified`);
                 }
             }
-            if (!this.macDms || !this.macDms.adp_token || !this.macDms.device_private_key) {
+            else if (!this.macDms || !this.macDms.adp_token || !this.macDms.device_private_key) {
                 this._options.logger && this._options.logger('Alexa-Remote WS-MQTT: Try to initialize old style push connection because macDms data missing');
                 url = this.connectType1();
             } else {
