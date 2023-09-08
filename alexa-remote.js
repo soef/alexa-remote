@@ -2,14 +2,15 @@ const https = require('https');
 const querystring = require('querystring');
 const os = require('os');
 const extend = require('extend');
-const AlexaWsMqtt = require('./alexa-wsmqtt.js');
+//const AlexaWsMqtt = require('./alexa-wsmqtt.js');
+const AlexaHttp2Push = require('./alexa-http2push.js');
 const { v1: uuidv1 } = require('uuid');
 const zlib = require('zlib');
 const fsPath = require('path');
 
 const EventEmitter = require('events');
 
-const officialUserAgent = 'AppleWebKit PitanguiBridge/2.2.483723.0-[HARDWARE=iPhone10_4][SOFTWARE=15.5][DEVICE=iPhone]';
+const officialUserAgent = 'AppleWebKit PitanguiBridge/2.2.556530.0-[HARDWARE=iPhone14_7][SOFTWARE=16.6][DEVICE=iPhone]';
 
 function _00(val) {
     let s = val.toString();
@@ -126,7 +127,7 @@ class AlexaRemote extends EventEmitter {
                 self._options.logger && self._options.logger('Alexa-Remote: cookie was provided');
                 if (self._options.formerRegistrationData) {
                     const tokensValidSince = Date.now() - self._options.formerRegistrationData.tokenDate;
-                    if (tokensValidSince < 24 * 60 * 60 * 1000 && self._options.macDms) {
+                    if (tokensValidSince < 24 * 60 * 60 * 1000 && self._options.macDms && self._options.formerRegistrationData.dataVersion === 2) {
                         return callback(null);
                     }
                     self._options.logger && self._options.logger('Alexa-Remote: former registration data exist, try refresh');
@@ -191,8 +192,8 @@ class AlexaRemote extends EventEmitter {
                         this._options.logger && this._options.logger(`Alexa-Remote: Could not query endpoints: ${err}`);
                     }
                     this.prepare(() => {
-                        if (this._options.useWsMqtt) {
-                            this.initWsMqttConnection();
+                        if (this._options.useWsMqtt || this._options.usePushConnection) {
+                            this.initPushConnection();
                         }
                         callback && callback();
                     });
@@ -402,18 +403,50 @@ class AlexaRemote extends EventEmitter {
         this.alexaCookie.stopProxyServer(callback);
     }
 
+    /** @deprecated */
     isWsMqttConnected() {
-        return this.alexaWsMqtt && this.alexaWsMqtt.isConnected();
+        return this.isPushConnected();
     }
 
+    isPushConnected() {
+        return this.alexahttp2Push && this.alexahttp2Push.isConnected();
+    }
+
+    /**
+     * @deprecated
+     */
     initWsMqttConnection() {
-        if (this.alexaWsMqtt) {
-            this.alexaWsMqtt.removeAllListeners();
-            this.alexaWsMqtt.disconnect();
-            this.alexaWsMqtt = null;
+        return this.initPushConnection();
+    }
+
+    initPushConnection() {
+        if (this.alexahttp2Push) {
+            this.alexahttp2Push.removeAllListeners();
+            this.alexahttp2Push.disconnect();
+            this.alexahttp2Push = null;
         }
-        this.alexaWsMqtt = new AlexaWsMqtt(this._options, this.cookie, this.macDms);
-        if (!this.alexaWsMqtt) return;
+        if (!this.authApiBearerToken) {
+            this.updateApiBearerToken((err) => {
+                if (err) {
+                    this._options.logger && this._options.logger('Alexa-Remote: Initializing WS-MQTT Push Connection failed because no Access-Token available!');
+                } else {
+                    return this.initPushConnection();
+                }
+            });
+            return;
+        }
+        this.alexahttp2Push = new AlexaHttp2Push(this._options, this.authApiBearerToken, (callback) => {
+            this._options.logger && this._options.logger('Alexa-Remote: Update access token ...');
+            this.updateApiBearerToken((err) => {
+                if (err) {
+                    this._options.logger && this._options.logger('Alexa-Remote: Initializing WS-MQTT Push Connection failed because no Access-Token available!');
+                    callback(null);
+                } else {
+                    callback(this.authApiBearerToken);
+                }
+            });
+        });
+        if (!this.alexahttp2Push) return;
 
         this._options.logger && this._options.logger('Alexa-Remote: Initialize WS-MQTT Push Connection');
 
@@ -422,19 +455,19 @@ class AlexaRemote extends EventEmitter {
         this.activityUpdateTimeout = null;
         this.activityUpdateRunning = false;
 
-        this.alexaWsMqtt.on('disconnect', (retries, msg) => {
+        this.alexahttp2Push.on('disconnect', (retries, msg) => {
             this.emit('ws-disconnect', retries, msg);
         });
-        this.alexaWsMqtt.on('error', (error) => {
+        this.alexahttp2Push.on('error', (error) => {
             this.emit('ws-error', error);
         });
-        this.alexaWsMqtt.on('connect', () => {
+        this.alexahttp2Push.on('connect', () => {
             this.emit('ws-connect');
         });
-        this.alexaWsMqtt.on('unknown', (incomingMsg) => {
+        this.alexahttp2Push.on('unknown', (incomingMsg) => {
             this.emit('ws-unknown-message', incomingMsg);
         });
-        this.alexaWsMqtt.on('command', (command, payload) => {
+        this.alexahttp2Push.on('command', (command, payload) => {
 
             this.emit('command', { 'command': command, 'payload': payload });
 
@@ -721,6 +754,8 @@ class AlexaRemote extends EventEmitter {
                 case 'PUSH_MICROPHONE_STATE':
                 case 'PUSH_DELETE_DOPPLER_ACTIVITIES':
                 case 'PUSH_DEVICE_SETUP_STATE_CHANGE':
+                case 'NotifyNowPlayingUpdated': // TODO
+                case 'NotifyMediaSessionsUpdated':
                     return;
 
             }
@@ -728,7 +763,7 @@ class AlexaRemote extends EventEmitter {
             this.emit('ws-unknown-command', command, payload);
         });
 
-        this.alexaWsMqtt.connect();
+        this.alexahttp2Push.connect();
     }
 
     getPushedActivities() {
@@ -749,7 +784,7 @@ class AlexaRemote extends EventEmitter {
                     else {
                         lastFoundQueueIndex = queueIndex;
                         const activity = res.splice(found, 1)[0];
-                        this._options.logger && this._options.logger(`Alexa-Remote: Activity found ${found} for Activity ID ${entry.key.entryId}`);
+                        this._options.logger && this._options.logger(`Alexa-Remote: Activity found entry ${found} for Activity ID ${entry.key.entryId}`);
                         activity.destinationUserId = entry.destinationUserId;
                         this.emit('ws-device-activity', activity);
                     }
@@ -787,8 +822,8 @@ class AlexaRemote extends EventEmitter {
             clearTimeout(this.cookieRefreshTimeout);
             this.cookieRefreshTimeout = null;
         }
-        if (this.alexaWsMqtt) {
-            this.alexaWsMqtt.disconnect();
+        if (this.alexahttp2Push) {
+            this.alexahttp2Push.disconnect();
         }
     }
 
@@ -819,7 +854,22 @@ class AlexaRemote extends EventEmitter {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            data: `app_name=${encodeURIComponent(deviceAppName)}&app_version=2.2.483723.0&di.sdk.version=6.12.3&source_token=${encodeURIComponent(this.cookieData.refreshToken)}&package_name=com.amazon.echo&di.hw.version=iPhone&platform=iOS&requested_token_type=access_token&source_token_type=refresh_token&di.os.name=iOS&di.os.version=15.5&current_version=6.12.3&previous_version=6.12.3`
+            data: `app_name=${encodeURIComponent(deviceAppName)}&app_version=2.2.556530.0&di.sdk.version=6.12.4&source_token=${encodeURIComponent(this.cookieData.refreshToken)}&package_name=com.amazon.echo&di.hw.version=iPhone&platform=iOS&requested_token_type=access_token&source_token_type=refresh_token&di.os.name=iOS&di.os.version=16.6&current_version=6.12.4&previous_version=6.12.4`
+        });
+    }
+
+    updateApiBearerToken(callback) {
+        if (this.authApiBearerToken && Date.now() < this.authApiBearerExpiry) {
+            return callback && callback(null);
+        }
+        this.getAuthApiBearerToken((err, res) => {
+            if (err || !res || !res.access_token || res.token_type !== 'bearer') {
+                this._options.logger && this._options.logger(`Alexa-Remote: Error getting auth token: ${err ? err.message : res}`);
+                return callback && callback(err);
+            }
+            this.authApiBearerToken = res.access_token;
+            this.authApiBearerExpiry = Date.now() + res.expires_in * 1000;
+            callback && callback(err);
         });
     }
 
@@ -838,13 +888,10 @@ class AlexaRemote extends EventEmitter {
         flags.headers.authority = flags.host;
         flags.headers['user-agent'] = `${officialUserAgent} ${this._options.apiUserAgentPostfix}`.trim();
         if (!this.authApiBearerToken || Date.now() >= this.authApiBearerExpiry) {
-            this.getAuthApiBearerToken((err, res) => {
-                if (err || !res || !res.access_token || res.token_type !== 'bearer') {
-                    this._options.logger && this._options.logger(`Alexa-Remote: Error getting auth token: ${err.message}`);
+            this.updateApiBearerToken(err => {
+                if (err) {
                     return callback && callback(err);
                 }
-                this.authApiBearerToken = res.access_token;
-                this.authApiBearerExpiry = Date.now() + res.expires_in * 1000;
                 flags.headers.authorization = this.authApiBearerToken;
                 this.httpsGet(true, path, callback, flags);
             });
@@ -1134,7 +1181,7 @@ class AlexaRemote extends EventEmitter {
     }
 
     getUsersMe(callback) {
-        this.httpsGetCall('/api/users/me?platform=ios&version=2.2.483723.0', callback);
+        this.httpsGetCall('/api/users/me?platform=ios&version=2.2.556530.0', callback);
     }
 
     getHousehold(callback) {

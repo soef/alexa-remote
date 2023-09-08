@@ -17,7 +17,9 @@ declare module "alexa-remote2" {
         deviceAppName: string;
         acceptLanguage: string;
         amazonPage: string;
+        /** @deprecated */
         useWsMqtt: boolean;
+        usePushConnection: boolean;
         cookieRefreshInterval: number;
         macDms: {
             device_private_key: string;
@@ -38,6 +40,7 @@ declare module "alexa-remote2" {
             "amazonPage": string;
             "csrf": string;
             "deviceAppName": string;
+            dataVersion: number | undefined;
         }
     }>;
 
@@ -298,7 +301,13 @@ declare module "alexa-remote2" {
 
         initBluetoothState(callback: CallbackWithError): void;
 
+        /** @deprecated */
         initWsMqttConnection(): void;
+        initPushConnection(): void;
+
+        /** @deprecated */
+        isWsMqttConnected(): boolean;
+        isPushConnected(): boolean;
 
         getPushedActivities(): void;
 
@@ -698,8 +707,6 @@ declare module "alexa-remote2" {
         ): void;
 
         getAuthenticationDetails(): GetAuthenticationDetails;
-
-        isWsMqttConnected(): boolean;
 
         stopProxyServer(callback: CallbackWithError): void
 
