@@ -33,9 +33,13 @@ class AlexaHttp2Push extends EventEmitter {
             let host = 'bob-dispatch-prod-eu.amazon.com';
             if (this._options.amazonPage === 'amazon.com') {
                 host = 'bob-dispatch-prod-na.amazon.com';
-            } else if (this._options.amazonPage === 'amazon.com.au' || this._options.amazonPage === 'amazon.co.jp') {
-                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH currently not supported for AU/JP. Contact the developer if you need it.');
+            } else if (this._options.amazonPage === 'amazon.co.jp') {
+                host = 'bob-dispatch-prod-fe.amazon.co.jp';
+            } else if (this._options.amazonPage === 'amazon.com.au') {
+                host = 'bob-dispatch-prod-fe.amazon.com.au';
             }
+            this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Use host ${host}`);
+
 
             const http2_options = {
                 ':method': 'GET',
