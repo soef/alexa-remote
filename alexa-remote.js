@@ -435,7 +435,7 @@ class AlexaRemote extends EventEmitter {
             });
             return;
         }
-        this.alexahttp2Push = new AlexaHttp2Push(this._options, this.authApiBearerToken, (callback) => {
+        this.alexahttp2Push = new AlexaHttp2Push(this._options, (callback) => {
             this._options.logger && this._options.logger('Alexa-Remote: Update access token ...');
             this.updateApiBearerToken((err) => {
                 if (err) {
