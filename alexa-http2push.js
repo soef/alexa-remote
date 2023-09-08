@@ -1,0 +1,239 @@
+const http2 = require('http2');
+const EventEmitter = require('events');
+
+class AlexaHttp2Push extends EventEmitter {
+
+    constructor(options, access_token, update_access_token) {
+        super();
+
+        this._options = options;
+        this.stop = false;
+        this.client = null;
+        this.stream = null;
+        this.pingPongInterval = null;
+        this.errorRetryCounter = 0;
+        this.reconnectTimeout = null;
+        this.pongTimeout = null;
+        this.initTimeout = null;
+        this.connectionActive = false;
+        this.access_token = access_token;
+        this.update_access_token = update_access_token;
+    }
+
+    isConnected() {
+        return this.connectionActive;
+    }
+
+    connect() {
+        const http2_options = {
+            ':method': 'GET',
+            ':path': '/v20160207/directives',
+            ':authority': 'bob-dispatch-prod-eu.amazon.com',
+            ':scheme': 'https',
+            'authorization': `Bearer ${this.access_token}`,
+            'accept-encoding': 'gzip',
+            'user-agent': 'okhttp/4.3.2-SNAPSHOT',
+        };
+
+        const onHttp2Close = (code, reason) => {
+            if (reason) {
+                reason = reason.toString();
+            }
+            try {
+                this.client && this.client.close();
+            } catch (err) {
+                // ignore
+            }
+            this.client = null;
+            this.stream = null;
+            this.connectionActive = false;
+            this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Close: ' + code + ': ' + reason);
+            if (this.initTimeout) {
+                clearTimeout(this.initTimeout);
+                this.initTimeout = null;
+            }
+            if (this.pingPongInterval) {
+                clearInterval(this.pingPongInterval);
+                this.pingPongInterval = null;
+            }
+            if (this.pongTimeout) {
+                clearTimeout(this.pongTimeout);
+                this.pongTimeout = null;
+            }
+            if (this.stop) return;
+            if (this.errorRetryCounter > 100) {
+                this.emit('disconnect', false, 'Too many failed retries. Check cookie and data');
+                return;
+            } else {
+                this.errorRetryCounter++;
+            }
+
+            const retryDelay = Math.min(60, (this.errorRetryCounter * 5) + 5);
+            this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Retry Connection in ' + retryDelay + 's');
+            this.emit('disconnect', true, 'Retry Connection in ' + retryDelay + 's');
+            this.reconnectTimeout && clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = setTimeout(() => {
+                this.reconnectTimeout = null;
+                this.connect();
+            }, retryDelay * 1000);
+        };
+
+        const onPingResponse = () => {
+            if (this.initTimeout) {
+                clearTimeout(this.initTimeout);
+                this.initTimeout = null;
+                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Initialization completed');
+                this.emit('connect');
+            }
+            if (this.pongTimeout) {
+                clearTimeout(this.pongTimeout);
+                this.pongTimeout = null;
+            }
+            this.connectionActive = true;
+        };
+
+        try {
+            this.client = http2.connect(`https://${http2_options[':authority']}`,  () => {
+                this.stream = this.client.request(http2_options);
+
+                this.stream.on('response', async (headers) => {
+                    if (headers[':status'] === 403) {
+                        this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Error 403 .... refresh token');
+                        this.update_access_token(token => {
+                            if (token) {
+                                this.access_token = token;
+                            }
+                            onHttp2Close(headers[':status']);
+                        });
+                    }
+                    else if (headers[':status'] !== 200) {
+                        onHttp2Close(headers[':status']);
+                    }
+                });
+
+                this.stream.on('data', (chunk) => {
+                    if (this.stop) {
+                        this.stream && this.stream.end();
+                        this.client && this.client.close();
+                        return;
+                    }
+                    chunk = chunk.toString();
+                    if (chunk.startsWith('------')) {
+                        this.client.ping(onPingResponse);
+
+                        this.pingPongInterval = setInterval(() => {
+                            if (!this.stream || !this.client) return;
+                            this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Send Ping');
+                            //console.log('SEND: ' + msg.toString('hex'));
+                            this.client.ping(onPingResponse);
+
+                            this.pongTimeout = setTimeout(() => {
+                                this.pongTimeout = null;
+                                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: No Pong received after 30s');
+                                this.stream && this.stream.end();
+                                this.client && this.client.close();
+                                this.connectionActive = false;
+                            }, 30000);
+                        }, 180000);
+
+                        return;
+                    }
+                    if (chunk.startsWith('Content-Type: application/json')) {
+                        const json_start = chunk.indexOf('{');
+                        const json_end = chunk.lastIndexOf('}');
+                        if (json_start === -1 || json_end === -1) {
+                            this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Unexpected ResponseCould not find json in chunk: ${chunk}`);
+                            return;
+                        }
+                        const message = chunk.substring(json_start, json_end + 1);
+                        try {
+                            const data = JSON.parse(message);
+                            if (!data || !data.directive || !data.directive.payload || !Array.isArray(data.directive.payload.renderingUpdates)) {
+                                this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Unexpected ResponseCould not find renderingUpdates in json: ${message}`);
+                                return;
+                            }
+                            data.directive.payload.renderingUpdates.forEach(update => {
+                                if (!update || !update.resourceMetadata) {
+                                    this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Unexpected ResponseCould not find resourceMetadata in renderingUpdates: ${message}`);
+                                }
+                                const dataContent = JSON.parse(update.resourceMetadata);
+
+                                const command = dataContent.command;
+                                const payload = JSON.parse(dataContent.payload);
+
+                                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Command ' + command + ': ' + JSON.stringify(payload, null, 4));
+                                this.emit('command', command, payload);
+                            });
+                        } catch (err) {
+                            this.emit('unexpected-response', `Could not parse json: ${message} : ${err.message}`);
+                        }
+                    }
+                });
+
+                this.stream.on('close', onHttp2Close);
+
+                this.stream.on('error', (error) => {
+                    this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Stream-Error: ' + error);
+                    this.emit('error', error);
+                    this.stream && this.stream.end();
+                    this.client && this.client.close();
+                });
+            });
+
+            this.client.on('close', onHttp2Close);
+
+            this.client.on('error', (error) => {
+                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Client-Error: ' + error);
+                this.emit('error', error);
+                this.stream && this.stream.end();
+                this.client && this.client.close();
+            });
+        }
+        catch (err) {
+            this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Error on Init ' + err.message);
+            this._options.logger && this._options.logger(err.stack);
+            this.emit('error', err);
+            return;
+        }
+        this.initTimeout && clearTimeout(this.initTimeout);
+
+        this.initTimeout = setTimeout(() => {
+            this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Initialization not done within 30s');
+            try {
+                this.stream && this.stream.end();
+                this.client && this.client.close();
+            } catch (err) {
+                //just make sure
+            }
+            if (this.stream || !this.reconnectTimeout) { // seems no close was emitted so far?!
+                onHttp2Close();
+            }
+        }, 30000);
+    }
+
+    disconnect() {
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
+        if (this.pollingTimeout) {
+            clearTimeout(this.pollingTimeout);
+            this.pollingTimeout = null;
+        }
+        if (this.initTimeout) {
+            clearTimeout(this.initTimeout);
+            this.initTimeout = null;
+        }
+        this.stop = true;
+        if (!this.client && !this.stream) return;
+        try {
+            this.stream && this.stream.end();
+            this.client && this.client.close();
+        } catch (e) {
+            this.connectionActive && this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Disconnect error: ' + e.message);
+        }
+    }
+}
+
+
+module.exports = AlexaHttp2Push;
