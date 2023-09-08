@@ -30,10 +30,17 @@ class AlexaHttp2Push extends EventEmitter {
         this.update_access_token(token => {
             this.access_token = token;
 
+            let host = 'bob-dispatch-prod-eu.amazon.com';
+            if (this._options.amazonPage === 'amazon.com') {
+                host = 'bob-dispatch-prod-na.amazon.com';
+            } else if (this._options.amazonPage === 'amazon.com.au' || this._options.amazonPage === 'amazon.co.jp') {
+                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH currently not supported for AU/JP. Contact the developer if you need it.');
+            }
+
             const http2_options = {
                 ':method': 'GET',
                 ':path': '/v20160207/directives',
-                ':authority': 'bob-dispatch-prod-eu.amazon.com',
+                ':authority': host,
                 ':scheme': 'https',
                 'authorization': `Bearer ${this.access_token}`,
                 'accept-encoding': 'gzip',
@@ -80,7 +87,7 @@ class AlexaHttp2Push extends EventEmitter {
                     this.errorRetryCounter++;
                 }
 
-                const retryDelay = (immediateReconnect || this.errorRetryCounter === 1) ? 0 : Math.min(60, this.errorRetryCounter * 5);
+                const retryDelay = (immediateReconnect || this.errorRetryCounter === 1) ? 1 : Math.min(60, this.errorRetryCounter * 5);
                 this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Retry Connection in ' + retryDelay + 's');
                 this.emit('disconnect', true, 'Retry Connection in ' + retryDelay + 's');
                 this.reconnectTimeout && clearTimeout(this.reconnectTimeout);
