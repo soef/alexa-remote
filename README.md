@@ -37,8 +37,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 6.0.0 (2023-09-08)
 * IMPORTANT: Node.js 16 is now required minimum Node.js version!
 * (Apollon77) Replace WS-MQTT by the new HTTP/2 push connection
 
