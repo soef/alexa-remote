@@ -37,8 +37,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 6.1.1 (2023-09-09)
 * (Apollon77) Fix for cookie refresh check
 
 ### 6.1.0 (2023-09-09)
