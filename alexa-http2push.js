@@ -31,14 +31,16 @@ class AlexaHttp2Push extends EventEmitter {
             this.access_token = token;
 
             let host = 'bob-dispatch-prod-eu.amazon.com';
-            if (this._options.amazonPage === 'amazon.com') {
+            if (this._options.pushDispatchHost) {
+                host = this._options.pushDispatchHost;
+            } else if (this._options.amazonPage === 'amazon.com') {
                 host = 'bob-dispatch-prod-na.amazon.com';
             } else if (this._options.amazonPage === 'amazon.com.br') {
                 host = 'bob-dispatch-prod-na.amazon.com';
             } else if (this._options.amazonPage === 'amazon.co.jp') {
-                host = 'bob-dispatch-prod-fe.amazon.co.jp';
+                host = 'bob-dispatch-prod-fe.amazon.com';
             } else if (this._options.amazonPage === 'amazon.com.au') {
-                host = 'bob-dispatch-prod-fe.amazon.com.au';
+                host = 'bob-dispatch-prod-fe.amazon.com';
             }
             this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Use host ${host}`);
 

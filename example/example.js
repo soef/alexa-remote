@@ -31,6 +31,7 @@ alexa.init({
 //        acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
 //        amazonPage: '...', // optional, override Amazon-Login-Page for cookie determination and referer for requests
         useWsMqtt: true, // optional, true to use the Websocket/MQTT direct push connection
+//        pushDispatchHost: '...', // optional, override push endpoint host
         cookieRefreshInterval: 7*24*60*1000, // optional, cookie refresh intervall, set to 0 to disable refresh
         deviceAppName: '...', // optional: name of the device app name which will be registered with Amazon, leave empty to use a default one
         apiUserAgentPostFix: '...', // optional: postfix to add to api useragent, leave empty to use a default one
