@@ -37,8 +37,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 6.0.2 (2023-09-09)
 * (Apollon77) Added experimental support for BR region
 
 ### 6.0.1 (2023-09-08)
