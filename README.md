@@ -37,8 +37,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 6.1.0 (2023-09-09)
 * (Apollon77) Introduce optional parameter "pushDispatchHost" to specify the host for the push connection
 * (Apollon77) Make sure cookie refresh timeout is valid and prevent overflow
 * (Apollon77) Fix support for push connections JP/AU regions
