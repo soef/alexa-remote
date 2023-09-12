@@ -62,12 +62,12 @@ class AlexaHttp2Push extends EventEmitter {
                     reason = reason.toString();
                 }
                 try {
-                    this.stream && this.stream.end();
+                    this.stream && this.stream.destroy();
                 } catch (err) {
                     // ignore
                 }
                 try {
-                    this.client && this.client.close();
+                    this.client && this.client.destroy();
                 } catch (err) {
                     // ignore
                 }
@@ -97,7 +97,7 @@ class AlexaHttp2Push extends EventEmitter {
 
                 const retryDelay = (immediateReconnect || this.errorRetryCounter === 1) ? 1 : Math.min(60, this.errorRetryCounter * 5);
                 this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Retry Connection in ' + retryDelay + 's');
-                this.emit('disconnect', true, 'Retry Connection in ' + retryDelay + 's');
+                this.emit('disconnect', true, `Retry Connection in ${retryDelay}s (${code}: ${reason})`);
                 this.reconnectTimeout && clearTimeout(this.reconnectTimeout);
                 this.reconnectTimeout = setTimeout(() => {
                     this.reconnectTimeout = null;
@@ -105,7 +105,7 @@ class AlexaHttp2Push extends EventEmitter {
                 }, retryDelay * 1000);
             };
 
-            const onPingResponse = () => {
+            const onPingResponse = (resetErrorCount) => {
                 if (this.initTimeout) {
                     clearTimeout(this.initTimeout);
                     this.initTimeout = null;
@@ -117,7 +117,9 @@ class AlexaHttp2Push extends EventEmitter {
                     this.pongTimeout = null;
                 }
                 this.connectionActive = true;
-                this.errorRetryCounter = 0;
+                if (resetErrorCount) {
+                    this.errorRetryCounter = 0;
+                }
             };
 
             try {
@@ -147,13 +149,13 @@ class AlexaHttp2Push extends EventEmitter {
                         }
                         chunk = chunk.toString();
                         if (chunk.startsWith('------')) {
-                            this.client.ping(onPingResponse);
+                            this.client.ping(() => onPingResponse(false));
 
                             this.pingPongInterval = setInterval(() => {
                                 if (!this.stream || !this.client) return;
                                 this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Send Ping');
                                 //console.log('SEND: ' + msg.toString('hex'));
-                                this.client.ping(onPingResponse);
+                                this.client.ping(() => onPingResponse(true));
 
                                 this.pongTimeout = setTimeout(() => {
                                     this.pongTimeout = null;

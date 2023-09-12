@@ -37,6 +37,10 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Optimize reconnection handling for push connections
+
 ### 6.1.1 (2023-09-09)
 * (Apollon77) Fix for cookie refresh check
 
