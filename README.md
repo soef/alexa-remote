@@ -37,8 +37,7 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
+### 6.1.2 (2023-09-12)
 * (Apollon77) Optimize reconnection handling for push connections
 
 ### 6.1.1 (2023-09-09)
