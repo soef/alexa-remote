@@ -37,9 +37,8 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-
-### __WORK IN PROGRESS__
-* (Apollon77) Adjust Activity detection to work with recent Amazon changes 
+### 6.2.0 (2023-10-27)
+* (Apollon77) Adjust Activity detection to work with recent Amazon changes
 
 ### 6.1.2 (2023-09-12)
 * (Apollon77) Optimize reconnection handling for push connections
