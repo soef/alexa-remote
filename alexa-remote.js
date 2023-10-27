@@ -39,6 +39,15 @@ class AlexaRemote extends EventEmitter {
 
         this.authApiBearerToken = null;
         this.authApiBearerExpiry = null;
+
+        this.lastVolumes = {};
+        this.lastEqualizer = {};
+        this.lastPushedActivity = {};
+
+        this.activityUpdateQueue = [];
+        this.activityUpdateNotFoundCounter = 0;
+        this.activityUpdateTimeout = null;
+        this.activityUpdateRunning = false;
     }
 
     setCookie(_cookie) {
@@ -422,6 +431,26 @@ class AlexaRemote extends EventEmitter {
         return this.initPushConnection();
     }
 
+    simulateActivity(deviceSerialNumber, destinationUserId) {
+        if (this.activityUpdateTimeout && this.activityUpdateQueue.some(entry => entry.deviceSerialNumber === deviceSerialNumber && entry.destinationUserId === destinationUserId)) return;
+
+        this._options.logger && this._options.logger(`Alexa-Remote: Simulate activity for ${deviceSerialNumber} with destinationUserId ${destinationUserId} ... fetch in 2s`);
+
+        if (this.activityUpdateTimeout) {
+            clearTimeout(this.activityUpdateTimeout);
+            this.activityUpdateTimeout = null;
+        }
+        this.activityUpdateQueue.push({
+            deviceSerialNumber: deviceSerialNumber,
+            destinationUserId: destinationUserId,
+            activityTimestamp: Date.now()
+        });
+        this.activityUpdateTimeout = setTimeout(() => {
+            this.activityUpdateTimeout = null;
+            this.getPushedActivities();
+        }, 2500);
+    }
+
     initPushConnection() {
         if (this.alexahttp2Push) {
             this.alexahttp2Push.removeAllListeners();
@@ -452,11 +481,6 @@ class AlexaRemote extends EventEmitter {
         if (!this.alexahttp2Push) return;
 
         this._options.logger && this._options.logger('Alexa-Remote: Initialize WS-MQTT Push Connection');
-
-        this.activityUpdateQueue = [];
-        this.activityUpdateNotFoundCounter = 0;
-        this.activityUpdateTimeout = null;
-        this.activityUpdateRunning = false;
 
         this.alexahttp2Push.on('disconnect', (retries, msg) => {
             this.emit('ws-disconnect', retries, msg);
@@ -617,6 +641,20 @@ class AlexaRemote extends EventEmitter {
                         'volumeSetting': 50
                     }
                     */
+                    if (
+                        !this.lastVolumes[payload.dopplerId.deviceSerialNumber] ||
+                        (
+                            this.lastVolumes[payload.dopplerId.deviceSerialNumber].volumeSetting === payload.volumeSetting &&
+                            this.lastVolumes[payload.dopplerId.deviceSerialNumber].isMuted === payload.isMuted
+                        )
+                    ) {
+                        this.simulateActivity(payload.dopplerId.deviceSerialNumber, payload.destinationUserId);
+                    }
+                    this.lastVolumes[payload.dopplerId.deviceSerialNumber] = {
+                        volumeSetting: payload.volumeSetting,
+                        isMuted: payload.isMuted
+                    };
+
                     this.emit('ws-volume-change', {
                         destinationUserId: payload.destinationUserId,
                         deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
@@ -657,6 +695,22 @@ class AlexaRemote extends EventEmitter {
                         'midrange': 0
                     }
                     */
+                    if (
+                        !this.lastEqualizer[payload.dopplerId.deviceSerialNumber] ||
+                        (
+                            this.lastEqualizer[payload.dopplerId.deviceSerialNumber].bass === payload.bass &&
+                            this.lastEqualizer[payload.dopplerId.deviceSerialNumber].treble === payload.treble &&
+                            this.lastEqualizer[payload.dopplerId.deviceSerialNumber].midrange === payload.midrange
+                        )
+                    ) {
+                        this.simulateActivity(payload.dopplerId.deviceSerialNumber, payload.destinationUserId);
+                    }
+                    this.lastEqualizer[payload.dopplerId.deviceSerialNumber] = {
+                        bass: payload.bass,
+                        treble: payload.treble,
+                        midrange: payload.midrange
+                    };
+
                     this.emit('ws-equilizer-state-change', {
                         destinationUserId: payload.destinationUserId,
                         deviceSerialNumber: payload.dopplerId.deviceSerialNumber,
@@ -770,33 +824,57 @@ class AlexaRemote extends EventEmitter {
     }
 
     getPushedActivities() {
+        this._options.logger && this._options.logger(`Alexa-Remote: Get pushed activities ... ${this.activityUpdateQueue.length} entries in queue (already running: ${this.activityUpdateRunning})`);
         if (this.activityUpdateRunning || !this.activityUpdateQueue.length) return;
         this.activityUpdateRunning = true;
-        this.getCustomerHistoryRecords({maxRecordSize: this.activityUpdateQueue.length + 2, filter: false}, (err, res) => {
+        this.getCustomerHistoryRecords({maxRecordSize: this.activityUpdateQueue.length + 2, filter: false, forceRequest: true}, (err, res) => {
             this.activityUpdateRunning = false;
             if (!err && res) {
                 this._options.logger && this._options.logger(`Alexa-Remote: Activity data ${JSON.stringify(res)}`); // TODO REMOVE
 
                 let lastFoundQueueIndex = -1;
                 this.activityUpdateQueue.forEach((entry, queueIndex) => {
-                    const found = res.findIndex(activity => activity.data.recordKey.endsWith(`#${entry.key.entryId}`) && activity.data.customerId === entry.key.registeredUserId);
+                    if (entry.key) { // deprecated
+                        const found = res.findIndex(activity => activity.data.recordKey.endsWith(`#${entry.key.entryId}`) && activity.data.customerId === entry.key.registeredUserId);
 
-                    if (found === -1) {
-                        this._options.logger && this._options.logger(`Alexa-Remote: Activity for id ${entry.key.entryId} not found`);
-                    }
-                    else {
-                        lastFoundQueueIndex = queueIndex;
-                        const activity = res.splice(found, 1)[0];
-                        this._options.logger && this._options.logger(`Alexa-Remote: Activity found entry ${found} for Activity ID ${entry.key.entryId}`);
-                        activity.destinationUserId = entry.destinationUserId;
-                        this.emit('ws-device-activity', activity);
+                        if (found === -1) {
+                            this._options.logger && this._options.logger(`Alexa-Remote: Activity for id ${entry.key.entryId} not found`);
+                        } else {
+                            lastFoundQueueIndex = queueIndex;
+                            const activity = res.splice(found, 1)[0];
+                            this._options.logger && this._options.logger(`Alexa-Remote: Activity found entry ${found} for Activity ID ${entry.key.entryId}`);
+                            activity.destinationUserId = entry.destinationUserId;
+                            this.emit('ws-device-activity', activity);
+                        }
+                    } else {
+                        const lastPushedActivity = this.lastPushedActivity[entry.deviceSerialNumber] || Date.now() - 30_000;
+                        const found = res.findIndex(activity => activity.data.recordKey.endsWith(`#${entry.deviceSerialNumber}`) && activity.data.customerId === entry.destinationUserId && activity.creationTimestamp >= entry.activityTimestamp - 10_000 && activity.creationTimestamp > lastPushedActivity); // Only if current stuff is found
+
+                        if (found === -1) {
+                            this._options.logger && this._options.logger(`Alexa-Remote: Activity for device ${entry.deviceSerialNumber} not found`);
+                        } else {
+                            const activity = res.splice(found, 1)[0];
+                            this._options.logger && this._options.logger(`Alexa-Remote: Activity (ts=${activity.creationTimestamp}) found entry ${found} for device ${entry.deviceSerialNumber}`);
+                            activity.destinationUserId = entry.destinationUserId;
+                            this.emit('ws-device-activity', activity);
+                            if (activity.data.utteranceType !== 'WAKE_WORD_ONLY') {
+                                this.lastPushedActivity[entry.deviceSerialNumber] = activity.creationTimestamp;
+                                lastFoundQueueIndex = queueIndex;
+                            } else {
+                                this._options.logger && this._options.logger(`Alexa-Remote: Only Wakeword activity for device ${entry.deviceSerialNumber} found. try again in 2,5s`);
+                                lastFoundQueueIndex = -2;
+                            }
+                        }
                     }
                 });
 
-                if (lastFoundQueueIndex === -1) {
+                if (lastFoundQueueIndex < 0) {
                     this._options.logger && this._options.logger(`Alexa-Remote: No activities from stored ${this.activityUpdateQueue.length} entries found in queue (${this.activityUpdateNotFoundCounter})`);
                     this.activityUpdateNotFoundCounter++;
-                    if (this.activityUpdateNotFoundCounter > 5) {
+                    if (
+                        (lastFoundQueueIndex === -1 && this.activityUpdateNotFoundCounter > 2) || // 2 tries without wakeword
+                        (lastFoundQueueIndex === -2 && this.activityUpdateNotFoundCounter > 5) // 5 tries with wakeword
+                    ) {
                         this._options.logger && this._options.logger('Alexa-Remote: Reset expected activities');
                         this.activityUpdateQueue = [];
                         this.activityUpdateNotFoundCounter = 0;
@@ -813,7 +891,7 @@ class AlexaRemote extends EventEmitter {
                 this.activityUpdateTimeout = setTimeout(() => {
                     this.activityUpdateTimeout = null;
                     this.getPushedActivities();
-                }, 300);
+                }, 2500);
 
             }
 
@@ -1895,6 +1973,9 @@ class AlexaRemote extends EventEmitter {
         if (typeof options === 'function') {
             callback = options;
             options = {};
+        }
+        if (!options.forceRequest && this.activityUpdateQueue.length) {
+            return callback && callback(new Error('Activity update is running, please try again later.'));
         }
         this.httpsGet (`https://www.${this._options.amazonPage}/alexa-privacy/apd/rvh/customer-history-records` +
             `?startTime=${options.startTime || (Date.now() - 24 * 60 * 60 * 1000)}` +
