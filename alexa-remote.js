@@ -830,6 +830,7 @@ class AlexaRemote extends EventEmitter {
         this.getCustomerHistoryRecords({maxRecordSize: this.activityUpdateQueue.length + 2, filter: false, forceRequest: true}, (err, res) => {
             this.activityUpdateRunning = false;
             if (!err && res) {
+                res.reverse();
                 this._options.logger && this._options.logger(`Alexa-Remote: Activity data ${JSON.stringify(res)}`); // TODO REMOVE
 
                 let lastFoundQueueIndex = -1;
