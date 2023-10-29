@@ -842,28 +842,38 @@ class AlexaRemote extends EventEmitter {
                             this._options.logger && this._options.logger(`Alexa-Remote: Activity for id ${entry.key.entryId} not found`);
                         } else {
                             lastFoundQueueIndex = queueIndex;
+                            this.activityUpdateQueue.splice(0, lastFoundQueueIndex + 1);
                             const activity = res.splice(found, 1)[0];
                             this._options.logger && this._options.logger(`Alexa-Remote: Activity found entry ${found} for Activity ID ${entry.key.entryId}`);
                             activity.destinationUserId = entry.destinationUserId;
                             this.emit('ws-device-activity', activity);
                         }
                     } else {
-                        const lastPushedActivity = this.lastPushedActivity[entry.deviceSerialNumber] || Date.now() - 30_000;
-                        const found = res.findIndex(activity => activity.data.recordKey.endsWith(`#${entry.deviceSerialNumber}`) && activity.data.customerId === entry.destinationUserId && activity.creationTimestamp >= entry.activityTimestamp - 10_000 && activity.creationTimestamp > lastPushedActivity); // Only if current stuff is found
+                        const lastPushedActivity = this.lastPushedActivity[entry.deviceSerialNumber] || Date.now() - 30000;
+                        const found = res.filter(activity => activity.data.recordKey.endsWith(`#${entry.deviceSerialNumber}`) && activity.data.customerId === entry.destinationUserId && activity.creationTimestamp >= entry.activityTimestamp - 10000 && activity.creationTimestamp > lastPushedActivity); // Only if current stuff is found
 
-                        if (found === -1) {
+                        if (found.length === 0) {
                             this._options.logger && this._options.logger(`Alexa-Remote: Activity for device ${entry.deviceSerialNumber} not found`);
                         } else {
-                            const activity = res.splice(found, 1)[0];
-                            this._options.logger && this._options.logger(`Alexa-Remote: Activity (ts=${activity.creationTimestamp}) found entry ${found} for device ${entry.deviceSerialNumber}`);
-                            activity.destinationUserId = entry.destinationUserId;
-                            this.emit('ws-device-activity', activity);
-                            if (activity.data.utteranceType !== 'WAKE_WORD_ONLY') {
-                                this.lastPushedActivity[entry.deviceSerialNumber] = activity.creationTimestamp;
+                            let foundSomething = false;
+                            found.forEach((activity, index) => {
+                                if (activity.data.utteranceType === 'WAKE_WORD_ONLY' && index === 0 && this.activityUpdateNotFoundCounter > 0 && found.length > 1) return;
+                                this._options.logger && this._options.logger(`Alexa-Remote: Activity (ts=${activity.creationTimestamp}) found for device ${entry.deviceSerialNumber}`);
+                                activity.destinationUserId = entry.destinationUserId;
+                                this.emit('ws-device-activity', activity);
+                                if (activity.data.utteranceType !== 'WAKE_WORD_ONLY') {
+                                    this.lastPushedActivity[entry.deviceSerialNumber] = activity.creationTimestamp;
+                                    foundSomething = true;
+                                } else {
+                                    this._options.logger && this._options.logger(`Alexa-Remote: Only Wakeword activity for device ${entry.deviceSerialNumber} found. try again in 2,5s`);
+                                    if (!foundSomething) {
+                                        lastFoundQueueIndex = -2;
+                                    }
+                                }
+                            });
+                            if (foundSomething) {
                                 lastFoundQueueIndex = queueIndex;
-                            } else {
-                                this._options.logger && this._options.logger(`Alexa-Remote: Only Wakeword activity for device ${entry.deviceSerialNumber} found. try again in 2,5s`);
-                                lastFoundQueueIndex = -2;
+                                this.activityUpdateQueue.splice(queueIndex, 1);
                             }
                         }
                     }
@@ -883,7 +893,6 @@ class AlexaRemote extends EventEmitter {
                 }
                 else {
                     this.activityUpdateNotFoundCounter = 0;
-                    this.activityUpdateQueue.splice(0, lastFoundQueueIndex + 1);
                     this._options.logger && this._options.logger(`Alexa-Remote: ${this.activityUpdateQueue.length} entries left in activity queue`);
                 }
             }

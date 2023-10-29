@@ -37,6 +37,10 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+
+### __WORK IN PROGRESS__
+* (Apollon77) Optimize activity detection to process all relevant entries in all cases
+
 ### 6.2.1 (2023-10-27)
 * (Apollon77) Optimize activity detection to process all relevant entries and not just the last one
 
