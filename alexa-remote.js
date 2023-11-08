@@ -432,9 +432,10 @@ class AlexaRemote extends EventEmitter {
     }
 
     simulateActivity(deviceSerialNumber, destinationUserId) {
+        if (!this._options.autoQueryActivityOnTrigger) return;
         if (this.activityUpdateTimeout && this.activityUpdateQueue.some(entry => entry.deviceSerialNumber === deviceSerialNumber && entry.destinationUserId === destinationUserId)) return;
 
-        this._options.logger && this._options.logger(`Alexa-Remote: Simulate activity for ${deviceSerialNumber} with destinationUserId ${destinationUserId} ... fetch in 2s`);
+        this._options.logger && this._options.logger(`Alexa-Remote: Simulate activity for ${deviceSerialNumber} with destinationUserId ${destinationUserId} ... fetch in 3s`);
 
         if (this.activityUpdateTimeout) {
             clearTimeout(this.activityUpdateTimeout);
@@ -448,7 +449,7 @@ class AlexaRemote extends EventEmitter {
         this.activityUpdateTimeout = setTimeout(() => {
             this.activityUpdateTimeout = null;
             this.getPushedActivities();
-        }, 2500);
+        }, 4000);
     }
 
     initPushConnection() {
@@ -824,12 +825,26 @@ class AlexaRemote extends EventEmitter {
     }
 
     getPushedActivities() {
+        if (!this._options.autoQueryActivityOnTrigger) return;
         this._options.logger && this._options.logger(`Alexa-Remote: Get pushed activities ... ${this.activityUpdateQueue.length} entries in queue (already running: ${this.activityUpdateRunning})`);
         if (this.activityUpdateRunning || !this.activityUpdateQueue.length) return;
         this.activityUpdateRunning = true;
-        this.getCustomerHistoryRecords({maxRecordSize: this.activityUpdateQueue.length + 2, filter: false, forceRequest: true}, (err, res) => {
+        let earliestActionDate = Date.now();
+        this.activityUpdateQueue.forEach(entry => {
+            if (entry.activityTimestamp < earliestActionDate) earliestActionDate = entry.activityTimestamp;
+        });
+        this.getCustomerHistoryRecords({
+            maxRecordSize: this.activityUpdateQueue.length + 2,
+            filter: false,
+            forceRequest: true,
+            startTime: earliestActionDate - 60000,
+        }, (err, res) => {
             this.activityUpdateRunning = false;
-            if (!err && res) {
+            if (!res || (err && err.message.includes('no body'))) {
+                err = null;
+                res = [];
+            }
+            if (!err) {
                 res.reverse();
                 this._options.logger && this._options.logger(`Alexa-Remote: Activity data ${JSON.stringify(res)}`); // TODO REMOVE
 
@@ -901,8 +916,7 @@ class AlexaRemote extends EventEmitter {
                 this.activityUpdateTimeout = setTimeout(() => {
                     this.activityUpdateTimeout = null;
                     this.getPushedActivities();
-                }, 2500);
-
+                }, 4000);
             }
 
         });
@@ -1042,7 +1056,7 @@ class AlexaRemote extends EventEmitter {
             }
 
             if (err || !body) { // Method 'DELETE' may return HTTP STATUS 200 without body
-                this._options.logger && this._options.logger('Alexa-Remote: Response: No body');
+                this._options.logger && this._options.logger(`Alexa-Remote: Response: No body (code=${res && res.statusCode})`);
                 return typeof res.statusCode === 'number' && res.statusCode >= 200 && res.statusCode < 300 ? callback(null, {'success': true}) : callback(new Error('no body'), null);
             }
 

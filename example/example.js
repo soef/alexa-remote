@@ -39,6 +39,7 @@ alexa.init({
         formerRegistrationData: { ... }, // optional/preferred: provide the result object from subsequent proxy usages (cookieData) here and some generated data will be reused for next proxy call too
         macDms: { ... }, // required since version 4.0 to use Push connection! Is returned in cookieData.macDms
         usePushConnectType: 1, // define which push connect type is used to initialize the push connection (type 1 is older but might work better than type 2)
+        autoQueryActivityOnTrigger: false, // optional: if true, alexa will query the activity on each - use with care and only if needed!
     },
     function (err) {
         if (err) {

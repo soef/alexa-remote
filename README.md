@@ -37,6 +37,10 @@ Then it should work again
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+### __WORK IN PROGRESS__
+* (Apollon77) Add new option "autoQueryActivityOnTrigger" to activate the automatic activity triggering (default is off!)
+* (Apollon77) Optimize Timing for activity queries
+
 ### 6.2.2 (2023-10-29)
 * (Apollon77) Optimize activity detection to process all relevant entries in all cases
 
