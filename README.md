@@ -10,15 +10,14 @@ Library to remote control an Alexa (Amazon Echo) device via LAN/WLAN.
 **All product and company names or logos are trademarks™ or registered® trademarks of their respective holders. Use of them does not imply any affiliation with or endorsement by them or any associated subsidiaries! This personal project is maintained in spare time and has no business goal.**
 **ALEXA is a trademark of AMAZON TECHNOLOGIES, INC.**
 
-## Example
-
-see example folder
-
-## Thanks:
-Partly based on [Amazon Alexa Remote Control](http://blog.loetzimmer.de/2017/10/amazon-alexa-hort-auf-die-shell-echo.html) (PLAIN shell) and [alexa-remote-control](https://github.com/thorsten-gehrig/alexa-remote-control) and [OpenHab-Addon](https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol)
-Thank you for that work.
-
 ## Troubleshooting
+
+### Issues when getting the cookie and tokens initially
+If you still use the E-Mail or SMS based 2FA flow then this might not work. Please update the 2FA/OTP method in the amazon settings to the current process.
+
+If you open the Proxy URL from a mobile device where also the Alexa App is installed on it might be that it do not work because Amazon might open the Alexa App. So please use a device or PC where the Alexa App is not installed
+
+If you see a page that tells you that "alexa.amazon.xx is deprecated" and you should use the alexa app and with a QR code on it when you enter the Proxy URL" then this means that you call the proxy URL ith a different IP/Domainname then you entered in the "proxy own IP" settings or you adjusted the IP shown in the Adapter configuration. The "proxy own IP" setting **needs to** match the IP/Domainname you use to call the proxy URL!
 
 ### Push Connections do not connect
 Sometimes it could happen that because of too many connection tries aAmazon blocks the push connection endpoint for a specific IP and "device".
@@ -31,8 +30,15 @@ If the Push connection is never established then you can try to use the followin
 
 Then it should work again
 
+## Example
+
+see example folder
+
+## Thanks:
+Partly based on [Amazon Alexa Remote Control](http://blog.loetzimmer.de/2017/10/amazon-alexa-hort-auf-die-shell-echo.html) (PLAIN shell) and [alexa-remote-control](https://github.com/thorsten-gehrig/alexa-remote-control) and [OpenHab-Addon](https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol)
+Thank you for that work.
+
 ## Known issues/Todos
-* If you still use the SMS based 2FA flow then this might now work. Please update the 2fa method in the amazon settings to the current process.
 * getNotification works, changeNotification not ... maybe change is DELETE +Create :-) (+ source for createNotification: https://github.com/noelportugal/alexa-reminders/blob/master/alexa-reminders.js#L75, and Delete/create: https://github.com/openhab/openhab2-addons/blob/f54c9b85016758ff6d271b62d255bbe41a027928/addons/binding/org.openhab.binding.amazonechocontrol/src/main/java/org/openhab/binding/amazonechocontrol/internal/Connection.java#L829)
 * docu docu docu (sorry ... will come)
 
