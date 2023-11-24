@@ -21,11 +21,15 @@ alexa.on('cookie', (cookie, csrf, macDms) => {
 alexa.init({
         cookie: cookie,  // cookie if already known, else can be generated using proxy
         proxyOnly: true,
-        proxyOwnIp: 'localhost',
-        proxyPort: 3001,
+        proxyOwnIp: 'localhost', // required if proxy enabled: provide the own IP with which you later access the proxy.
+                                 // Providing/Using a hostname here can lead to issues!
+        proxyPort: 3001,         // optional: use this port for the proxy
         proxyLogLevel: 'info',
         bluetooth: true,
         logger: console.log, // optional
+
+        // The following options are optional. Try without them first and just use really needed ones!!
+
         alexaServiceHost: 'layla.amazon.de', // optional, e.g. "pitangui.amazon.com" for amazon.com, default is "layla.amazon.de"
 //        userAgent: '...', // optional, override used user-Agent for all Requests and Cookie determination
 //        acceptLanguage: '...', // optional, override Accept-Language-Header for cookie determination
@@ -37,8 +41,8 @@ alexa.init({
         apiUserAgentPostFix: '...', // optional: postfix to add to api useragent, leave empty to use a default one
         formerDataStorePath: '...', // optional: overwrite path where some of the formerRegistrationData are persisted to optimize against Amazon security measures
         formerRegistrationData: { ... }, // optional/preferred: provide the result object from subsequent proxy usages (cookieData) here and some generated data will be reused for next proxy call too
-        macDms: { ... }, // required since version 4.0 to use Push connection! Is returned in cookieData.macDms
-        usePushConnectType: 1, // define which push connect type is used to initialize the push connection (type 1 is older but might work better than type 2)
+        macDms: { ... }, // required in version 4.0 to use old Push connection! Is returned in cookieData.macDms, No longer needed since HTTP2-Push connection
+        usePushConnectType: 3, // define which push connect type is used to initialize the push connection (type 1 and 2 or outdated, defaults to 3
         autoQueryActivityOnTrigger: false, // optional: if true, alexa will query the activity on each - use with care and only if needed!
     },
     function (err) {

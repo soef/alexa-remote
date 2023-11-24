@@ -43,6 +43,9 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+### __WORK IN PROGRESS__
+* (Apollon77) Prevent some error/crash cases
+
 ### 7.0.0 (2023-11-08)
 * (Apollon77) Add new option "autoQueryActivityOnTrigger" to activate the automatic activity triggering (default is off!)
 * (Apollon77) Optimize Timing for activity queries

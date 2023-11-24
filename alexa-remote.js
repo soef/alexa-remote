@@ -1998,7 +1998,7 @@ class AlexaRemote extends EventEmitter {
             callback = options;
             options = {};
         }
-        if (!options.forceRequest && this.activityUpdateQueue.length) {
+        if (!options.forceRequest && this.activityUpdateQueue && this.activityUpdateQueue.length) {
             return callback && callback(new Error('Activity update is running, please try again later.'));
         }
         this.httpsGet (`https://www.${this._options.amazonPage}/alexa-privacy/apd/rvh/customer-history-records` +

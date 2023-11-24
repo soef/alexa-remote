@@ -124,7 +124,14 @@ class AlexaHttp2Push extends EventEmitter {
 
             try {
                 this.client = http2.connect(`https://${http2_options[':authority']}`,  () => {
-                    this.stream = this.client.request(http2_options);
+                    if (!this.client) return;
+                    try {
+                        this.stream = this.client.request(http2_options);
+                    } catch (error) {
+                        this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Error on Request ' + error.message);
+                        this.emit('error', error);
+                        return;
+                    }
 
                     this.stream.on('response', async (headers) => {
                         if (headers[':status'] === 403) {
@@ -155,7 +162,11 @@ class AlexaHttp2Push extends EventEmitter {
                                 if (!this.stream || !this.client) return;
                                 this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Send Ping');
                                 //console.log('SEND: ' + msg.toString('hex'));
-                                this.client.ping(() => onPingResponse(true));
+                                try {
+                                    this.client.ping(() => onPingResponse(true));
+                                } catch (error) {
+                                    this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Error on Ping ' + error.message);
+                                }
 
                                 this.pongTimeout = setTimeout(() => {
                                     this.pongTimeout = null;
