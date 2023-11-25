@@ -43,6 +43,9 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
+### __WORK IN PROGRESS__
+* (Apollon77) Adjust some texts
+
 ### 7.0.1 (2023-11-24)
 * (Apollon77) Prevent some error/crash cases
 
