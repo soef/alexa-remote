@@ -45,7 +45,7 @@ class AlexaHttp2Push extends EventEmitter {
             this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Use host ${host}`);
 
 
-            const http2_options = {
+            const http2Options = {
                 ':method': 'GET',
                 ':path': '/v20160207/directives',
                 ':authority': host,
@@ -74,7 +74,7 @@ class AlexaHttp2Push extends EventEmitter {
                 this.client = null;
                 this.stream = null;
                 this.connectionActive = false;
-                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Close: ' + code + ': ' + reason);
+                this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Close: ${code}: ${reason}`);
                 if (this.initTimeout) {
                     clearTimeout(this.initTimeout);
                     this.initTimeout = null;
@@ -87,17 +87,23 @@ class AlexaHttp2Push extends EventEmitter {
                     clearTimeout(this.pongTimeout);
                     this.pongTimeout = null;
                 }
-                if (this.stop) return;
+                if (this.stop) {
+                    return;
+                }
                 if (this.errorRetryCounter > 100) {
                     this.emit('disconnect', false, 'Too many failed retries. Check cookie and data');
                     return;
-                } else {
-                    this.errorRetryCounter++;
                 }
 
+                this.errorRetryCounter++;
+
                 const retryDelay = (immediateReconnect || this.errorRetryCounter === 1) ? 1 : Math.min(60, this.errorRetryCounter * 5);
-                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Retry Connection in ' + retryDelay + 's');
-                this.emit('disconnect', true, `Retry Connection in ${retryDelay}s (${code}: ${reason})`);
+                this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Retry Connection in ${retryDelay}s`);
+                if (code !== undefined || reason !== undefined) {
+                    this.emit('disconnect', true, `Retry Connection in ${retryDelay}s (${code}: ${reason})`);
+                } else {
+                    this.emit('disconnect', true, `Retry Connection in ${retryDelay}s`);
+                }
                 this.reconnectTimeout && clearTimeout(this.reconnectTimeout);
                 this.reconnectTimeout = setTimeout(() => {
                     this.reconnectTimeout = null;
@@ -123,12 +129,14 @@ class AlexaHttp2Push extends EventEmitter {
             };
 
             try {
-                this.client = http2.connect(`https://${http2_options[':authority']}`,  () => {
-                    if (!this.client) return;
+                this.client = http2.connect(`https://${http2Options[':authority']}`,  () => {
+                    if (!this.client) {
+                        return;
+                    }
                     try {
-                        this.stream = this.client.request(http2_options);
+                        this.stream = this.client.request(http2Options);
                     } catch (error) {
-                        this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Error on Request ' + error.message);
+                        this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Error on Request ${error.message}`);
                         this.emit('error', error);
                         return;
                     }
@@ -142,8 +150,7 @@ class AlexaHttp2Push extends EventEmitter {
                                 }
                                 onHttp2Close(headers[':status'], undefined, this.errorRetryCounter < 3);
                             });
-                        }
-                        else if (headers[':status'] !== 200) {
+                        } else if (headers[':status'] !== 200) {
                             onHttp2Close(headers[':status']);
                         }
                     });
@@ -159,13 +166,15 @@ class AlexaHttp2Push extends EventEmitter {
                             this.client.ping(() => onPingResponse(false));
 
                             this.pingPongInterval = setInterval(() => {
-                                if (!this.stream || !this.client) return;
+                                if (!this.stream || !this.client) {
+                                    return;
+                                }
                                 this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Send Ping');
-                                //console.log('SEND: ' + msg.toString('hex'));
+                                // console.log('SEND: ' + msg.toString('hex'));
                                 try {
                                     this.client.ping(() => onPingResponse(true));
                                 } catch (error) {
-                                    this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Error on Ping ' + error.message);
+                                    this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Error on Ping ${error.message}`);
                                 }
 
                                 this.pongTimeout = setTimeout(() => {
@@ -202,11 +211,11 @@ class AlexaHttp2Push extends EventEmitter {
                                     const command = dataContent.command;
                                     const payload = JSON.parse(dataContent.payload);
 
-                                    this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Command ' + command + ': ' + JSON.stringify(payload, null, 4));
+                                    this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Command ${command}: ${JSON.stringify(payload, null, 4)}`);
                                     this.emit('command', command, payload);
                                 });
                             } catch (err) {
-                                this.emit('unexpected-response', `Could not parse json: ${message} : ${err.message}`);
+                                this.emit('unexpected-response', `Could not parse json: ${message}: ${err.message}`);
                             }
                         }
                     });
@@ -214,7 +223,7 @@ class AlexaHttp2Push extends EventEmitter {
                     this.stream.on('close', onHttp2Close);
 
                     this.stream.on('error', (error) => {
-                        this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Stream-Error: ' + error);
+                        this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Stream-Error: ${error}`);
                         this.emit('error', error);
                         this.stream && this.stream.end();
                         this.client && this.client.close();
@@ -224,14 +233,14 @@ class AlexaHttp2Push extends EventEmitter {
                 this.client.on('close', onHttp2Close);
 
                 this.client.on('error', (error) => {
-                    this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Client-Error: ' + error);
+                    this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Client-Error: ${error}`);
                     this.emit('error', error);
                     this.stream && this.stream.end();
                     this.client && this.client.close();
                 });
             }
             catch (err) {
-                this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Error on Init ' + err.message);
+                this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Error on Init ${err.message}`);
                 this._options.logger && this._options.logger(err.stack);
                 this.emit('error', err);
                 return;
@@ -244,9 +253,9 @@ class AlexaHttp2Push extends EventEmitter {
                     this.stream && this.stream.end();
                     this.client && this.client.close();
                 } catch (err) {
-                    //just make sure
+                    // just make sure
                 }
-                if (this.stream || !this.reconnectTimeout) { // seems no close was emitted so far?!
+                if (this.stream || !this.reconnectTimeout) { // it seems no close was emitted so far?!
                     onHttp2Close();
                 }
             }, 30000);
@@ -267,15 +276,16 @@ class AlexaHttp2Push extends EventEmitter {
             this.initTimeout = null;
         }
         this.stop = true;
-        if (!this.client && !this.stream) return;
+        if (!this.client && !this.stream) {
+            return;
+        }
         try {
             this.stream && this.stream.end();
             this.client && this.client.close();
         } catch (e) {
-            this.connectionActive && this._options.logger && this._options.logger('Alexa-Remote HTTP2-PUSH: Disconnect error: ' + e.message);
+            this.connectionActive && this._options.logger && this._options.logger(`Alexa-Remote HTTP2-PUSH: Disconnect error: ${e.message}`);
         }
     }
 }
-
 
 module.exports = AlexaHttp2Push;
