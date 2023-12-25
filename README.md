@@ -13,18 +13,18 @@ Library to remote control an Alexa (Amazon Echo) device via LAN/WLAN.
 ## Troubleshooting
 
 ### Issues when getting the cookie and tokens initially
-If you still use the E-Mail or SMS based 2FA flow then this might not work. Please update the 2FA/OTP method in the amazon settings to the current process.
+If you still use the E-Mail or SMS based 2FA flow, then this might not work. Please update the 2FA/OTP method in the amazon settings to the current process.
 
-If you open the Proxy URL from a mobile device where also the Alexa App is installed on it might be that it do not work because Amazon might open the Alexa App. So please use a device or PC where the Alexa App is not installed
+If you open the Proxy URL from a mobile device where also the Alexa App is installed on, it might be that it does not work because Amazon might open the Alexa App. So please use a device or PC where the Alexa App is not installed
 
-If you see a page that tells you that "alexa.amazon.xx is deprecated" and you should use the alexa app and with a QR code on it when you enter the Proxy URL" then this means that you call the proxy URL ith a different IP/Domainname then you entered in the "proxy own IP" settings or you adjusted the IP shown in the Adapter configuration. The "proxy own IP" setting **needs to** match the IP/Domainname you use to call the proxy URL!
+If you see a page that tells you that "alexa.amazon.xx is deprecated" and you should use the alexa app and with a QR code on it when you enter the Proxy URL" then this means that you call the proxy URL ith a different IP/Domainname then you entered in the "proxy own IP" settings, or you adjusted the IP shown in the Adapter configuration. The "proxy own IP" setting **needs to** match the IP/Domainname you use to call the proxy URL!
 
 ### Push Connections do not connect
 Sometimes it could happen that because of too many connection tries aAmazon blocks the push connection endpoint for a specific IP and "device".
 
-If the Push connection is never established then you can try to use the following:
-* delete all cookie, formerRegistrationData and macDms from the settings
-* lokale the location of the alexa-cookie2 library in your npm tree
+If the Push connection is never established, then you can try to use the following:
+* delete all cookies, formerRegistrationData and macDms from the settings
+* locale the location of the alexa-cookie2 library in your npm tree
 * check if there is a file like .../alexa-cookie2/lib/formerDataStore.json - if existing please delete them
 * get new cookie via proxy
 
