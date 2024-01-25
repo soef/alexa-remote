@@ -43,7 +43,7 @@ Thank you for that work.
 * docu docu docu (sorry ... will come)
 
 ## Changelog:
-### __WORK IN PROGRESS__
+### 7.0.3 (2024-01-25)
 * (Apollon77) Adjust Activity Record query to newest Amazon changes
 
 ### 7.0.2 (2023-11-25)
