@@ -44,7 +44,7 @@ Thank you for that work.
 
 ## Changelog:
 ### __WORK IN PROGRESS__
-* (Apollon77) Adjust Activity Record query to newest Amazon adjustments
+* (Apollon77) Adjust Activity Record query to newest Amazon changes
 
 ### 7.0.2 (2023-11-25)
 * (Apollon77) Adjust some texts
