@@ -40,6 +40,10 @@ class AlexaRemote extends EventEmitter {
         this.authApiBearerToken = null;
         this.authApiBearerExpiry = null;
 
+        this.activityCsrfToken = null;
+        this.activityCsrfTokenExpiry = null;
+        this.activityCsrfTokenReferer = null;
+
         this.lastVolumes = {};
         this.lastEqualizer = {};
         this.lastPushedActivity = {};
@@ -1060,6 +1064,10 @@ class AlexaRemote extends EventEmitter {
                 return typeof res.statusCode === 'number' && res.statusCode >= 200 && res.statusCode < 300 ? callback(null, {'success': true}) : callback(new Error('no body'), null);
             }
 
+            if (flags && flags.handleAsText) {
+                return callback(null, body);
+            }
+
             let ret;
             try {
                 ret = JSON.parse(body);
@@ -1993,6 +2001,121 @@ class AlexaRemote extends EventEmitter {
         );
     }
 
+    _getCustomerHistoryRecords(options, callback) {
+        let url = `https://www.${this._options.amazonPage}/alexa-privacy/apd/rvh/customer-history-records-v2` +
+            `?startTime=${options.startTime || (Date.now() - 24 * 60 * 60 * 1000)}` +
+            `&endTime=${options.endTime || Date.now() + 24 * 60 * 60 * 1000}`;
+        if (options.recordType && options.recordType !== 'VOICE_HISTORY') {
+            url += `&pageType=${options.recordType}`;
+        }
+        //ignoring maxSize for now and just take the 10 that are returned. `&maxRecordSize=${options.maxRecordSize || 1}`,
+        this.httpsGet(
+            url,
+            (err, result) => {
+                if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
+
+                const ret = [];
+                if (result.customerHistoryRecords) {
+                    for (let r = 0; r < result.customerHistoryRecords.length; r++) {
+                        const res = result.customerHistoryRecords[r];
+                        const o = {
+                            data: res
+                        };
+                        const convParts = {};
+                        if (res.voiceHistoryRecordItems && Array.isArray(res.voiceHistoryRecordItems)) {
+                            res.voiceHistoryRecordItems.forEach(item => {
+                                convParts[item.recordItemType] = convParts[item.recordItemType] || [];
+                                convParts[item.recordItemType].push(item);
+                            });
+                            o.conversionDetails = convParts;
+                        }
+
+                        const recordKey = res.recordKey.split('#'); // A3NSX4MMJVG96V#1612297041815#A1RABVCI4QCIKC#G0911W0793360TLG
+
+                        o.deviceType = recordKey[2] || null;
+                        //o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
+                        o.creationTimestamp = res.timestamp || null;
+                        //o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
+
+                        o.deviceSerialNumber = recordKey[3];
+                        if (!this.serialNumbers[o.deviceSerialNumber]) continue;
+                        o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
+                        const dev = this.find(o.deviceSerialNumber);
+                        const wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
+
+                        o.description = {'summary': ''};
+                        if (convParts.CUSTOMER_TRANSCRIPT || convParts.ASR_REPLACEMENT_TEXT) {
+                            if (convParts.CUSTOMER_TRANSCRIPT) {
+                                convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
+                                    let text = trans.transcriptText;
+                                    if (wakeWord && text.startsWith(wakeWord)) {
+                                        text = text.substr(wakeWord.length).trim();
+                                    } else if (text.startsWith('alexa')) {
+                                        text = text.substr(5).trim();
+                                    }
+                                    o.description.summary += `${text}, `;
+                                });
+                            }
+                            if (convParts.ASR_REPLACEMENT_TEXT) {
+                                convParts.ASR_REPLACEMENT_TEXT.forEach(trans => {
+                                    let text = trans.transcriptText;
+                                    if (wakeWord && text.startsWith(wakeWord)) {
+                                        text = text.substr(wakeWord.length).trim();
+                                    } else if (text.startsWith('alexa')) {
+                                        text = text.substr(5).trim();
+                                    }
+                                    o.description.summary += `${text}, `;
+                                });
+                            }
+                            o.description.summary = o.description.summary.substring(0, o.description.summary.length - 2).trim();
+                        }
+                        o.alexaResponse = '';
+                        if (convParts.ALEXA_RESPONSE || convParts.TTS_REPLACEMENT_TEXT) {
+                            if (convParts.ALEXA_RESPONSE) {
+                                convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += `${trans.transcriptText}, `);
+                            }
+                            if (convParts.TTS_REPLACEMENT_TEXT) {
+                                convParts.TTS_REPLACEMENT_TEXT.forEach(trans => o.alexaResponse += `${trans.transcriptText}, `);
+                            }
+                            o.alexaResponse = o.alexaResponse.substring(0, o.alexaResponse.length - 2).trim();
+                        }
+                        if (options.filter) {
+                            if (!o.description || !o.description.summary.length) continue;
+
+                            if (res.utteranceType === 'WAKE_WORD_ONLY') {
+                                continue;
+                            }
+
+                            switch (o.description.summary) {
+                                case 'stopp':
+                                case 'alexa':
+                                case 'echo':
+                                case 'computer':
+                                case 'amazon':
+                                case 'ziggy':
+                                case ',':
+                                case '':
+                                    continue;
+                            }
+                        }
+
+                        if (o.description.summary || !options.filter) ret.push(o);
+                    }
+                }
+                if (typeof callback === 'function') return callback (err, ret);
+            },
+            {
+                headers: {
+                    'authority': `www.${this._options.amazonPage}`,
+                    'anti-csrftoken-a2z': this.activityCsrfToken,
+                    'referer': this.activityCsrfTokenReferer
+                },
+                method: 'POST',
+                data: '{"previousRequestToken": null}'
+            }
+        );
+    }
+
     getCustomerHistoryRecords(options, callback) {
         if (typeof options === 'function') {
             callback = options;
@@ -2001,110 +2124,29 @@ class AlexaRemote extends EventEmitter {
         if (!options.forceRequest && this.activityUpdateQueue && this.activityUpdateQueue.length) {
             return callback && callback(new Error('Activity update is running, please try again later.'));
         }
-        this.httpsGet (`https://www.${this._options.amazonPage}/alexa-privacy/apd/rvh/customer-history-records` +
-            `?startTime=${options.startTime || (Date.now() - 24 * 60 * 60 * 1000)}` +
-            `&endTime=${options.endTime || Date.now() + 24 * 60 * 60 * 1000}` +
-            `&recordType=${options.recordType || 'VOICE_HISTORY'}` +
-            `&maxRecordSize=${options.maxRecordSize || 1}`,
-        (err, result) => {
-            if (err || !result) return callback/*.length >= 2*/ && callback(err, result);
 
-            const ret = [];
-            if (result.customerHistoryRecords) {
-                for (let r = 0; r < result.customerHistoryRecords.length; r++) {
-                    const res = result.customerHistoryRecords[r];
-                    const o = {
-                        data: res
-                    };
-                    const convParts = {};
-                    if (res.voiceHistoryRecordItems && Array.isArray(res.voiceHistoryRecordItems)) {
-                        res.voiceHistoryRecordItems.forEach(item => {
-                            convParts[item.recordItemType] = convParts[item.recordItemType] || [];
-                            convParts[item.recordItemType].push(item);
-                        });
-                        o.conversionDetails = convParts;
-                    }
-
-                    const recordKey = res.recordKey.split('#'); // A3NSX4MMJVG96V#1612297041815#A1RABVCI4QCIKC#G0911W0793360TLG
-
-                    o.deviceType = recordKey[2] || null;
-                    //o.deviceAccountId = res.sourceDeviceIds[i].deviceAccountId || null;
-                    o.creationTimestamp = res.timestamp || null;
-                    //o.activityStatus = res.activityStatus || null; // DISCARDED_NON_DEVICE_DIRECTED_INTENT, SUCCESS, FAIL, SYSTEM_ABANDONED
-
-                    o.deviceSerialNumber = recordKey[3];
-                    if (!this.serialNumbers[o.deviceSerialNumber]) continue;
-                    o.name = this.serialNumbers[o.deviceSerialNumber].accountName;
-                    const dev = this.find(o.deviceSerialNumber);
-                    const wakeWord = (dev && dev.wakeWord) ? dev.wakeWord : null;
-
-                    o.description = {'summary': ''};
-                    if (convParts.CUSTOMER_TRANSCRIPT || convParts.ASR_REPLACEMENT_TEXT) {
-                        if (convParts.CUSTOMER_TRANSCRIPT) {
-                            convParts.CUSTOMER_TRANSCRIPT.forEach(trans => {
-                                let text = trans.transcriptText;
-                                if (wakeWord && text.startsWith(wakeWord)) {
-                                    text = text.substr(wakeWord.length).trim();
-                                } else if (text.startsWith('alexa')) {
-                                    text = text.substr(5).trim();
-                                }
-                                o.description.summary += `${text}, `;
-                            });
-                        }
-                        if (convParts.ASR_REPLACEMENT_TEXT) {
-                            convParts.ASR_REPLACEMENT_TEXT.forEach(trans => {
-                                let text = trans.transcriptText;
-                                if (wakeWord && text.startsWith(wakeWord)) {
-                                    text = text.substr(wakeWord.length).trim();
-                                } else if (text.startsWith('alexa')) {
-                                    text = text.substr(5).trim();
-                                }
-                                o.description.summary += `${text}, `;
-                            });
-                        }
-                        o.description.summary = o.description.summary.substring(0, o.description.summary.length - 2).trim();
-                    }
-                    o.alexaResponse = '';
-                    if (convParts.ALEXA_RESPONSE || convParts.TTS_REPLACEMENT_TEXT) {
-                        if (convParts.ALEXA_RESPONSE) {
-                            convParts.ALEXA_RESPONSE.forEach(trans => o.alexaResponse += `${trans.transcriptText}, `);
-                        }
-                        if (convParts.TTS_REPLACEMENT_TEXT) {
-                            convParts.TTS_REPLACEMENT_TEXT.forEach(trans => o.alexaResponse += `${trans.transcriptText}, `);
-                        }
-                        o.alexaResponse = o.alexaResponse.substring(0, o.alexaResponse.length - 2).trim();
-                    }
-                    if (options.filter) {
-                        if (!o.description || !o.description.summary.length) continue;
-
-                        if (res.utteranceType === 'WAKE_WORD_ONLY') {
-                            continue;
-                        }
-
-                        switch (o.description.summary) {
-                            case 'stopp':
-                            case 'alexa':
-                            case 'echo':
-                            case 'computer':
-                            case 'amazon':
-                            case 'ziggy':
-                            case ',':
-                            case '':
-                                continue;
-                        }
-                    }
-
-                    if (o.description.summary || !options.filter) ret.push(o);
-                }
-            }
-            if (typeof callback === 'function') return callback (err, ret);
-        },
-        {
-            headers: {
-                'authority': 'www.amazon.de'
-            }
+        if (this.activityCsrfToken && this.activityCsrfTokenExpiry > Date.now()) {
+            return this._getCustomerHistoryRecords(options, callback);
         }
-        );
+
+        const csrfPageUrl = `https://www.${this._options.amazonPage}/alexa-privacy/apd/activity?ref=activityHistory`; // disableGlobalNav=true&locale=de-DE
+        this.httpsGet(csrfPageUrl, (err, result) => {
+            if (err || !result) return callback && callback(err, result);
+
+            const regex = /meta name="csrf-token" content="([^"]+)"/g;
+            const csrfTokenRes = regex.exec(result);
+            if (csrfTokenRes && csrfTokenRes[1]) {
+                this.activityCsrfToken = csrfTokenRes[1];
+                this.activityCsrfTokenExpiry = Date.now() + 2 * 60 * 60 * 1000;
+                this.activityCsrfTokenReferer = csrfPageUrl;
+
+                this._getCustomerHistoryRecords(options, callback);
+            } else {
+                return callback/*.length >= 2*/ && callback(new Error('CSRF Page has no token'), result);
+            }
+        }, {
+            handleAsText: true
+        });
     }
 
     getAccount(includeActors, callback) {
