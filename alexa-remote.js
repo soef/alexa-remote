@@ -949,7 +949,7 @@ class AlexaRemote extends EventEmitter {
     getAuthApiBearerToken(callback) {
         if (!this.alexaCookie) this.alexaCookie = require('alexa-cookie2');
         const deviceAppName = (this._options.formerRegistrationData && this._options.formerRegistrationData.deviceAppName) || this.alexaCookie.getDeviceAppName(); // Use the App Name from last cookie response or use default one
-        this.httpsGet(true, 'https://api.amazon.de/auth/token', (err, res) => {
+        this.httpsGet(true, `https://api.${this._options.amazonPage}/auth/token`, (err, res) => {
             if (err) {
                 this._options.logger && this._options.logger(`Alexa-Remote: Error getting auth token: ${err.message}`);
                 callback(err);
